@@ -121,7 +121,7 @@ function ProductPage() {
               <Link to="/signup">Start free trial</Link>
             </Button>
             <Button asChild variant="outline" className="rounded-full">
-              <Link to="/replies">Try the reply writer</Link>
+              <Link to="/dashboard/replies">Try the reply writer</Link>
             </Button>
           </div>
         </section>
