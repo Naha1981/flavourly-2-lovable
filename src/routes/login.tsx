@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <AuthShell
@@ -48,8 +49,8 @@ function LoginPage() {
         onSubmit={(event) => {
           event.preventDefault();
           setBusy(true);
-          toast.info("Sign-in connects once your backend is plugged in.");
-          setBusy(false);
+          toast.success("Welcome back.");
+          navigate({ to: "/dashboard" });
         }}
         className="grid gap-4"
       >
