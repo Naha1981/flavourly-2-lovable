@@ -12,12 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CompanyRouteImport } from './routes/company'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProductRouteImport } from './routes/product'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as ClaimSlugRouteImport } from './routes/claim.$slug'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardCampaignsRouteImport } from './routes/dashboard.campaigns'
+import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
+import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 
@@ -36,9 +43,19 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -66,6 +83,31 @@ const ClaimSlugRoute = ClaimSlugRouteImport.update({
   path: '/claim/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardInboxRoute = DashboardInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRepliesRoute = DashboardRepliesRouteImport.update({
+  id: '/replies',
+  path: '/replies',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
@@ -81,41 +123,61 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/company': typeof CompanyRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/company': typeof CompanyRoute
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/company': typeof CompanyRoute
   '/contact': typeof ContactRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/product': typeof ProductRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -123,47 +185,69 @@ export interface FileRouteTypes {
     | '/'
     | '/company'
     | '/contact'
+    | '/dashboard'
     | '/login'
+    | '/onboarding'
     | '/pricing'
     | '/product'
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/campaigns'
+    | '/dashboard/inbox'
+    | '/dashboard/replies'
+    | '/dashboard/settings'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/company'
     | '/contact'
     | '/login'
+    | '/onboarding'
     | '/pricing'
     | '/product'
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/campaigns'
+    | '/dashboard/inbox'
+    | '/dashboard/replies'
+    | '/dashboard/settings'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/company'
     | '/contact'
+    | '/dashboard'
     | '/login'
+    | '/onboarding'
     | '/pricing'
     | '/product'
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/campaigns'
+    | '/dashboard/inbox'
+    | '/dashboard/replies'
+    | '/dashboard/settings'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompanyRoute: typeof CompanyRoute
   ContactRoute: typeof ContactRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ProductRoute: typeof ProductRoute
   SignupRoute: typeof SignupRoute
@@ -196,11 +280,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -238,6 +336,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClaimSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/campaigns': {
+      id: '/dashboard/campaigns'
+      path: '/campaigns'
+      fullPath: '/dashboard/campaigns'
+      preLoaderRoute: typeof DashboardCampaignsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/inbox': {
+      id: '/dashboard/inbox'
+      path: '/inbox'
+      fullPath: '/dashboard/inbox'
+      preLoaderRoute: typeof DashboardInboxRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/replies': {
+      id: '/dashboard/replies'
+      path: '/replies'
+      fullPath: '/dashboard/replies'
+      preLoaderRoute: typeof DashboardRepliesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/legal/privacy': {
       id: '/legal/privacy'
       path: '/legal/privacy'
@@ -255,11 +388,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardRouteChildren {
+  DashboardCampaignsRoute: typeof DashboardCampaignsRoute
+  DashboardInboxRoute: typeof DashboardInboxRoute
+  DashboardRepliesRoute: typeof DashboardRepliesRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardCampaignsRoute: DashboardCampaignsRoute,
+  DashboardInboxRoute: DashboardInboxRoute,
+  DashboardRepliesRoute: DashboardRepliesRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompanyRoute: CompanyRoute,
   ContactRoute: ContactRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ProductRoute: ProductRoute,
   SignupRoute: SignupRoute,
