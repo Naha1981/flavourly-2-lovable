@@ -7,8 +7,8 @@ const APP_ID = "flavourly";
 type OpResult<T> = { ok: true; data: T } | { ok: false; error: string; status?: number };
 
 async function op<T>(tenantId: string, path: string, init: RequestInit = {}): Promise<OpResult<T>> {
-  const baseUrl = process.env.OPERATOR_URL;
-  const apiKey = process.env.OPERATOR_API_KEY;
+  const baseUrl = process.env["OPERATOR_URL"];
+  const apiKey = process.env["OPERATOR_API_KEY"];
   if (!baseUrl || !apiKey) return { ok: false, error: "WhatsApp service isn't configured." };
 
   const headers = new Headers(init.headers);

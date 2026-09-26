@@ -5,8 +5,8 @@ import { createLovableAiGatewayRunIdFetch } from "./ai-gateway.server";
 
 export type TriageInput = {
   message: string;
-  guestName?: string;
-  restaurant: { name: string; hours?: string; notes?: string };
+  guestName?: string | undefined;
+  restaurant: { name: string; hours?: string | undefined; notes?: string | undefined };
 };
 
 export type Triage = {
@@ -18,7 +18,7 @@ export type Triage = {
   owner: "AI can reply" | "Manager" | "Kitchen" | "Front of house";
 };
 
-export type TriageResult = ({ ok: true } & Triage) | { ok: false; error: string; status?: number };
+export type TriageResult = ({ ok: true } & Triage) | { ok: false; error: string; status?: number | undefined };
 
 const pick = <T extends string>(v: unknown, opts: readonly T[], fallback: T): T =>
   opts.includes(String(v).toLowerCase() as T) ? (String(v).toLowerCase() as T) : fallback;
@@ -31,7 +31,7 @@ function friendlyError(status?: number) {
 }
 
 export async function triageMessage(input: TriageInput): Promise<TriageResult> {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return { ok: false, error: "AI isn't configured yet." };
 
   const r = input.restaurant;
