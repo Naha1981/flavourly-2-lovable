@@ -8,21 +8,21 @@ export type ReplyIntent = "auto" | "booking" | "faq" | "complaint";
 export type DraftInput = {
   message: string;
   intent: ReplyIntent;
-  guestName?: string;
+  guestName?: string | undefined;
   restaurant: {
     name: string;
-    city?: string;
-    cuisine?: string;
-    hours?: string;
-    averageCheck?: number;
-    ownerName?: string;
-    notes?: string;
+    city?: string | undefined;
+    cuisine?: string | undefined;
+    hours?: string | undefined;
+    averageCheck?: number | undefined;
+    ownerName?: string | undefined;
+    notes?: string | undefined;
   };
 };
 
 export type DraftResult =
   | { ok: true; intent: Exclude<ReplyIntent, "auto">; reply: string }
-  | { ok: false; error: string; status?: number };
+  | { ok: false; error: string; status?: number | undefined };
 
 const MODEL = "openai/gpt-6-astra";
 
@@ -40,7 +40,7 @@ function friendlyError(status?: number): string {
 }
 
 export async function generateReplyDraft(input: DraftInput): Promise<DraftResult> {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) return { ok: false, error: "AI drafting isn't configured yet." };
 
   const r = input.restaurant;
