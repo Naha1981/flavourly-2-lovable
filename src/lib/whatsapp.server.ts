@@ -28,7 +28,7 @@ async function op<T>(tenantId: string, path: string, init: RequestInit = {}): Pr
     }
     if (!res.ok) {
       console.error("operator error", path, res.status, body);
-      const message = typeof body.message === "string" ? body.message : `WhatsApp service error (${res.status})`;
+      const message = typeof body["message"] === "string" ? (body["message"] as string) : `WhatsApp service error (${res.status})`;
       return { ok: false, error: message, status: res.status };
     }
     return { ok: true, data: body as T };
@@ -75,7 +75,9 @@ export async function status(tenantId: string, waAccountId: string): Promise<OpR
 }
 
 export function reconnect(tenantId: string, waAccountId: string) {
-  return op<unknown>(tenantId, `/accounts/${encodeURIComponent(waAccountId)}/connect`, { method: "POST" });
+  return op<{ status?: string; qrCode?: string | null }>(tenantId, `/accounts/${encodeURIComponent(waAccountId)}/connect`, {
+    method: "POST",
+  });
 }
 
 export function pairingCode(tenantId: string, waAccountId: string, phoneNumber: string) {
@@ -87,7 +89,7 @@ export function pairingCode(tenantId: string, waAccountId: string, phoneNumber: 
 }
 
 export function sendText(tenantId: string, waAccountId: string, to: string, text: string) {
-  return op<unknown>(tenantId, "/send", {
+  return op<{ messageId?: string; status?: string }>(tenantId, "/send", {
     method: "POST",
     body: JSON.stringify({ waAccountId, to, text, type: "text" }),
   });
