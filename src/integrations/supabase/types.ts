@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      wa_conversations: {
+        Row: {
+          assignee: string | null
+          chat_id: string
+          created_at: string
+          guest_name: string | null
+          guest_phone: string | null
+          id: string
+          intent: string
+          last_message: string | null
+          last_message_at: string
+          next_action: string | null
+          sentiment: string | null
+          status: string
+          summary: string | null
+          tenant_id: string
+          unread: number
+          urgency: string
+        }
+        Insert: {
+          assignee?: string | null
+          chat_id: string
+          created_at?: string
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          intent?: string
+          last_message?: string | null
+          last_message_at?: string
+          next_action?: string | null
+          sentiment?: string | null
+          status?: string
+          summary?: string | null
+          tenant_id: string
+          unread?: number
+          urgency?: string
+        }
+        Update: {
+          assignee?: string | null
+          chat_id?: string
+          created_at?: string
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          intent?: string
+          last_message?: string | null
+          last_message_at?: string
+          next_action?: string | null
+          sentiment?: string | null
+          status?: string
+          summary?: string | null
+          tenant_id?: string
+          unread?: number
+          urgency?: string
+        }
+        Relationships: []
+      }
+      wa_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          direction: string
+          id: string
+          sent_at: string
+          tenant_id: string
+          wa_message_id: string | null
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          direction?: string
+          id?: string
+          sent_at?: string
+          tenant_id: string
+          wa_message_id?: string | null
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          direction?: string
+          id?: string
+          sent_at?: string
+          tenant_id?: string
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
