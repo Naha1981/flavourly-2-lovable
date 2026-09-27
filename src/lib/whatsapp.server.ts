@@ -89,7 +89,7 @@ export function pairingCode(tenantId: string, waAccountId: string, phoneNumber: 
 }
 
 export function sendText(tenantId: string, waAccountId: string, to: string, text: string) {
-  return op<unknown>(tenantId, "/send", {
+  return op<{ messageId?: string; status?: string }>(tenantId, "/send", {
     method: "POST",
     body: JSON.stringify({ waAccountId, to, text, type: "text" }),
   });
