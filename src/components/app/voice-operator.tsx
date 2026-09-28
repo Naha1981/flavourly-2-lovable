@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Phone, Square } from "lucide-react";
+import { Mic, Phone, Square } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
   const outputContextRef = useRef<AudioContext | null>(null);
   const inputSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const silenceGainRef = useRef<GainNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nextPlayTimeRef = useRef(0);
 
@@ -79,11 +80,13 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
 
   const cleanupAudio = () => {
     processorRef.current?.disconnect();
+    silenceGainRef.current?.disconnect();
     inputSourceRef.current?.disconnect();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     void inputContextRef.current?.close();
     void outputContextRef.current?.close();
     processorRef.current = null;
+    silenceGainRef.current = null;
     inputSourceRef.current = null;
     streamRef.current = null;
     inputContextRef.current = null;
@@ -232,8 +235,12 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
             }),
           );
         };
+        const silenceGain = inputContext.createGain();
+        silenceGain.gain.value = 0;
         source.connect(processor);
-        processor.connect(inputContext.destination);
+        processor.connect(silenceGain);
+        silenceGain.connect(inputContext.destination);
+        silenceGainRef.current = silenceGain;
         inputSourceRef.current = source;
         processorRef.current = processor;
       };
