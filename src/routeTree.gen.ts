@@ -32,6 +32,7 @@ import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
+import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public/cron/milestones'
 import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
@@ -152,6 +153,11 @@ const DashboardIntelligenceMenuMatrixRoute =
     path: '/intelligence/menu-matrix',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardVoiceRoute = DashboardVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const ApiPublicCronMilestonesRoute = ApiPublicCronMilestonesRouteImport.update({
   id: '/api/public/cron/milestones',
   path: '/api/public/cron/milestones',
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/m/$slug': typeof MSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
+    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard'
     | '/dashboard/intelligence/menu-matrix'
+    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
+    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -523,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIntelligenceMenuMatrixRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/voice': {
+      id: '/dashboard/voice'
+      path: '/voice'
+      fullPath: '/dashboard/voice'
+      preLoaderRoute: typeof DashboardVoiceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/api/public/cron/milestones': {
       id: '/api/public/cron/milestones'
       path: '/api/public/cron/milestones'
@@ -556,6 +575,7 @@ interface DashboardRouteChildren {
   DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardIntelligenceMenuMatrixRoute: typeof DashboardIntelligenceMenuMatrixRoute
+  DashboardVoiceRoute: typeof DashboardVoiceRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
