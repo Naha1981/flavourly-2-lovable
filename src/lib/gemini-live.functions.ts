@@ -59,6 +59,7 @@ export const createGeminiLiveToken = createServerFn({ method: "POST" })
             config: {
               responseModalities: ["AUDIO"],
               sessionResumption: {},
+              contextWindowCompression: {},
               inputAudioTranscription: {},
               outputAudioTranscription: {},
               systemInstruction: {
