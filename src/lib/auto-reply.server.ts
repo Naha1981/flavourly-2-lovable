@@ -83,6 +83,11 @@ async function decide(
     return `Tap to unlock your *${formatZAR(claim.discountCents)} off* code (works only at the restaurant, valid 15 minutes):\n${APP_URL()}/geo-claim/${claim.token}`;
   }
 
+  // A 1-5 rating (or the comment after a low one) answers our feedback request.
+  const { handleFeedbackReply } = await import("./reputation.server");
+  const feedback = await handleFeedbackReply({ tenantId: i.tenantId, phone: i.phone, text: t });
+  if (feedback) return feedback;
+
   // A YES/CANCEL to a reminder we just sent beats starting a new booking draft.
   const { handleReminderReply } = await import("./reminders.server");
   const reminder = await handleReminderReply({ tenantId: i.tenantId, phone: i.phone, text: t });

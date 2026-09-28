@@ -25,6 +25,7 @@ import { Route as DashboardCampaignsRouteImport } from './routes/dashboard.campa
 import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
 import { Route as DashboardMenuRouteImport } from './routes/dashboard.menu'
 import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies'
+import { Route as DashboardReputationRouteImport } from './routes/dashboard.reputation'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
 import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
@@ -118,6 +119,11 @@ const DashboardRepliesRoute = DashboardRepliesRouteImport.update({
   path: '/replies',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardReputationRoute = DashboardReputationRouteImport.update({
+  id: '/reputation',
+  path: '/reputation',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/inbox': typeof DashboardInboxRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/dashboard/inbox': typeof DashboardInboxRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/dashboard/inbox': typeof DashboardInboxRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
+  '/dashboard/reputation': typeof DashboardReputationRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/dashboard/inbox'
     | '/dashboard/menu'
     | '/dashboard/replies'
+    | '/dashboard/reputation'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/dashboard/inbox'
     | '/dashboard/menu'
     | '/dashboard/replies'
+    | '/dashboard/reputation'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/dashboard/inbox'
     | '/dashboard/menu'
     | '/dashboard/replies'
+    | '/dashboard/reputation'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -499,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRepliesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/reputation': {
+      id: '/dashboard/reputation'
+      path: '/reputation'
+      fullPath: '/dashboard/reputation'
+      preLoaderRoute: typeof DashboardReputationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
@@ -591,6 +610,7 @@ interface DashboardRouteChildren {
   DashboardInboxRoute: typeof DashboardInboxRoute
   DashboardMenuRoute: typeof DashboardMenuRoute
   DashboardRepliesRoute: typeof DashboardRepliesRoute
+  DashboardReputationRoute: typeof DashboardReputationRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardVoiceRoute: typeof DashboardVoiceRoute
@@ -603,6 +623,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInboxRoute: DashboardInboxRoute,
   DashboardMenuRoute: DashboardMenuRoute,
   DashboardRepliesRoute: DashboardRepliesRoute,
+  DashboardReputationRoute: DashboardReputationRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
   DashboardVoiceRoute: DashboardVoiceRoute,

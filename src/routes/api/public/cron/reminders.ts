@@ -9,7 +9,12 @@ export const Route = createFileRoute("/api/public/cron/reminders")({
         const denied = await authenticateCronRequest(request);
         if (denied) return denied;
         const { runReminders } = await import("@/lib/reminders.server");
-        return Response.json({ ok: true, result: await runReminders() });
+        const { runFeedbackRequests } = await import("@/lib/reputation.server");
+        // One schedule drives both the reminder ladder and post-visit feedback requests.
+        return Response.json({
+          ok: true,
+          result: { reminders: await runReminders(), feedback: await runFeedbackRequests() },
+        });
       },
     },
   },
