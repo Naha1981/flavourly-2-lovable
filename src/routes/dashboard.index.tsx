@@ -199,7 +199,7 @@ function RestaurantHeader({ tonightCovers }: { tonightCovers: number }) {
         <div className="absolute inset-x-5 bottom-5 grid gap-2 sm:inset-x-7 sm:bottom-7 sm:grid-cols-4 lg:inset-x-9 lg:bottom-9">
           <HeroMetric label="Bookings" value="42" detail="Tonight" />
           <HeroMetric label="VIPs" value={String(vipsTonight.length)} detail="Arriving" />
-          <HeroMetric label="Covers" value={String(tonightCovers + 10)} detail="Expected" />
+          <HeroMetric label="VIP covers" value={String(tonightCovers)} detail="Tonight" />
           <HeroMetric label="Open messages" value={String(conversations.filter((c) => c.unread).length)} detail="Need attention" />
         </div>
       </div>
