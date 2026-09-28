@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { BarChart3, Home, Inbox, Megaphone, Send, Settings, Sparkles, UtensilsCrossed } from "lucide-react";
+import { BarChart3, Home, Inbox, Megaphone, Mic, Send, Settings, Sparkles, UtensilsCrossed } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 
@@ -10,6 +10,7 @@ export const Route = createFileRoute("/dashboard")({
 const nav = [
   { to: "/dashboard", label: "Today", icon: Home, exact: true },
   { to: "/dashboard/inbox", label: "Inbox", icon: Inbox, exact: false },
+  { to: "/dashboard/voice", label: "Voice", icon: Mic, exact: false },
   { to: "/dashboard/menu", label: "Menu", icon: UtensilsCrossed, exact: false },
   { to: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
   { to: "/dashboard/intelligence/menu-matrix", label: "Profit", icon: BarChart3, exact: false },
