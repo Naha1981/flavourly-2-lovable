@@ -7,6 +7,8 @@ import { AuthShell } from "@/routes/login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { enterWorkspace, isAuthRequired } from "@/lib/auth-client";
 
 const searchSchema = z.object({
   plan: z.string().optional(),
@@ -37,6 +39,50 @@ function SignupPage() {
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
+  const submit = async (form: HTMLFormElement) => {
+    setBusy(true);
+    try {
+      if (!(await isAuthRequired())) {
+        toast.success("Workspace created — let's set up your restaurant.");
+        navigate({ to: "/onboarding", search: { step: "profile" } });
+        return;
+      }
+      const f = new FormData(form);
+      const restaurant = String(f.get("restaurant") ?? "").trim();
+      const email = String(f.get("email") ?? "").trim();
+      const password = String(f.get("password") ?? "");
+      if (!restaurant || !email || password.length < 8) {
+        toast.error("Add your restaurant, an email, and a password of at least 8 characters.");
+        return;
+      }
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { restaurant, name: String(f.get("name") ?? "").trim() },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (!data.session) {
+        // Email confirmation is on: the workspace is created on first sign-in.
+        toast.success("Check your email to confirm your address, then sign in.");
+        navigate({ to: "/login", search: {} });
+        return;
+      }
+      await enterWorkspace(restaurant);
+      toast.success("Workspace created — let's set up your restaurant.");
+      navigate({ to: "/onboarding", search: { step: "profile" } });
+    } catch {
+      toast.error("Couldn't create your workspace. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <AuthShell
       title="Start your 14-day trial"
@@ -57,27 +103,37 @@ function SignupPage() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          setBusy(true);
-          toast.success("Workspace created — let's set up your restaurant.");
-          navigate({ to: "/onboarding", search: { step: "profile" } });
+          void submit(event.currentTarget);
         }}
         className="grid gap-4"
       >
         <div className="grid gap-2">
           <Label htmlFor="restaurant">Restaurant name</Label>
-          <Input id="restaurant" placeholder="Marble" />
+          <Input id="restaurant" name="restaurant" placeholder="Marble" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="name">Your name</Label>
-          <Input id="name" placeholder="Warren Dlamini" />
+          <Input id="name" name="name" placeholder="Warren Dlamini" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Work email</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@restaurant.co.za" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@restaurant.co.za"
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Choose a password</Label>
-          <Input id="password" type="password" autoComplete="new-password" placeholder="••••••••" />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+          />
         </div>
         <Button type="submit" disabled={busy} className="mt-2 w-full rounded-full">
           Create my workspace

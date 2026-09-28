@@ -35,6 +35,7 @@ import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
 import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public/cron/milestones'
 import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
+import { Route as ApiPublicCronRemindersRouteImport } from './routes/api/public/cron/reminders'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -168,6 +169,11 @@ const ApiPublicCronOutboxRoute = ApiPublicCronOutboxRouteImport.update({
   path: '/api/public/cron/outbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronRemindersRoute = ApiPublicCronRemindersRouteImport.update({
+  id: '/api/public/cron/reminders',
+  path: '/api/public/cron/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksWhatsappRoute =
   ApiPublicWebhooksWhatsappRouteImport.update({
     id: '/api/public/webhooks/whatsapp',
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
+  '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -230,6 +237,7 @@ export interface FileRoutesByTo {
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
+  '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
+  '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
+    | '/api/public/cron/reminders'
     | '/api/public/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
+    | '/api/public/cron/reminders'
     | '/api/public/webhooks/whatsapp'
   id:
     | '__root__'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
+    | '/api/public/cron/reminders'
     | '/api/public/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -369,6 +381,7 @@ export interface RootRouteChildren {
   MSlugRoute: typeof MSlugRoute
   ApiPublicCronMilestonesRoute: typeof ApiPublicCronMilestonesRoute
   ApiPublicCronOutboxRoute: typeof ApiPublicCronOutboxRoute
+  ApiPublicCronRemindersRoute: typeof ApiPublicCronRemindersRoute
   ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronOutboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/reminders': {
+      id: '/api/public/cron/reminders'
+      path: '/api/public/cron/reminders'
+      fullPath: '/api/public/cron/reminders'
+      preLoaderRoute: typeof ApiPublicCronRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/whatsapp': {
       id: '/api/public/webhooks/whatsapp'
       path: '/api/public/webhooks/whatsapp'
@@ -612,6 +632,7 @@ const rootRouteChildren: RootRouteChildren = {
   MSlugRoute: MSlugRoute,
   ApiPublicCronMilestonesRoute: ApiPublicCronMilestonesRoute,
   ApiPublicCronOutboxRoute: ApiPublicCronOutboxRoute,
+  ApiPublicCronRemindersRoute: ApiPublicCronRemindersRoute,
   ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport

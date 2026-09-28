@@ -3,6 +3,11 @@ import { z } from "zod";
 
 const tenant = z.string().trim().min(1).max(80);
 
+const guard = async (tenantId: string) => {
+  const { authorizeTenant } = await import("./tenant-auth.server");
+  await authorizeTenant(tenantId);
+};
+
 export type InboxConversation = {
   id: string;
   chatId: string;
@@ -29,6 +34,7 @@ export type InboxMessage = {
 export const listConversations = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant }).parse(d))
   .handler(async ({ data }): Promise<InboxConversation[]> => {
+    await guard(data.tenantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("wa_conversations")
@@ -60,6 +66,7 @@ export const listConversations = createServerFn({ method: "POST" })
 export const listMessages = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant, conversationId: z.string().uuid() }).parse(d))
   .handler(async ({ data }): Promise<InboxMessage[]> => {
+    await guard(data.tenantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("wa_messages")
@@ -88,6 +95,7 @@ export const updateConversation = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: { assignee?: string | null; status?: string; unread?: number } = {};
     if (data.assignee !== undefined) patch.assignee = data.assignee;

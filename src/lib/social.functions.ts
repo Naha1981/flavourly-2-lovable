@@ -3,6 +3,11 @@ import { z } from "zod";
 
 import { formatZAR } from "./south-africa";
 
+const guard = async (tenantId: string) => {
+  const { authorizeTenant, MANAGERS } = await import("./tenant-auth.server");
+  await authorizeTenant(tenantId, MANAGERS);
+};
+
 const tenant = z
   .string()
   .trim()
@@ -23,6 +28,7 @@ export type SocialDraft = {
 export const listSocialDrafts = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant }).parse(d))
   .handler(async ({ data }): Promise<SocialDraft[]> => {
+    await guard(data.tenantId);
     const { db } = await import("./db.server");
     const c = await db();
     const { data: rows } = await c
@@ -48,6 +54,7 @@ export const generateSocialDraft = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, theme: z.string().trim().max(80).optional() }).parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const { db, APP_URL } = await import("./db.server");
     const c = await db();
     const { data: venue } = await c
@@ -86,6 +93,7 @@ export const rejectSocialDraft = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, draftId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c
@@ -110,6 +118,7 @@ export const approveSocialDraft = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const { publishDraft } = await import("./openpost.server");
     return publishDraft(data.tenantId, data.draftId, data.caption);
   });

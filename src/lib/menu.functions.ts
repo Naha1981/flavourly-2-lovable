@@ -46,6 +46,11 @@ export type VenueRow = {
   autoRepliesEnabled: boolean;
 };
 
+const guard = async (tenantId: string, roles: "any" | "managers" = "any") => {
+  const { authorizeTenant, ANY_ROLE, MANAGERS } = await import("./tenant-auth.server");
+  await authorizeTenant(tenantId, roles === "any" ? ANY_ROLE : MANAGERS);
+};
+
 const fail = (msg: string) => ({ ok: false as const, error: msg });
 
 /* ---------- public menu (guest-facing; never exposes cost or internal fields) ---------- */
@@ -210,6 +215,8 @@ export const saveCategory = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
+    await guard(data.tenantId, "any");
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c
@@ -235,6 +242,7 @@ export const saveMenuItem = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     const row = {
@@ -259,6 +267,7 @@ export const setItemAvailability = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, itemId: z.string().uuid(), isAvailable: z.boolean() }).parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "any");
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c
@@ -274,6 +283,7 @@ export const deleteMenuItem = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, itemId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c
@@ -298,6 +308,7 @@ export const savePairing = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     // Both items must belong to this tenant.
@@ -326,6 +337,7 @@ export const deletePairing = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, pairingId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c
@@ -339,6 +351,7 @@ export const deletePairing = createServerFn({ method: "POST" })
 export const getMenuMatrix = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant }).parse(d))
   .handler(async ({ data }): Promise<MatrixSummary> => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     const { data: rows } = await c
@@ -362,6 +375,7 @@ export const getMenuMatrix = createServerFn({ method: "POST" })
 export const getVenue = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant }).parse(d))
   .handler(async ({ data }): Promise<VenueRow | null> => {
+    await guard(data.tenantId, "any");
     const { db } = await import("./db.server");
     const c = await db();
     const { data: r } = await c
@@ -408,6 +422,7 @@ export const saveVenue = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId, "managers");
     const { db } = await import("./db.server");
     const c = await db();
     const { error } = await c.from("tenant_profiles").upsert(

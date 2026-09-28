@@ -20,4 +20,8 @@ const schema = z.object({
 
 export const draftReply = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => schema.parse(data))
-  .handler(async ({ data }) => generateReplyDraft(data));
+  .handler(async ({ data }) => {
+    const { requireUser } = await import("./tenant-auth.server");
+    await requireUser();
+    return generateReplyDraft(data);
+  });

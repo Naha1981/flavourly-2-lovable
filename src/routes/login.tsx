@@ -7,6 +7,8 @@ import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { enterWorkspace, isAuthRequired } from "@/lib/auth-client";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -31,6 +33,45 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
+
+  const submit = async (form: HTMLFormElement) => {
+    setBusy(true);
+    try {
+      // Until REQUIRE_AUTH is switched on the app keeps its open demo behaviour.
+      if (!(await isAuthRequired())) {
+        toast.success("Welcome back.");
+        navigate({ to: "/dashboard" });
+        return;
+      }
+      const f = new FormData(form);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: String(f.get("email") ?? "").trim(),
+        password: String(f.get("password") ?? ""),
+      });
+      if (error) {
+        toast.error(
+          error.message.includes("Email not confirmed")
+            ? "Confirm your email first, then sign in."
+            : "That email and password don't match.",
+        );
+        return;
+      }
+      const ws = await enterWorkspace();
+      if (!ws) {
+        toast.error(
+          "No restaurant is linked to this account yet. Start a free trial to create one.",
+        );
+        return;
+      }
+      toast.success("Welcome back.");
+      navigate({ to: redirect && redirect.startsWith("/dashboard") ? redirect : "/dashboard" });
+    } catch {
+      toast.error("Couldn't sign you in. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <AuthShell
@@ -48,22 +89,32 @@ function LoginPage() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          setBusy(true);
-          toast.success("Welcome back.");
-          navigate({ to: "/dashboard" });
+          void submit(event.currentTarget);
         }}
         className="grid gap-4"
       >
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@restaurant.co.za" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@restaurant.co.za"
+          />
         </div>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <span className="text-xs text-muted-foreground">Forgot it? Ask your owner</span>
           </div>
-          <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+          />
         </div>
         <Button type="submit" disabled={busy} className="mt-2 w-full rounded-full">
           Sign in

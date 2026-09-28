@@ -27,9 +27,15 @@ const jsonResponse = async (response: Response) => {
   return { body, text };
 };
 
+const guard = async (tenantId: string) => {
+  const { authorizeTenant } = await import("./tenant-auth.server");
+  await authorizeTenant(tenantId);
+};
+
 export const createGeminiLiveToken = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ tenantId: tenant }).parse(data))
-  .handler(async () => {
+  .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const apiKey = process.env["GEMINI_API_KEY"];
     if (!apiKey) {
       return {
@@ -102,6 +108,7 @@ export const runGeminiLiveTool = createServerFn({ method: "POST" })
         .parse(data),
   )
   .handler(async ({ data }) => {
+    await guard(data.tenantId);
     const { executeFlavourlyLiveTool } = await import("./gemini-live.server");
     const validNames = new Set<string>(FLAVOURLY_LIVE_TOOLS.map((tool) => tool.name));
     if (!validNames.has(data.name)) {

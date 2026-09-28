@@ -43,6 +43,17 @@ export const defaultProfile: RestaurantProfile = {
 export const slugify = (v: string) =>
   v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "restaurant";
 
+/** Writes into the stored profile outside React (used right after sign-in). */
+export function patchStoredProfile(patch: Partial<RestaurantProfile>) {
+  try {
+    const raw = localStorage.getItem(KEY);
+    const current = raw ? { ...defaultProfile, ...JSON.parse(raw) } : defaultProfile;
+    localStorage.setItem(KEY, JSON.stringify({ ...current, ...patch }));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function useRestaurantProfile() {
   const [profile, setProfile] = useState<RestaurantProfile>(defaultProfile);
   const [ready, setReady] = useState(false);

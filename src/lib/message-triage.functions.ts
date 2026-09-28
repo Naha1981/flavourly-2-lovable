@@ -15,4 +15,8 @@ const schema = z.object({
 
 export const analyseMessage = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => schema.parse(d))
-  .handler(async ({ data }) => triageMessage(data));
+  .handler(async ({ data }) => {
+    const { requireUser } = await import("./tenant-auth.server");
+    await requireUser();
+    return triageMessage(data);
+  });
