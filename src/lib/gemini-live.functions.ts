@@ -5,7 +5,6 @@ import {
   FLAVOURLY_LIVE_TOOLS,
   type FlavourlyLiveToolName,
 } from "./gemini-live.tools";
-import { executeFlavourlyLiveTool } from "./gemini-live.server";
 
 const tenant = z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/);
 
@@ -73,7 +72,8 @@ export const createGeminiLiveToken = createServerFn({ method: "POST" })
     );
 
     const { body } = await jsonResponse(response);
-    if (!response.ok || typeof body["name"] !== "string") {
+    const tokenName = body["name"];
+    if (!response.ok || typeof tokenName !== "string") {
       console.error("Gemini Live token provisioning failed", response.status, body);
       return {
         ok: false as const,
@@ -83,7 +83,7 @@ export const createGeminiLiveToken = createServerFn({ method: "POST" })
 
     return {
       ok: true as const,
-      token: body["name"],
+      token: tokenName,
       expiresAt: expireTime,
       newSessionExpiresAt: newSessionExpireTime,
     };
@@ -101,6 +101,7 @@ export const runGeminiLiveTool = createServerFn({ method: "POST" })
         .parse(data),
   )
   .handler(async ({ data }) => {
+    const { executeFlavourlyLiveTool } = await import("./gemini-live.server");
     const validNames = new Set<string>(FLAVOURLY_LIVE_TOOLS.map((tool) => tool.name));
     if (!validNames.has(data.name)) {
       return { ok: false as const, error: "Tool not allowed." };
