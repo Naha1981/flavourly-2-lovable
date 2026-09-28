@@ -13,6 +13,7 @@ type Incoming = {
   name: string | null;
   body: string;
   waMessageId: string | null;
+  waAccountId: string | null;
   sentAt: string;
   fromMe: boolean;
 };
@@ -70,6 +71,7 @@ function parseEvent(raw: unknown): Incoming | null {
     name: str(pick(ev, ["pushName", "name", "senderName", "contact.name", "notifyName"])),
     body,
     waMessageId: str(pick(ev, ["id", "messageId", "key.id"])),
+    waAccountId: str(pick(root, ["waAccountId", "accountId"])) ?? str(pick(ev, ["waAccountId", "accountId"])),
     sentAt,
     fromMe,
   };
@@ -193,6 +195,23 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
           });
           if (msgError && msgError.code !== "23505") console.error("message insert failed", msgError);
           saved += 1;
+
+          // Duplicate deliveries (unique wa_message_id) must not trigger a second auto-reply.
+          if (!msg.fromMe && msg.phone && !msgError) {
+            try {
+              const { autoReply } = await import("@/lib/auto-reply.server");
+              await autoReply({
+                tenantId: msg.tenantId,
+                phone: msg.phone,
+                name: msg.name,
+                text: msg.body,
+                conversationId: conversationId as string,
+                waAccountId: msg.waAccountId,
+              });
+            } catch (e) {
+              console.error("auto-reply failed", e);
+            }
+          }
         }
 
         return Response.json({ ok: true, saved });

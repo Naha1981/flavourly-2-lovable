@@ -89,10 +89,10 @@ export const updateConversation = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = {};
-    if (data.assignee !== undefined) patch["assignee"] = data.assignee;
-    if (data.status !== undefined) patch["status"] = data.status;
-    if (data.markRead) patch["unread"] = 0;
+    const patch: { assignee?: string | null; status?: string; unread?: number } = {};
+    if (data.assignee !== undefined) patch.assignee = data.assignee;
+    if (data.status !== undefined) patch.status = data.status;
+    if (data.markRead) patch.unread = 0;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("wa_conversations")

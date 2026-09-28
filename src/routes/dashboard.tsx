@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { Home, Inbox, Megaphone, Settings, Sparkles } from "lucide-react";
+import { BarChart3, Home, Inbox, Megaphone, Send, Settings, Sparkles, UtensilsCrossed } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 
@@ -10,7 +10,10 @@ export const Route = createFileRoute("/dashboard")({
 const nav = [
   { to: "/dashboard", label: "Today", icon: Home, exact: true },
   { to: "/dashboard/inbox", label: "Inbox", icon: Inbox, exact: false },
+  { to: "/dashboard/menu", label: "Menu", icon: UtensilsCrossed, exact: false },
   { to: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
+  { to: "/dashboard/intelligence/menu-matrix", label: "Profit", icon: BarChart3, exact: false },
+  { to: "/dashboard/social", label: "Social", icon: Send, exact: false },
   { to: "/dashboard/replies", label: "AI desk", icon: Sparkles, exact: false },
   { to: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
@@ -42,13 +45,13 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {nav.map(({ to, label, icon: Icon, exact }) => (
           <Link
             key={to}
             to={to}
             activeOptions={{ exact }}
-            className="grid place-items-center gap-0.5 py-2.5 text-[11px] text-muted-foreground"
+            className="grid min-w-[4.5rem] flex-1 place-items-center gap-0.5 py-2.5 text-[11px] text-muted-foreground"
             activeProps={{ className: "text-primary font-medium" }}
           >
             <Icon className="size-5" strokeWidth={1.6} /> {label}

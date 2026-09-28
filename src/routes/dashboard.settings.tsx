@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { VenueSettings } from "@/components/app/venue-settings";
 import { WhatsAppConnect } from "@/components/app/whatsapp-connect";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { dashMeta, PageTitle } from "./dashboard";
@@ -19,6 +20,10 @@ function SettingsPage() {
         <h2 className="font-medium text-foreground">{profile.name}</h2>
         <p className="text-sm text-muted-foreground">{profile.city} · {profile.hours}</p>
         <Link to="/onboarding" search={{ step: "profile" }} className="text-sm font-medium text-primary">Edit profile</Link>
+      </section>
+      <section className="glass-card mt-6 grid gap-4 rounded-2xl border border-border p-5">
+        <h2 className="font-medium text-foreground">Venue, rewards and auto-replies</h2>
+        <VenueSettings profile={profile} />
       </section>
       <section className="glass-card mt-6 grid gap-4 rounded-2xl border border-border p-5">
         <h2 className="font-medium text-foreground">WhatsApp</h2>

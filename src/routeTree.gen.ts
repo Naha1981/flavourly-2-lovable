@@ -23,10 +23,17 @@ import { Route as ClaimSlugRouteImport } from './routes/claim.$slug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardCampaignsRouteImport } from './routes/dashboard.campaigns'
 import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
+import { Route as DashboardMenuRouteImport } from './routes/dashboard.menu'
 import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
+import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
+import { Route as MSlugRouteImport } from './routes/m.$slug'
+import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
+import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public/cron/milestones'
+import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -99,6 +106,11 @@ const DashboardInboxRoute = DashboardInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMenuRoute = DashboardMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardRepliesRoute = DashboardRepliesRouteImport.update({
   id: '/replies',
   path: '/replies',
@@ -109,6 +121,16 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSocialRoute = DashboardSocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const GeoClaimTokenRoute = GeoClaimTokenRouteImport.update({
+  id: '/geo-claim/$token',
+  path: '/geo-claim/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
@@ -117,6 +139,27 @@ const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
 const LegalTermsRoute = LegalTermsRouteImport.update({
   id: '/legal/terms',
   path: '/legal/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MSlugRoute = MSlugRouteImport.update({
+  id: '/m/$slug',
+  path: '/m/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIntelligenceMenuMatrixRoute =
+  DashboardIntelligenceMenuMatrixRouteImport.update({
+    id: '/intelligence/menu-matrix',
+    path: '/intelligence/menu-matrix',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const ApiPublicCronMilestonesRoute = ApiPublicCronMilestonesRouteImport.update({
+  id: '/api/public/cron/milestones',
+  path: '/api/public/cron/milestones',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronOutboxRoute = ApiPublicCronOutboxRouteImport.update({
+  id: '/api/public/cron/outbox',
+  path: '/api/public/cron/outbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicWebhooksWhatsappRoute =
@@ -140,11 +183,18 @@ export interface FileRoutesByFullPath {
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/social': typeof DashboardSocialRoute
+  '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
+  '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -160,11 +210,18 @@ export interface FileRoutesByTo {
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/social': typeof DashboardSocialRoute
+  '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/m/$slug': typeof MSlugRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
+  '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -182,11 +239,18 @@ export interface FileRoutesById {
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/social': typeof DashboardSocialRoute
+  '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
+  '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
+  '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -205,11 +269,18 @@ export interface FileRouteTypes {
     | '/claim/$slug'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/menu'
     | '/dashboard/replies'
     | '/dashboard/settings'
+    | '/dashboard/social'
+    | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/m/$slug'
     | '/dashboard/'
+    | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/cron/milestones'
+    | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -225,11 +296,18 @@ export interface FileRouteTypes {
     | '/claim/$slug'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/menu'
     | '/dashboard/replies'
     | '/dashboard/settings'
+    | '/dashboard/social'
+    | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/m/$slug'
     | '/dashboard'
+    | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/cron/milestones'
+    | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
   id:
     | '__root__'
@@ -246,11 +324,18 @@ export interface FileRouteTypes {
     | '/claim/$slug'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/menu'
     | '/dashboard/replies'
     | '/dashboard/settings'
+    | '/dashboard/social'
+    | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
+    | '/m/$slug'
     | '/dashboard/'
+    | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/cron/milestones'
+    | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -266,8 +351,12 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   StoriesRoute: typeof StoriesRoute
   ClaimSlugRoute: typeof ClaimSlugRoute
+  GeoClaimTokenRoute: typeof GeoClaimTokenRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
+  MSlugRoute: typeof MSlugRoute
+  ApiPublicCronMilestonesRoute: typeof ApiPublicCronMilestonesRoute
+  ApiPublicCronOutboxRoute: typeof ApiPublicCronOutboxRoute
   ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
@@ -371,6 +460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardInboxRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/menu': {
+      id: '/dashboard/menu'
+      path: '/menu'
+      fullPath: '/dashboard/menu'
+      preLoaderRoute: typeof DashboardMenuRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/replies': {
       id: '/dashboard/replies'
       path: '/replies'
@@ -384,6 +480,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/settings'
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/social': {
+      id: '/dashboard/social'
+      path: '/social'
+      fullPath: '/dashboard/social'
+      preLoaderRoute: typeof DashboardSocialRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/geo-claim/$token': {
+      id: '/geo-claim/$token'
+      path: '/geo-claim/$token'
+      fullPath: '/geo-claim/$token'
+      preLoaderRoute: typeof GeoClaimTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/legal/privacy': {
       id: '/legal/privacy'
@@ -399,6 +509,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/$slug': {
+      id: '/m/$slug'
+      path: '/m/$slug'
+      fullPath: '/m/$slug'
+      preLoaderRoute: typeof MSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/intelligence/menu-matrix': {
+      id: '/dashboard/intelligence/menu-matrix'
+      path: '/intelligence/menu-matrix'
+      fullPath: '/dashboard/intelligence/menu-matrix'
+      preLoaderRoute: typeof DashboardIntelligenceMenuMatrixRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/api/public/cron/milestones': {
+      id: '/api/public/cron/milestones'
+      path: '/api/public/cron/milestones'
+      fullPath: '/api/public/cron/milestones'
+      preLoaderRoute: typeof ApiPublicCronMilestonesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/outbox': {
+      id: '/api/public/cron/outbox'
+      path: '/api/public/cron/outbox'
+      fullPath: '/api/public/cron/outbox'
+      preLoaderRoute: typeof ApiPublicCronOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/whatsapp': {
       id: '/api/public/webhooks/whatsapp'
       path: '/api/public/webhooks/whatsapp'
@@ -412,17 +550,23 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardCampaignsRoute: typeof DashboardCampaignsRoute
   DashboardInboxRoute: typeof DashboardInboxRoute
+  DashboardMenuRoute: typeof DashboardMenuRoute
   DashboardRepliesRoute: typeof DashboardRepliesRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardIntelligenceMenuMatrixRoute: typeof DashboardIntelligenceMenuMatrixRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCampaignsRoute: DashboardCampaignsRoute,
   DashboardInboxRoute: DashboardInboxRoute,
+  DashboardMenuRoute: DashboardMenuRoute,
   DashboardRepliesRoute: DashboardRepliesRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardSocialRoute: DashboardSocialRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardIntelligenceMenuMatrixRoute: DashboardIntelligenceMenuMatrixRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -441,8 +585,12 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   StoriesRoute: StoriesRoute,
   ClaimSlugRoute: ClaimSlugRoute,
+  GeoClaimTokenRoute: GeoClaimTokenRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
+  MSlugRoute: MSlugRoute,
+  ApiPublicCronMilestonesRoute: ApiPublicCronMilestonesRoute,
+  ApiPublicCronOutboxRoute: ApiPublicCronOutboxRoute,
   ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
