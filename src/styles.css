@@ -409,3 +409,38 @@
     transition: none !important;
   }
 }
+
+
+/* Restaurant command-center home */
+.restaurant-hero {
+  min-height: 360px;
+  isolation: isolate;
+}
+.restaurant-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 35%, rgba(217, 198, 117, 0.1) 50%, transparent 65%),
+    radial-gradient(circle at 82% 18%, rgba(143, 199, 159, 0.14), transparent 30%);
+  background-size: 240% 100%, 100% 100%;
+  animation: restaurant-sweep 12s ease-in-out infinite;
+}
+.insight-panel {
+  animation: insight-breathe 8s ease-in-out infinite;
+}
+@keyframes restaurant-sweep {
+  0%, 100% { background-position: 120% 0, 0 0; }
+  50% { background-position: -30% 0, 0 0; }
+}
+@keyframes insight-breathe {
+  0%, 100% { box-shadow: 0 24px 48px -28px rgba(23, 61, 41, 0.42); }
+  50% { box-shadow: 0 28px 54px -26px rgba(23, 61, 41, 0.58); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .restaurant-hero::after,
+  .insight-panel {
+    animation: none !important;
+  }
+}
