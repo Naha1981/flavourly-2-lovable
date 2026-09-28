@@ -200,49 +200,28 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
       socketRef.current = ws;
 
       ws.onopen = () => {
-        const setup = {
-          setup: {
-            model: `models/${MODEL}`,
-            responseModalities: ["AUDIO"],
-            systemInstruction: {
-              parts: [
-                {
-                  text: `You are helping the restaurant team at ${restaurantName}. Use Flavourly tools before making factual claims.`,
-                },
-              ],
-            },
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            tools: [{ functionDeclarations: FLAVOURLY_LIVE_TOOLS }],
-            sessionResumption: {},
-          },
-        };
-        ws.send(JSON.stringify(setup));
-
-        const source = inputContext.createMediaStreamSource(stream);
-        const processor = inputContext.createScriptProcessor(4096, 1, 1);
-        processor.onaudioprocess = (event) => {
-          if (ws.readyState !== WebSocket.OPEN) return;
-          const pcmBytes = floatTo16BitPCM(event.inputBuffer.getChannelData(0));
-          ws.send(
-            JSON.stringify({
-              realtimeInput: {
-                audio: {
-                  data: bytesToBase64(pcmBytes),
-                  mimeType: "audio/pcm;rate=16000",
-                },
+        ws.send(
+          JSON.stringify({
+            setup: {
+              model: `models/${MODEL}`,
+              generationConfig: {
+                responseModalities: ["AUDIO"],
               },
-            }),
-          );
-        };
-        const silenceGain = inputContext.createGain();
-        silenceGain.gain.value = 0;
-        source.connect(processor);
-        processor.connect(silenceGain);
-        silenceGain.connect(inputContext.destination);
-        silenceGainRef.current = silenceGain;
-        inputSourceRef.current = source;
-        processorRef.current = processor;
+              systemInstruction: {
+                parts: [
+                  {
+                    text: `You are helping the restaurant team at ${restaurantName}. Use Flavourly tools before making factual claims.`,
+                  },
+                ],
+              },
+              inputAudioTranscription: {},
+              outputAudioTranscription: {},
+              tools: [{ functionDeclarations: FLAVOURLY_LIVE_TOOLS }],
+              sessionResumption: {},
+              contextWindowCompression: {},
+            },
+          }),
+        );
       };
 
       ws.onmessage = async (event) => {
@@ -257,6 +236,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
             functionCalls?: Array<{ id: string; name: string; args?: Record<string, unknown> }>;
           };
           setupComplete?: unknown;
+          toolCallCancellation?: { ids?: string[] };
           error?: { message?: string };
         };
 
@@ -267,6 +247,31 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
         }
 
         if (message.setupComplete) {
+          const source = inputContext.createMediaStreamSource(stream);
+          const processor = inputContext.createScriptProcessor(4096, 1, 1);
+          processor.onaudioprocess = (event) => {
+            if (ws.readyState !== WebSocket.OPEN) return;
+            const pcmBytes = floatTo16BitPCM(event.inputBuffer.getChannelData(0));
+            ws.send(
+              JSON.stringify({
+                realtimeInput: {
+                  audio: {
+                    data: bytesToBase64(pcmBytes),
+                    mimeType: "audio/pcm;rate=16000",
+                  },
+                },
+              }),
+            );
+          };
+          const silenceGain = inputContext.createGain();
+          silenceGain.gain.value = 0;
+          source.connect(processor);
+          processor.connect(silenceGain);
+          silenceGain.connect(inputContext.destination);
+          silenceGainRef.current = silenceGain;
+          inputSourceRef.current = source;
+          processorRef.current = processor;
+
           setConnected(true);
           setBusy(false);
           setStatus("Live — speak now");
@@ -284,9 +289,19 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
           if (part.inlineData?.data) await playAudio(part.inlineData.data);
         }
 
+        if (message.toolCallCancellation?.ids?.length) {
+          setStatus("Live — pending tool cancelled");
+        }
+
         if (message.toolCall) {
-          await handleToolCall(message.toolCall);
-          setStatus("Live — speak now");
+          const cancelled = new Set(message.toolCallCancellation?.ids ?? []);
+          const filtered = {
+            functionCalls: (message.toolCall.functionCalls ?? []).filter((call) => !cancelled.has(call.id)),
+          };
+          if (filtered.functionCalls.length) {
+            await handleToolCall(filtered);
+            setStatus("Live — speak now");
+          }
         }
 
         if (message.serverContent?.turnComplete) {
