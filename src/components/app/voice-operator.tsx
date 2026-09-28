@@ -116,7 +116,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
     );
     const buffer = context.createBuffer(1, samples.length, OUTPUT_RATE);
     const channel = buffer.getChannelData(0);
-    for (let i = 0; i < samples.length; i += 1) channel[i] = samples[i] / 32768;
+    for (let i = 0; i < samples.length; i += 1) channel[i] = (samples[i] ?? 0) / 32768;
 
     const source = context.createBufferSource();
     source.buffer = buffer;

@@ -27,12 +27,12 @@ import { Route as DashboardMenuRouteImport } from './routes/dashboard.menu'
 import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
+import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
-import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public/cron/milestones'
 import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
@@ -127,6 +127,11 @@ const DashboardSocialRoute = DashboardSocialRouteImport.update({
   path: '/social',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardVoiceRoute = DashboardVoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const GeoClaimTokenRoute = GeoClaimTokenRouteImport.update({
   id: '/geo-claim/$token',
   path: '/geo-claim/$token',
@@ -153,11 +158,6 @@ const DashboardIntelligenceMenuMatrixRoute =
     path: '/intelligence/menu-matrix',
     getParentRoute: () => DashboardRoute,
   } as any)
-const DashboardVoiceRoute = DashboardVoiceRouteImport.update({
-  id: '/voice',
-  path: '/voice',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const ApiPublicCronMilestonesRoute = ApiPublicCronMilestonesRouteImport.update({
   id: '/api/public/cron/milestones',
   path: '/api/public/cron/milestones',
@@ -193,13 +193,13 @@ export interface FileRoutesByFullPath {
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
-  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -221,13 +221,13 @@ export interface FileRoutesByTo {
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
-  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -251,13 +251,13 @@ export interface FileRoutesById {
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/voice': typeof DashboardVoiceRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
-  '/dashboard/voice': typeof DashboardVoiceRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
@@ -282,13 +282,13 @@ export interface FileRouteTypes {
     | '/dashboard/replies'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/voice'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
-    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -310,13 +310,13 @@ export interface FileRouteTypes {
     | '/dashboard/replies'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/voice'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard'
     | '/dashboard/intelligence/menu-matrix'
-    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -339,13 +339,13 @@ export interface FileRouteTypes {
     | '/dashboard/replies'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/voice'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
-    | '/dashboard/voice'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/webhooks/whatsapp'
@@ -500,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSocialRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/voice': {
+      id: '/dashboard/voice'
+      path: '/voice'
+      fullPath: '/dashboard/voice'
+      preLoaderRoute: typeof DashboardVoiceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/geo-claim/$token': {
       id: '/geo-claim/$token'
       path: '/geo-claim/$token'
@@ -535,13 +542,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIntelligenceMenuMatrixRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/voice': {
-      id: '/dashboard/voice'
-      path: '/voice'
-      fullPath: '/dashboard/voice'
-      preLoaderRoute: typeof DashboardVoiceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/api/public/cron/milestones': {
       id: '/api/public/cron/milestones'
       path: '/api/public/cron/milestones'
@@ -573,9 +573,9 @@ interface DashboardRouteChildren {
   DashboardRepliesRoute: typeof DashboardRepliesRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
+  DashboardVoiceRoute: typeof DashboardVoiceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardIntelligenceMenuMatrixRoute: typeof DashboardIntelligenceMenuMatrixRoute
-  DashboardVoiceRoute: typeof DashboardVoiceRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -585,6 +585,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardRepliesRoute: DashboardRepliesRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
+  DashboardVoiceRoute: DashboardVoiceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardIntelligenceMenuMatrixRoute: DashboardIntelligenceMenuMatrixRoute,
 }

@@ -299,11 +299,30 @@
   animation-delay: -2.4s;
 }
 
-.leak-card,
-.flow-node,
-.magic-window,
-.engine-card {
+.magic-window {
   animation: node-in 700ms cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Scroll reveal (see components/site/reveal.tsx) */
+[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+}
+[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+  transition: opacity 700ms cubic-bezier(.22,1,.36,1) var(--reveal-delay, 0ms),
+    transform 700ms cubic-bezier(.22,1,.36,1) var(--reveal-delay, 0ms);
+}
+
+/* Hero conversation plays once on load: message, reply, confirmation, then the detected signal. */
+@keyframes stage-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.stage-in {
+  animation: stage-in 600ms cubic-bezier(.22,1,.36,1) both;
+  animation-delay: var(--stage-delay, 0ms);
 }
 
 .flow-line {
@@ -401,11 +420,14 @@
   .live-dot,
   .flow-line::after,
   .hero-title,
-  .leak-card,
-  .flow-node,
-  .magic-window,
-  .engine-card {
+  .stage-in,
+  .magic-window {
     animation: none !important;
+    transition: none !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
     transition: none !important;
   }
 }

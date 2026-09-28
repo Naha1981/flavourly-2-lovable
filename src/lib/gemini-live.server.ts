@@ -57,7 +57,7 @@ export async function executeFlavourlyLiveTool(
   }
 
   if (name === "get_today_bookings") {
-    const limit = clampLimit(args.limit, 8);
+    const limit = clampLimit(args["limit"], 8);
     const day = todaySast();
     const { data, error } = await c
       .from("reservations")
@@ -87,7 +87,7 @@ export async function executeFlavourlyLiveTool(
   }
 
   if (name === "get_menu_performance") {
-    const limit = clampLimit(args.limit, 6);
+    const limit = clampLimit(args["limit"], 6);
     const { data, error } = await c
       .from("menu_items")
       .select("id, name, price_cents, cost_price_cents, is_available, sales_count_30d")
@@ -112,7 +112,7 @@ export async function executeFlavourlyLiveTool(
   }
 
   if (name === "get_inbox_summary") {
-    const limit = clampLimit(args.limit, 6);
+    const limit = clampLimit(args["limit"], 6);
     const { data, error } = await c
       .from("wa_conversations")
       .select(
@@ -145,7 +145,7 @@ export async function executeFlavourlyLiveTool(
   }
 
   if (name === "get_vip_customers") {
-    const limit = clampLimit(args.limit, 6);
+    const limit = clampLimit(args["limit"], 6);
     const { data, error } = await c
       .from("customers")
       .select("id, name, phone, total_spend_cents, visit_count, is_vip, last_visit_at")
@@ -170,9 +170,9 @@ export async function executeFlavourlyLiveTool(
   }
 
   if (name === "draft_promotion") {
-    const theme = String(args.theme ?? "").trim().slice(0, 120);
-    const offer = String(args.offer ?? "").trim().slice(0, 180);
-    const audience = String(args.audience ?? "").trim().slice(0, 120);
+    const theme = String(args["theme"] ?? "").trim().slice(0, 120);
+    const offer = String(args["offer"] ?? "").trim().slice(0, 180);
+    const audience = String(args["audience"] ?? "").trim().slice(0, 120);
 
     if (!theme) return { ok: false, error: "Promotion theme is required." };
 

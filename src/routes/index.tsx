@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { SiteHeader } from "@/components/site/site-header";
+import { Reveal } from "@/components/site/reveal";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,11 +125,16 @@ function Hero() {
 
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             Flavourly watches customer demand, missed messages, quiet trading periods and returning
-            guests — then helps your team turn those opportunities into bookings and repeat business.
+            guests — then helps your team turn those opportunities into bookings and repeat
+            business.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="rounded-full px-7 text-base shadow-[var(--shadow-lift)]">
+            <Button
+              asChild
+              size="lg"
+              className="rounded-full px-7 text-base shadow-[var(--shadow-lift)]"
+            >
               <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
                 See what Flavourly finds <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
@@ -189,27 +195,33 @@ function HeroExperience() {
                 <p className="text-xs text-forest">Watching demand</p>
               </div>
             </div>
-            <Badge variant="outline" className="rounded-full border-forest/20 bg-forest/5 text-forest">
+            <Badge
+              variant="outline"
+              className="rounded-full border-forest/20 bg-forest/5 text-forest"
+            >
               Live demo
             </Badge>
           </div>
 
           <div className="mt-5 space-y-3">
-            <Bubble side="left" time="23:41">
+            <Bubble side="left" time="23:41" delay={500}>
               Table for 2 tonight?
             </Bubble>
-            <Bubble side="right" time="23:41">
+            <Bubble side="right" time="23:41" delay={1500}>
               I found a window table at 19:00. Shall I book it?
             </Bubble>
-            <Bubble side="left" time="23:42">
+            <Bubble side="left" time="23:42" delay={2600}>
               Yes please 🙏
             </Bubble>
-            <Bubble side="right" time="23:42">
+            <Bubble side="right" time="23:42" delay={3600}>
               Booked. I'll keep the table warm for Kabelo.
             </Bubble>
           </div>
 
-          <div className="mt-5 rounded-[1.4rem] border border-forest/15 bg-forest/5 p-4">
+          <div
+            className="stage-in mt-5 rounded-[1.4rem] border border-forest/15 bg-forest/5 p-4"
+            style={{ "--stage-delay": "4600ms" } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-forest">
                 Signal detected
@@ -230,9 +242,7 @@ function HeroExperience() {
           Tonight
         </p>
         <p className="mt-1 font-display text-2xl text-foreground">VIP arriving</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Thabo · 19:00 · 4 guests
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Thabo · 19:00 · 4 guests</p>
       </div>
 
       <div className="hero-float hero-float-delay glass-card absolute -right-4 -top-5 hidden w-52 rounded-2xl p-4 sm:block">
@@ -261,15 +271,20 @@ function SignalChip({ label, value }: { label: string; value: string }) {
 function Bubble({
   side,
   time,
+  delay = 0,
   children,
 }: {
   side: "left" | "right";
   time: string;
+  delay?: number;
   children: React.ReactNode;
 }) {
   const isRight = side === "right";
   return (
-    <div className={isRight ? "flex justify-end" : "flex justify-start"}>
+    <div
+      className={`stage-in ${isRight ? "flex justify-end" : "flex justify-start"}`}
+      style={{ "--stage-delay": `${delay}ms` } as React.CSSProperties}
+    >
       <div
         className={
           isRight
@@ -338,20 +353,18 @@ function RevenueLeakSection() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             {leaks.map((leak, index) => (
-              <article
-                key={leak.time}
-                className="leak-card glass-card group rounded-2xl p-5"
-                style={{ animationDelay: `${index * 120}ms` }}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground">
-                    {leak.time}
-                  </span>
-                  <leak.icon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </div>
-                <h3 className="mt-5 font-display text-xl leading-tight">{leak.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{leak.body}</p>
-              </article>
+              <Reveal key={leak.time} delay={index * 120} className="h-full">
+                <article className="glass-card group h-full rounded-2xl p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground">
+                      {leak.time}
+                    </span>
+                    <leak.icon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                  <h3 className="mt-5 font-display text-xl leading-tight">{leak.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{leak.body}</p>
+                </article>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -362,10 +375,25 @@ function RevenueLeakSection() {
 
 function RevenueFlow() {
   const steps = [
-    { key: "01", label: "Demand", body: "Guest messages, booking intent, quiet periods", icon: MessageCircle },
-    { key: "02", label: "Intelligence", body: "Flavourly connects the signal to context", icon: Sparkles },
+    {
+      key: "01",
+      label: "Demand",
+      body: "Guest messages, booking intent, quiet periods",
+      icon: MessageCircle,
+    },
+    {
+      key: "02",
+      label: "Intelligence",
+      body: "Flavourly connects the signal to context",
+      icon: Sparkles,
+    },
     { key: "03", label: "Action", body: "Reply, recover, target or escalate", icon: Send },
-    { key: "04", label: "Outcome", body: "More bookings, repeat visits and clarity", icon: UtensilsCrossed },
+    {
+      key: "04",
+      label: "Outcome",
+      body: "More bookings, repeat visits and clarity",
+      icon: UtensilsCrossed,
+    },
   ];
 
   return (
@@ -387,23 +415,21 @@ function RevenueFlow() {
         <div className="relative mt-12 grid gap-4 md:grid-cols-4">
           <div className="flow-line" aria-hidden="true" />
           {steps.map((step, index) => (
-            <article
-              key={step.key}
-              className="flow-node relative z-10 rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)]"
-              style={{ animationDelay: `${index * 140}ms` }}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <span className="font-display text-lg text-primary">{step.key}</span>
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-secondary">
-                  <step.icon className="h-4 w-4 text-foreground" />
+            <Reveal key={step.key} delay={index * 160} className="relative z-10">
+              <article className="relative h-full rounded-3xl border border-border/80 bg-card p-5 shadow-[var(--shadow-soft)]">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="font-display text-lg text-primary">{step.key}</span>
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-secondary">
+                    <step.icon className="h-4 w-4 text-foreground" />
+                  </div>
                 </div>
-              </div>
-              <h3 className="mt-6 font-display text-2xl">{step.label}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-              {index < steps.length - 1 ? (
-                <ArrowRight className="flow-arrow absolute -right-3 top-1/2 z-20 hidden h-5 w-5 -translate-y-1/2 rounded-full bg-background p-0.5 text-primary md:block" />
-              ) : null}
-            </article>
+                <h3 className="mt-6 font-display text-2xl">{step.label}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+                {index < steps.length - 1 ? (
+                  <ArrowRight className="flow-arrow absolute -right-3 top-1/2 z-20 hidden h-5 w-5 -translate-y-1/2 rounded-full bg-background p-0.5 text-primary md:block" />
+                ) : null}
+              </article>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -507,23 +533,22 @@ function Engines() {
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {engines.map((engine, index) => (
-          <article
-            key={engine.name}
-            className="engine-card group relative overflow-hidden rounded-3xl border border-border/80 bg-card p-6 shadow-[var(--shadow-soft)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
-          >
-            <div className="engine-number" aria-hidden="true">
-              0{index + 1}
-            </div>
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-secondary">
-              <engine.icon className="h-5 w-5 text-primary" strokeWidth={1.6} />
-            </div>
-            <h3 className="mt-5 font-display text-2xl">{engine.name}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{engine.line}</p>
-            <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-sm font-medium text-forest">
-              <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" />
-              {engine.benefit}
-            </p>
-          </article>
+          <Reveal key={engine.name} delay={(index % 3) * 120} className="h-full">
+            <article className="engine-card group relative h-full overflow-hidden rounded-3xl border border-border/80 bg-card p-6 shadow-[var(--shadow-soft)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]">
+              <div className="engine-number" aria-hidden="true">
+                0{index + 1}
+              </div>
+              <div className="grid h-11 w-11 place-items-center rounded-xl bg-secondary">
+                <engine.icon className="h-5 w-5 text-primary" strokeWidth={1.6} />
+              </div>
+              <h3 className="mt-5 font-display text-2xl">{engine.name}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{engine.line}</p>
+              <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-sm font-medium text-forest">
+                <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                {engine.benefit}
+              </p>
+            </article>
+          </Reveal>
         ))}
       </div>
     </section>
@@ -552,17 +577,19 @@ function Story() {
                 ["10:07", "Opportunity", "145 dormant guests are eligible for a win-back."],
                 ["10:12", "Campaign", "Flavourly drafts the offer and target audience."],
                 ["10:16", "Approval", "Owner approves between prep and service."],
-              ].map(([time, title, body]) => (
-                <div key={time} className="flex gap-4">
-                  <span className="w-12 shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">
-                    {time}
-                  </span>
-                  <div className="relative border-l border-border/80 pl-5 pb-1">
-                    <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_4px_var(--background)]" />
-                    <p className="font-semibold">{title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              ].map(([time, title, body], i) => (
+                <Reveal key={time} delay={i * 180}>
+                  <div className="flex gap-4">
+                    <span className="w-12 shrink-0 pt-0.5 font-mono text-xs text-muted-foreground">
+                      {time}
+                    </span>
+                    <div className="relative border-l border-border/80 pl-5 pb-1">
+                      <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_4px_var(--background)]" />
+                      <p className="font-semibold">{title}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{body}</p>
+                    </div>
                   </div>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -619,7 +646,9 @@ function PricingPeek() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Pricing</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              Pricing
+            </p>
             <h2 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
               One useful intervention should justify the subscription.
             </h2>
@@ -697,7 +726,12 @@ function FinalCta() {
               See the restaurant demo <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="rounded-full bg-card px-8 text-base">
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="rounded-full bg-card px-8 text-base"
+          >
             <Link to="/contact">Talk to us</Link>
           </Button>
         </div>
