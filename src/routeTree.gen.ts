@@ -27,6 +27,7 @@ import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
+import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -118,6 +119,12 @@ const LegalTermsRoute = LegalTermsRouteImport.update({
   path: '/legal/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksWhatsappRoute =
+  ApiPublicWebhooksWhatsappRouteImport.update({
+    id: '/api/public/webhooks/whatsapp',
+    path: '/api/public/webhooks/whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesByTo {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,6 +187,7 @@ export interface FileRoutesById {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/dashboard/'
+    | '/api/public/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/dashboard'
+    | '/api/public/webhooks/whatsapp'
   id:
     | '__root__'
     | '/'
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/dashboard/'
+    | '/api/public/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -255,6 +268,7 @@ export interface RootRouteChildren {
   ClaimSlugRoute: typeof ClaimSlugRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
+  ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -385,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/whatsapp': {
+      id: '/api/public/webhooks/whatsapp'
+      path: '/api/public/webhooks/whatsapp'
+      fullPath: '/api/public/webhooks/whatsapp'
+      preLoaderRoute: typeof ApiPublicWebhooksWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -422,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimSlugRoute: ClaimSlugRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
+  ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
