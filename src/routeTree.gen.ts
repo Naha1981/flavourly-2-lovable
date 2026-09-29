@@ -30,6 +30,7 @@ import { Route as DashboardReputationRouteImport } from './routes/dashboard.repu
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
 import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
+import { Route as DashboardWaitlistRouteImport } from './routes/dashboard.waitlist'
 import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
@@ -145,6 +146,11 @@ const DashboardVoiceRoute = DashboardVoiceRouteImport.update({
   path: '/voice',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardWaitlistRoute = DashboardWaitlistRouteImport.update({
+  id: '/waitlist',
+  path: '/waitlist',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const GeoClaimTokenRoute = GeoClaimTokenRouteImport.update({
   id: '/geo-claim/$token',
   path: '/geo-claim/$token',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
+  '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
+  '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
+  '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
+    | '/dashboard/waitlist'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
+    | '/dashboard/waitlist'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
+    | '/dashboard/waitlist'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -558,6 +570,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVoiceRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/waitlist': {
+      id: '/dashboard/waitlist'
+      path: '/waitlist'
+      fullPath: '/dashboard/waitlist'
+      preLoaderRoute: typeof DashboardWaitlistRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/geo-claim/$token': {
       id: '/geo-claim/$token'
       path: '/geo-claim/$token'
@@ -634,6 +653,7 @@ interface DashboardRouteChildren {
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardVoiceRoute: typeof DashboardVoiceRoute
+  DashboardWaitlistRoute: typeof DashboardWaitlistRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardIntelligenceMenuMatrixRoute: typeof DashboardIntelligenceMenuMatrixRoute
 }
@@ -648,6 +668,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
   DashboardVoiceRoute: DashboardVoiceRoute,
+  DashboardWaitlistRoute: DashboardWaitlistRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardIntelligenceMenuMatrixRoute: DashboardIntelligenceMenuMatrixRoute,
 }

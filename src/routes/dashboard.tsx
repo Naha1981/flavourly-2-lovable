@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useEffect, useState } from "react";
 import {
   BarChart3,
+  Clock3,
   Home,
   Inbox,
   Megaphone,
@@ -29,6 +30,7 @@ const nav = [
   { to: "/dashboard/menu", label: "Menu", icon: UtensilsCrossed, exact: false },
   { to: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
   { to: "/dashboard/intelligence/menu-matrix", label: "Profit", icon: BarChart3, exact: false },
+  { to: "/dashboard/waitlist", label: "Waitlist", icon: Clock3, exact: false },
   { to: "/dashboard/redeem", label: "Redeem", icon: Ticket, exact: false },
   { to: "/dashboard/reputation", label: "Reputation", icon: ShieldAlert, exact: false },
   { to: "/dashboard/social", label: "Social", icon: Send, exact: false },

@@ -51,8 +51,9 @@ export async function handleBookingMessage(input: {
     .limit(1);
   const draft = (rows?.[0] as Draft | undefined) ?? null;
 
+  if (!draft && intent.isConfirm) return { handled: false };
+  if (!draft && intent.isCancel) return { handled: false }; // handled just above once we know there's an upcoming booking
   if (!draft && !hasBookingSignal(intent, input.text)) return { handled: false };
-  if (!draft && (intent.isConfirm || intent.isCancel)) return { handled: false };
 
   if (intent.isCancel && draft) {
     await c

@@ -83,6 +83,36 @@ async function decide(
     return `Tap to unlock your *${formatZAR(claim.discountCents)} off* code (works only at the restaurant, valid 15 minutes):\n${APP_URL()}/geo-claim/${claim.token}`;
   }
 
+  // A YES/CANCEL to a live waitlist offer takes priority over everything below.
+  const { handleWaitlistReply } = await import("./waitlist.server");
+  const waitlistReply = await handleWaitlistReply({
+    tenantId: i.tenantId,
+    phone: i.phone,
+    text: t,
+  });
+  if (waitlistReply) return waitlistReply;
+
+  const waitJoin = t.match(/^wait(?:list)?\s+(\d{1,2})\s+(.+)$/i);
+  if (waitJoin) {
+    const { db } = await import("./db.server");
+    const { parseDate } = await import("./booking/parse");
+    const party = Number(waitJoin[1]);
+    const date = parseDate(waitJoin[2] ?? "", new Date());
+    if (!date)
+      return "Which date would you like to join the waitlist for? e.g. *WAITLIST 4 Friday*";
+    const c = await db();
+    await c
+      .from("waitlist_entries")
+      .insert({
+        tenant_id: i.tenantId,
+        customer_phone: i.phone,
+        customer_name: i.name,
+        party_size: party,
+        requested_date: date,
+      });
+    return `You're on the waitlist for ${party} on ${date}. We'll message you the moment a table opens up.`;
+  }
+
   // A 1-5 rating (or the comment after a low one) answers our feedback request.
   const { handleFeedbackReply } = await import("./reputation.server");
   const feedback = await handleFeedbackReply({ tenantId: i.tenantId, phone: i.phone, text: t });
