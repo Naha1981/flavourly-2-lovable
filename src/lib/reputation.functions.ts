@@ -26,6 +26,7 @@ export type Incident = {
   assignedTo: string | null;
   voucherCode: string | null;
   voucherCents: number | null;
+  voucherUsedAt: string | null;
   createdAt: string;
 };
 
@@ -51,6 +52,7 @@ export const listIncidents = createServerFn({ method: "POST" })
       assignedTo: r.assigned_to,
       voucherCode: r.recovery_voucher_code,
       voucherCents: r.recovery_voucher_cents,
+      voucherUsedAt: r.recovery_voucher_used_at,
       createdAt: r.created_at,
     }));
   });

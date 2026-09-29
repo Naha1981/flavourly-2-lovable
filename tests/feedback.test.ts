@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { newVoucherCode, nextFeedbackStep, parseRating } from "../src/lib/feedback";
+import {
+  newVoucherCode,
+  nextFeedbackStep,
+  normalizeVoucherCode,
+  parseRating,
+} from "../src/lib/feedback";
 
 describe("parseRating", () => {
   it("accepts a bare 1-5 with light decoration", () => {
@@ -34,5 +39,11 @@ describe("nextFeedbackStep", () => {
 describe("newVoucherCode", () => {
   it("is 8 unambiguous characters", () => {
     expect(newVoucherCode()).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
+  });
+});
+
+describe("normalizeVoucherCode", () => {
+  it("ignores case, spaces and dashes", () => {
+    expect(normalizeVoucherCode(" ab-c 2k9x ")).toBe("ABC2K9X");
   });
 });

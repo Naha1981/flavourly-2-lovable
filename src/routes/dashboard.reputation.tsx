@@ -176,7 +176,8 @@ function ReputationPage() {
               />
               {i.voucherCode ? (
                 <span className="text-sm text-forest">
-                  Voucher {i.voucherCode} · {formatZAR(i.voucherCents ?? 0)}
+                  Voucher {i.voucherCode} · {formatZAR(i.voucherCents ?? 0)} ·{" "}
+                  {i.voucherUsedAt ? "used" : "not used yet"}
                 </span>
               ) : (
                 <span className="ml-auto flex items-center gap-2">

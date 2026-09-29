@@ -15,6 +15,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
   const save = useServerFn(saveVenue);
   const [form, setForm] = useState({
     whatsappPhone: "",
+    managerPhone: "",
     googleReviewUrl: "",
     latitude: "",
     longitude: "",
@@ -29,6 +30,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
       if (!v) return;
       setForm({
         whatsappPhone: v.whatsappPhone ?? "",
+        managerPhone: v.managerPhone ?? profile.managerPhone ?? "",
         googleReviewUrl: v.googleReviewUrl ?? "",
         latitude: v.latitude?.toString() ?? "",
         longitude: v.longitude?.toString() ?? "",
@@ -65,6 +67,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
           tenantId: profile.slug,
           name: profile.name,
           whatsappPhone: form.whatsappPhone.trim() || null,
+          managerPhone: form.managerPhone.trim() || null,
           googleReviewUrl: form.googleReviewUrl.trim() || null,
           latitude: lat !== null && Number.isFinite(lat) ? lat : null,
           longitude: lon !== null && Number.isFinite(lon) ? lon : null,
@@ -91,6 +94,16 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
             placeholder="27821234567"
             value={form.whatsappPhone}
             onChange={(e) => set("whatsappPhone", e.target.value)}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="mgr-phone">Manager WhatsApp (gets alerts)</Label>
+          <Input
+            id="mgr-phone"
+            inputMode="tel"
+            placeholder="27821234567"
+            value={form.managerPhone}
+            onChange={(e) => set("managerPhone", e.target.value)}
           />
         </div>
         <div className="grid gap-1.5">

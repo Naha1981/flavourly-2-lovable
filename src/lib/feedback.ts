@@ -27,3 +27,6 @@ export const newVoucherCode = (
 
 export const RECOVERY_DEFAULT_CENTS = 15_000;
 export const RECOVERY_MAX_CENTS = 100_000;
+
+/** Codes are read aloud and typed on a phone: ignore case, spaces and dashes. */
+export const normalizeVoucherCode = (raw: string) => raw.toUpperCase().replace(/[^A-Z0-9]/g, "");

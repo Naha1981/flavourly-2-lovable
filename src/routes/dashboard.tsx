@@ -10,6 +10,7 @@ import {
   Settings,
   ShieldAlert,
   Sparkles,
+  Ticket,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ const nav = [
   { to: "/dashboard/menu", label: "Menu", icon: UtensilsCrossed, exact: false },
   { to: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
   { to: "/dashboard/intelligence/menu-matrix", label: "Profit", icon: BarChart3, exact: false },
+  { to: "/dashboard/redeem", label: "Redeem", icon: Ticket, exact: false },
   { to: "/dashboard/reputation", label: "Reputation", icon: ShieldAlert, exact: false },
   { to: "/dashboard/social", label: "Social", icon: Send, exact: false },
   { to: "/dashboard/replies", label: "AI desk", icon: Sparkles, exact: false },
