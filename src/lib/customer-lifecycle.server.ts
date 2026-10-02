@@ -9,20 +9,28 @@ function daysBetween(a: Date, b: Date) {
   return Math.floor((b.getTime() - a.getTime()) / 86_400_000);
 }
 
-function birthdayDays(birthday: string, now: Date): number | null {
+function birthdayTarget(birthday: string, now: Date): { days: number; year: number } | null {
   if (!/^\d{2}-\d{2}$/.test(birthday)) return null;
   const [month, day] = birthday.split("-").map(Number);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let target = new Date(now.getFullYear(), month - 1, day);
-  if (target < today) target = new Date(now.getFullYear() + 1, month - 1, day);
+  let year = now.getFullYear();
+  let target = new Date(year, month - 1, day);
+  if (target < today) {
+    year += 1;
+    target = new Date(year, month - 1, day);
+  }
   const days = daysBetween(today, target);
-  return days >= 0 && days <= BIRTHDAY_WINDOW_DAYS ? days : null;
+  return days >= 0 && days <= BIRTHDAY_WINDOW_DAYS ? { days, year } : null;
+}
+
+function birthdayDays(birthday: string, now: Date): number | null {
+  return birthdayTarget(birthday, now)?.days ?? null;
 }
 
 function birthdayText(name: string | null, days: number, restaurant: string) {
   const who = name?.trim() || "there";
   const when = days === 0 ? "today" : "in " + days + (days === 1 ? " day" : " days");
-  return `🎂 Hi ${who}, your birthday is ${when}! We'd love to celebrate with you at ${restaurant}. Reply BOOK and we'll help you choose a table.`;
+  return `🎂 Hi ${who}, your birthday is ${when}! We'd love to celebrate with you at ${restaurant}. We'll add a complimentary dessert to your birthday booking. Reply BOOK and we'll help you choose a table.`;
 }
 
 function reactivationText(name: string | null, restaurant: string, segment: "at_risk" | "dormant") {
@@ -53,9 +61,10 @@ async function processTenant(
     const phone = String(customer.phone ?? "").replace(/\D/g, "");
     if (!phone) continue;
 
-    const birthday = typeof customer.birthday === "string" ? birthdayDays(customer.birthday, now) : null;
+    const birthdayInfo = typeof customer.birthday === "string" ? birthdayTarget(customer.birthday, now) : null;
+    const birthday = birthdayInfo?.days ?? null;
     const lastBirthday = customer.last_birthday_reward_sent_at ? new Date(customer.last_birthday_reward_sent_at) : null;
-    const birthdayNotRecentlySent = !lastBirthday || daysBetween(lastBirthday, now) >= 365;
+    const birthdayNotRecentlySent = !lastBirthday || lastBirthday.getFullYear() !== birthdayInfo?.year;
 
     if (birthday !== null && birthdayNotRecentlySent) {
       const result = await enqueueOutbox({
