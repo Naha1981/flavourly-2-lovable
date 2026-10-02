@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { db } from "../db.server";
 import {
@@ -79,14 +79,14 @@ export async function getBillingStatus(tenantId: string) {
   const { count: monthlyReserved } = await c.from("outbox_jobs")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
-    .gte("created_at", monthStart.toISOString())
-    .in("status", ["pending", "processing", "sent", "quiet_hours_delayed", "approval_required"]);
+    .gte("sent_at", monthStart.toISOString())
+    .eq("status", "sent");
 
   const { count: hourlyReserved } = await c.from("outbox_jobs")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
-    .gte("created_at", hourStart.toISOString())
-    .in("status", ["pending", "processing", "sent", "quiet_hours_delayed", "approval_required"]);
+    .gte("sent_at", hourStart.toISOString())
+    .eq("status", "sent");
 
   return {
     plan,
@@ -130,7 +130,7 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
   const merchantKey = env("PAYFAST_MERCHANT_KEY");
   const passphrase = env("PAYFAST_PASSPHRASE");
   const base = sandbox ? SANDBOX_BASE_URL : LIVE_BASE_URL;
-  const mPaymentId = tenantId + ":" + tier + ":" + crypto.randomUUID();
+  const mPaymentId = tenantId + ":" + tier + ":" + randomUUID();
 
   const data: Record<string, string> = {
     merchant_id: merchantId,
@@ -251,4 +251,23 @@ export function assertPayFastSource(request: Request) {
   const remote = request.headers.get("x-real-ip")?.trim();
   const source = forwarded || remote;
   if (!source || !allow.includes(source)) throw new Error("PayFast source IP rejected.");
+}
+
+export async function assertCanSendNow(tenantId: string) {
+  const billing = await getBillingStatus(tenantId);
+  if (!billing.serviceAllowed) {
+    throw new Error("Messaging is paused because the restaurant trial or subscription is not active.");
+  }
+  const decision = quotaDecision(billing.plan, {
+    monthlyReserved: billing.monthlyReserved,
+    hourlyReserved: billing.hourlyReserved,
+  });
+  if (!decision.allowed) {
+    throw new Error(
+      decision.reason === "monthly_quota_exceeded"
+        ? "Monthly message quota reached for the current Flavourly plan."
+        : "Hourly message rate limit reached for the current Flavourly plan.",
+    );
+  }
+  return billing;
 }
