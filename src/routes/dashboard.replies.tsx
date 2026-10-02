@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { GuestPreferences } from "@/components/app/guest-preferences";
 import { MessageTriage } from "@/components/app/message-triage";
 import { ReplyDrafter } from "@/components/app/reply-drafter";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
@@ -23,6 +24,11 @@ function RepliesPage() {
       <section className="mt-10 grid gap-4">
         <h2 className="font-medium text-foreground">2. Draft the reply</h2>
         <ReplyDrafter profile={profile} onDrafted={() => update({ aiTested: true })} />
+      </section>
+      <section className="mt-10 grid gap-4">
+        <h2 className="font-medium text-foreground">3. Remember this guest</h2>
+        <p className="-mt-2 text-sm text-muted-foreground">Pull dining preferences, allergies and profile notes out of a whole conversation.</p>
+        <GuestPreferences profile={profile} />
       </section>
     </>
   );

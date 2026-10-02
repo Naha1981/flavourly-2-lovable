@@ -56,7 +56,13 @@ export const getWhatsAppHealth = createServerFn({ method: "POST" })
         const base = process.env["OPERATOR_URL"];
         if (!base) return { reachable: false, latencyMs: null, error: "WhatsApp service isn't configured." };
         try {
-          const res = await fetch(`${base.replace(/\/$/, "")}/health`);
+          const res = await fetch(`${base.replace(/\/$/, "")}/accounts`, {
+            headers: {
+              "X-API-Key": process.env["OPERATOR_API_KEY"] ?? "",
+              "X-App-Id": "flavourly",
+              "X-Tenant-Id": data.tenantId,
+            },
+          });
           return {
             reachable: res.status < 500,
             latencyMs: Date.now() - started,
