@@ -215,7 +215,13 @@ function CampaignCard({
     setMsg(null);
     try {
       const r = await send({ data: { tenantId, campaignId: c.id } });
-      setMsg(r.ok ? `Queued for ${r.audience} guests.` : r.error);
+      setMsg(
+        r.ok
+          ? r.heldForApproval
+            ? `${r.queued} queued and ${r.heldForApproval} held for manager approval.`
+            : `Queued for ${r.audience} guests.`
+          : r.error,
+      );
       await onChanged();
     } finally {
       setBusy(false);
