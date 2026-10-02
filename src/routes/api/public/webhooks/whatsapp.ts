@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
         }
 
         const { ingestPayload, tenantOf } = await import("@/lib/webhook-ingest.server");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { db } = await import("@/lib/db.server");
         const tenantId = tenantOf(parsed);
 
         let result: Awaited<ReturnType<typeof ingestPayload>>;
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
         }
         const failed = result.failures.length > 0;
 
-        await supabaseAdmin.from("wa_webhook_events" as never).insert({
+        await (await db()).from("wa_webhook_events").insert({
           tenant_id: tenantId,
           status: failed ? "failed" : "processed",
           error: failed ? result.failures.join("; ").slice(0, 500) : null,
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
           raw_body: failed ? rawBody.slice(0, 50000) : null,
           event_count: result.events,
           saved: result.saved,
-        } as never);
+        });
 
         return Response.json({ ok: !failed, saved: result.saved });
       },
