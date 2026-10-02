@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "install": "npm install",
     "install:browsers": "npx playwright install chromium",
     "test": "e2e run",
     "test:smoke": "e2e run tests/smoke.e2e.ts"
