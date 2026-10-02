@@ -29,6 +29,8 @@ export async function sendWhatsApp(
   text: string,
   accountHint?: string | null,
 ) {
+  const { assertCanSendNow } = await import("./billing.server");
+  await assertCanSendNow(tenantId);
   const accountId = await resolveWaAccountId(tenantId, accountHint);
   if (!accountId) return { ok: false as const, error: "No WhatsApp account for tenant" };
   return wa.sendText(tenantId, accountId, phone.replace(/\D/g, ""), text);
