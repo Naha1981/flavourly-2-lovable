@@ -46,7 +46,7 @@ export async function launchCampaign(tenantId: string, campaignId: string) {
     if (r.approvalRequired) held += 1;
   }
 
-  await c.from("campaigns").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", campaignId);
+  await c.from("campaigns").update({ status: "queued", sent_at: null }).eq("tenant_id", tenantId).eq("id", campaignId);
   return { ok: true as const, audience: guests.length, queued, heldForApproval: held };
 }
 
@@ -56,7 +56,7 @@ export type CampaignSummary = {
   segment: Segment;
   messageA: string;
   messageB: string | null;
-  status: "draft" | "sent";
+  status: "draft" | "queued" | "sent";
   sentAt: string | null;
   createdAt: string;
   sentCount: number;
