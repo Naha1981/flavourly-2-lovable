@@ -10,32 +10,26 @@ async function audience(tenantId: string, segment: Segment) {
   if (segment === "vip") q = q.eq("is_vip", true);
   if (segment === "dormant_30" || segment === "dormant_60") {
     const days = segment === "dormant_30" ? 30 : 60;
-    q = q
-      .not("last_visit_at", "is", null)
+    q = q.not("last_visit_at", "is", null)
       .lt("last_visit_at", new Date(Date.now() - days * 86_400_000).toISOString());
   }
   const { data } = await q.limit(2000);
   return (data ?? []) as Array<{ id: string; phone: string; name: string | null }>;
 }
 
-/** Queues one message per guest in the segment. Marketing, so it's held to the SAST send window like any other automated send. */
 export async function launchCampaign(tenantId: string, campaignId: string) {
   const c = await db();
-  const { data: campaign } = await c
-    .from("campaigns")
+  const { data: campaign } = await c.from("campaigns")
     .select("id, segment, message_a, message_b, status")
-    .eq("tenant_id", tenantId)
-    .eq("id", campaignId)
-    .maybeSingle();
+    .eq("tenant_id", tenantId).eq("id", campaignId).maybeSingle();
   if (!campaign) return { ok: false as const, error: "Campaign not found." };
-  if (campaign.status === "sent")
-    return { ok: false as const, error: "This campaign has already been sent." };
+  if (campaign.status !== "draft") return { ok: false as const, error: "This campaign has already been launched." };
 
   const guests = await audience(tenantId, campaign.segment as Segment);
-  if (guests.length === 0)
-    return { ok: false as const, error: "No guests match this segment yet." };
+  if (guests.length === 0) return { ok: false as const, error: "No guests match this segment yet." };
 
   let queued = 0;
+  let held = 0;
   for (const g of guests) {
     const variant = assignVariant(g.phone, Boolean(campaign.message_b));
     const text = variant === "a" ? campaign.message_a : (campaign.message_b as string);
@@ -44,15 +38,16 @@ export async function launchCampaign(tenantId: string, campaignId: string) {
       phone: g.phone,
       text,
       automated: true,
-      dedupeKey: `campaign:${campaign.id}:${g.id}`,
+      dedupeKey: "campaign:" + campaign.id + ":" + g.id,
+      campaignId: campaign.id,
+      variant,
     });
     if (r.queued) queued += 1;
+    if (r.approvalRequired) held += 1;
   }
-  await c
-    .from("campaigns")
-    .update({ status: "sent", sent_at: new Date().toISOString() })
-    .eq("id", campaignId);
-  return { ok: true as const, audience: guests.length, queued };
+
+  await c.from("campaigns").update({ status: "queued", sent_at: null }).eq("tenant_id", tenantId).eq("id", campaignId);
+  return { ok: true as const, audience: guests.length, queued, heldForApproval: held };
 }
 
 export type CampaignSummary = {
@@ -61,7 +56,7 @@ export type CampaignSummary = {
   segment: Segment;
   messageA: string;
   messageB: string | null;
-  status: "draft" | "sent";
+  status: "draft" | "queued" | "sent";
   sentAt: string | null;
   createdAt: string;
   sentCount: number;
@@ -70,49 +65,29 @@ export type CampaignSummary = {
   variantB: { sentCount: number; bookings: number; revenueCents: number } | undefined;
 };
 
-/** Reads real outcomes back from reservations and the loyalty ledger — never a random or made-up figure. */
 async function attribution(tenantId: string, campaignId: string, sentAt: string) {
   const c = await db();
-  const windowEnd = new Date(
-    new Date(sentAt).getTime() + ATTRIBUTION_WINDOW_DAYS * 86_400_000,
-  ).toISOString();
+  const windowEnd = new Date(new Date(sentAt).getTime() + ATTRIBUTION_WINDOW_DAYS * 86_400_000).toISOString();
 
-  const { data: jobs } = await c
-    .from("outbox_jobs")
-    .select("recipient_phone, variant")
-    .eq("campaign_id", campaignId)
-    .eq("status", "sent");
+  const { data: jobs } = await c.from("outbox_jobs")
+    .select("recipient_phone, variant").eq("campaign_id", campaignId).eq("status", "sent");
   const recipients = jobs ?? [];
-  if (recipients.length === 0)
-    return { total: zero(), b: undefined as CampaignSummary["variantB"] };
+  if (recipients.length === 0) return { total: zero(), b: undefined as CampaignSummary["variantB"] };
 
   const phones = [...new Set(recipients.map((r) => r.recipient_phone as string))];
-  const { data: custs } = await c
-    .from("customers")
-    .select("id, phone")
-    .eq("tenant_id", tenantId)
-    .in("phone", phones);
+  const { data: custs } = await c.from("customers").select("id, phone")
+    .eq("tenant_id", tenantId).in("phone", phones);
   const idByPhone = new Map((custs ?? []).map((row) => [row.phone as string, row.id as string]));
 
-  const { data: bookings } = await c
-    .from("reservations")
-    .select("customer_phone")
-    .eq("tenant_id", tenantId)
-    .in("customer_phone", phones)
-    .neq("status", "cancelled")
-    .gte("created_at", sentAt)
-    .lte("created_at", windowEnd);
+  const { data: bookings } = await c.from("reservations").select("customer_phone")
+    .eq("tenant_id", tenantId).in("customer_phone", phones)
+    .neq("status", "cancelled").gte("created_at", sentAt).lte("created_at", windowEnd);
 
   const customerIds = [...idByPhone.values()];
   const { data: ledger } = customerIds.length
-    ? await c
-        .from("loyalty_ledger")
-        .select("customer_id, metadata")
-        .eq("tenant_id", tenantId)
-        .eq("reason", "visit_earn")
-        .in("customer_id", customerIds)
-        .gte("created_at", sentAt)
-        .lte("created_at", windowEnd)
+    ? await c.from("loyalty_ledger").select("customer_id, metadata")
+        .eq("tenant_id", tenantId).eq("reason", "visit_earn")
+        .in("customer_id", customerIds).gte("created_at", sentAt).lte("created_at", windowEnd)
     : { data: [] };
 
   const phoneByCustomer = new Map([...idByPhone.entries()].map(([phone, id]) => [id, phone]));
@@ -136,13 +111,7 @@ async function attribution(tenantId: string, campaignId: string, sentAt: string)
 
   const hasB = recipients.some((r) => r.variant === "b");
   const total = rollUp(new Set(phones));
-  const b = hasB
-    ? rollUp(
-        new Set(
-          recipients.filter((r) => r.variant === "b").map((r) => r.recipient_phone as string),
-        ),
-      )
-    : undefined;
+  const b = hasB ? rollUp(new Set(recipients.filter((r) => r.variant === "b").map((r) => r.recipient_phone as string))) : undefined;
   return { total, b };
 }
 
@@ -150,18 +119,14 @@ const zero = () => ({ sentCount: 0, bookings: 0, revenueCents: 0 });
 
 export async function listCampaignsWithAttribution(tenantId: string): Promise<CampaignSummary[]> {
   const c = await db();
-  const { data: rows } = await c
-    .from("campaigns")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const { data: rows } = await c.from("campaigns").select("*")
+    .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(50);
+
   const out: CampaignSummary[] = [];
   for (const r of rows ?? []) {
-    const sent =
-      r.status === "sent" && r.sent_at
-        ? await attribution(tenantId, r.id, r.sent_at as string)
-        : { total: zero(), b: undefined };
+    const sent = r.status === "sent" && r.sent_at
+      ? await attribution(tenantId, r.id, r.sent_at as string)
+      : { total: zero(), b: undefined };
     out.push({
       id: r.id,
       name: r.name,

@@ -9,6 +9,8 @@ import {
 } from "./loyalty.server";
 import { formatZAR } from "./south-africa";
 import { sendWhatsApp } from "./wa-account.server";
+import { decideApproval } from "./approval-classifier";
+import { enqueueOutbox } from "./outbox.server";
 
 /**
  * Deterministic auto-replies for inbound WhatsApp messages: JOIN, BALANCE,
@@ -23,7 +25,8 @@ export async function autoReply(input: {
   text: string;
   conversationId: string;
   waAccountId?: string | null;
-}): Promise<{ replied: boolean }> {
+  waMessageId?: string | null;
+}): Promise<{ replied: boolean; heldForApproval?: boolean }> {
   const c = await db();
   const { data: venue } = await c
     .from("tenant_profiles")
@@ -34,6 +37,21 @@ export async function autoReply(input: {
 
   const reply = await decide(input, (venue.name as string) ?? "us");
   if (!reply) return { replied: false };
+
+  const decision = decideApproval(reply);
+  if (decision.outcome === "require_approval") {
+    const held = await enqueueOutbox({
+      tenantId: input.tenantId,
+      phone: input.phone,
+      text: reply,
+      automated: true,
+      dedupeKey: input.waMessageId ? "autoreply:" + input.waMessageId : undefined,
+      conversationId: input.conversationId,
+    });
+    await c.from("wa_conversations").update({ status: "needs_approval" })
+      .eq("tenant_id", input.tenantId).eq("id", input.conversationId);
+    return { replied: false, heldForApproval: held.approvalRequired };
+  }
 
   const sent = await sendWhatsApp(input.tenantId, input.phone, reply, input.waAccountId);
   if (!sent.ok) {
