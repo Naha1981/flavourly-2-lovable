@@ -46,7 +46,7 @@ function safeEqual(a: string, b: string) {
 function publicAppUrl() {
   const value = env("PUBLIC_APP_URL");
   if (!value) throw new Error("PUBLIC_APP_URL is required for PayFast billing.");
-  return value.replace(//$/, "");
+  return value.replace(/\/$/, "");
 }
 
 function assertPayFastConfigured() {
