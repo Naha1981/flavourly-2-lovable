@@ -6,12 +6,9 @@ export type TenantRole = "owner" | "manager" | "staff";
 export const ANY_ROLE: TenantRole[] = ["owner", "manager", "staff"];
 export const MANAGERS: TenantRole[] = ["owner", "manager"];
 
-/**
- * Enforcement is opt-in (REQUIRE_AUTH=true) because the sign-in screens were
- * placeholders until now: turning it on before accounts exist would lock the
- * owner out. Flip it once you've signed up and can see your workspace.
- */
-export const authRequired = () => process.env["REQUIRE_AUTH"] === "true";
+/** Production is fail-closed. Local/demo environments can opt in with REQUIRE_AUTH=true. */
+export const authRequired = () =>
+  process.env["REQUIRE_AUTH"] === "true" || process.env["NODE_ENV"] === "production";
 
 const deny = (status: 401 | 403, message: string) =>
   new Response(JSON.stringify({ error: message }), {
@@ -28,7 +25,6 @@ async function currentUserId(): Promise<string | null> {
   return error || !data.user ? null : data.user.id;
 }
 
-/** Any signed-in user (for calls that aren't tied to a tenant). No-op unless enforced. */
 export async function requireUser(): Promise<string | null> {
   if (!authRequired()) return null;
   const id = await currentUserId();
@@ -36,7 +32,6 @@ export async function requireUser(): Promise<string | null> {
   return id;
 }
 
-/** Signed-in user who belongs to `tenantId` with one of `roles`. No-op unless enforced. */
 export async function authorizeTenant(
   tenantId: string,
   roles: TenantRole[] = ANY_ROLE,

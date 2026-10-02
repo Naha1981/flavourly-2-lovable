@@ -1,16 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createWorkspace, getAuthConfig, myWorkspace, type Workspace } from "./workspace.functions";
-import { patchStoredProfile } from "./restaurant-profile";
 
 export const isAuthRequired = async () => {
   try {
     return (await getAuthConfig()).required;
   } catch {
-    return false; // if the server can't say, keep the app usable
+    return false;
   }
 };
 
-/** Loads (or, on first sign-in, creates) the caller's workspace and points the dashboard at it. */
+/** Loads (or, on first sign-in, creates) the caller workspace. */
 export async function enterWorkspace(fallbackName?: string): Promise<Workspace | null> {
   let ws = await myWorkspace();
   if (!ws) {
@@ -19,7 +18,6 @@ export async function enterWorkspace(fallbackName?: string): Promise<Workspace |
     if (!name) return null;
     ws = await createWorkspace({ data: { restaurantName: name } });
   }
-  patchStoredProfile({ slug: ws.tenantId, name: ws.name });
   return ws;
 }
 
