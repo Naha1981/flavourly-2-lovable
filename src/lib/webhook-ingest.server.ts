@@ -1,8 +1,6 @@
 /**
  * Turns a verified WhatsApp webhook payload into saved conversations/messages.
- * Shared by the live webhook and the "retry failed delivery" control, so a
- * retry runs exactly the same code. Duplicate deliveries are harmless: the
- * unique wa_message_id stops a second message row and a second auto-reply.
+ * Tenant and account identity are mandatory because this endpoint serves many restaurants.
  */
 
 type Incoming = {
@@ -23,12 +21,8 @@ function pick(o: Record<string, unknown>, keys: string[]): unknown {
   for (const k of keys) {
     let cur: unknown = o;
     for (const p of k.split(".")) {
-      if (cur && typeof cur === "object" && p in (cur as Record<string, unknown>)) {
-        cur = (cur as Record<string, unknown>)[p];
-      } else {
-        cur = undefined;
-        break;
-      }
+      if (cur && typeof cur === "object" && p in (cur as Record<string, unknown>)) cur = (cur as Record<string, unknown>)[p];
+      else { cur = undefined; break; }
     }
     if (cur !== undefined && cur !== null && cur !== "") return cur;
   }
@@ -52,8 +46,9 @@ function parseEvent(raw: unknown): Incoming | null {
   if (!chatRaw) return null;
 
   const phone = chatRaw.replace(/@.*$/, "").replace(/\D/g, "") || null;
-  const tenantId =
-    str(pick(root, ["tenantId", "tenant_id", "tenant"])) ?? str(pick(ev, ["tenantId", "tenant_id"])) ?? "default";
+  const tenantId = str(pick(root, ["tenantId", "tenant_id", "tenant"])) ?? str(pick(ev, ["tenantId", "tenant_id"]));
+  const waAccountId = str(pick(root, ["waAccountId", "accountId"])) ?? str(pick(ev, ["waAccountId", "accountId"]));
+  if (!tenantId || !waAccountId) return null;
 
   const tsRaw = pick(ev, ["timestamp", "sentAt", "messageTimestamp", "t"]);
   let sentAt = new Date().toISOString();
@@ -61,14 +56,11 @@ function parseEvent(raw: unknown): Incoming | null {
   else if (typeof tsRaw === "string" && !Number.isNaN(Date.parse(tsRaw))) sentAt = new Date(tsRaw).toISOString();
 
   return {
-    tenantId,
-    chatId: chatRaw,
-    phone,
+    tenantId, chatId: chatRaw, phone,
     name: str(pick(ev, ["pushName", "name", "senderName", "contact.name", "notifyName"])),
     body,
     waMessageId: str(pick(ev, ["id", "messageId", "key.id"])),
-    waAccountId: str(pick(root, ["waAccountId", "accountId"])) ?? str(pick(ev, ["waAccountId", "accountId"])),
-    sentAt,
+    waAccountId, sentAt,
     fromMe: Boolean(pick(ev, ["fromMe", "key.fromMe", "outgoing"])),
   };
 }
@@ -76,13 +68,10 @@ function parseEvent(raw: unknown): Incoming | null {
 function classify(text: string): { intent: string; urgency: string } {
   const t = text.toLowerCase();
   const has = (...w: string[]) => w.some((x) => t.includes(x));
-  if (has("complain", "terrible", "awful", "refund", "cold food", "rude", "disgusting", "worst", "sick"))
-    return { intent: "complaint", urgency: "high" };
-  if (has("book", "table", "reserve", "reservation", "seat", "tonight", "party of"))
-    return { intent: "booking", urgency: "medium" };
+  if (has("complain", "terrible", "awful", "refund", "cold food", "rude", "disgusting", "worst", "sick")) return { intent: "complaint", urgency: "high" };
+  if (has("book", "table", "reserve", "reservation", "seat", "tonight", "party of")) return { intent: "booking", urgency: "medium" };
   if (has("cater", "function", "event", "private room", "wedding")) return { intent: "catering", urgency: "medium" };
-  if (has("menu", "hours", "open", "park", "vegan", "halaal", "halal", "allerg", "price"))
-    return { intent: "faq", urgency: "normal" };
+  if (has("menu", "hours", "open", "park", "vegan", "halaal", "halal", "allerg", "price")) return { intent: "faq", urgency: "normal" };
   return { intent: "other", urgency: "normal" };
 }
 
@@ -92,7 +81,6 @@ export function splitEvents(parsed: unknown): unknown[] {
   return Array.isArray(msgs) ? msgs : [parsed];
 }
 
-/** Best-effort tenant id for logging, before processing. */
 export function tenantOf(parsed: unknown): string | null {
   for (const e of splitEvents(parsed)) {
     const m = parseEvent(e);
@@ -113,88 +101,61 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
     const msg = parseEvent(item);
     if (!msg) continue;
 
+    // Duplicate delivery must be a complete no-op before touching the conversation.
+    if (msg.waMessageId) {
+      const { data: duplicate, error: duplicateError } = await supabaseAdmin
+        .from("wa_messages").select("id").eq("wa_message_id", msg.waMessageId).maybeSingle();
+      if (duplicateError) { failures.push("duplicate-check: " + duplicateError.message); continue; }
+      if (duplicate) continue;
+    }
+
     const { intent, urgency } = classify(msg.body);
     const { data: existing, error: findError } = await supabaseAdmin
-      .from("wa_conversations")
-      .select("id, unread, status")
-      .eq("tenant_id", msg.tenantId)
-      .eq("chat_id", msg.chatId)
-      .maybeSingle();
-    if (findError) {
-      failures.push(`lookup: ${findError.message}`);
-      continue;
-    }
+      .from("wa_conversations").select("id, unread, status").eq("tenant_id", msg.tenantId).eq("chat_id", msg.chatId).maybeSingle();
+    if (findError) { failures.push("lookup: " + findError.message); continue; }
 
     let conversationId = existing?.id ?? null;
     if (conversationId) {
-      const { error } = await supabaseAdmin
-        .from("wa_conversations")
-        .update({
-          last_message: msg.body.slice(0, 400),
-          last_message_at: msg.sentAt,
-          unread: msg.fromMe ? (existing?.unread ?? 0) : (existing?.unread ?? 0) + 1,
-          ...(msg.fromMe
-            ? {}
-            : {
-                intent,
-                urgency,
-                status: existing?.status === "resolved" ? "open" : (existing?.status ?? "open"),
-                ...(msg.name ? { guest_name: msg.name } : {}),
-              }),
-        })
-        .eq("id", conversationId);
-      if (error) failures.push(`update: ${error.message}`);
+      const { error } = await supabaseAdmin.from("wa_conversations").update({
+        last_message: msg.body.slice(0, 400),
+        last_message_at: msg.sentAt,
+        unread: msg.fromMe ? (existing?.unread ?? 0) : (existing?.unread ?? 0) + 1,
+        ...(msg.fromMe ? {} : {
+          intent, urgency,
+          status: existing?.status === "resolved" ? "open" : (existing?.status ?? "open"),
+          ...(msg.name ? { guest_name: msg.name } : {}),
+        }),
+      }).eq("id", conversationId);
+      if (error) { failures.push("update: " + error.message); continue; }
     } else {
-      const { data: created, error } = await supabaseAdmin
-        .from("wa_conversations")
-        .insert({
-          tenant_id: msg.tenantId,
-          chat_id: msg.chatId,
-          guest_name: msg.name ?? msg.phone,
-          guest_phone: msg.phone,
-          intent,
-          urgency,
-          status: "open",
-          unread: msg.fromMe ? 0 : 1,
-          last_message: msg.body.slice(0, 400),
-          last_message_at: msg.sentAt,
-        })
-        .select("id")
-        .single();
-      if (error || !created) {
-        failures.push(`conversation: ${error?.message ?? "not created"}`);
-        continue;
-      }
+      const { data: created, error } = await supabaseAdmin.from("wa_conversations").insert({
+        tenant_id: msg.tenantId, chat_id: msg.chatId,
+        guest_name: msg.name ?? msg.phone, guest_phone: msg.phone,
+        intent, urgency, status: "open", unread: msg.fromMe ? 0 : 1,
+        last_message: msg.body.slice(0, 400), last_message_at: msg.sentAt,
+      }).select("id").single();
+      if (error || !created) { failures.push("conversation: " + (error?.message ?? "not created")); continue; }
       conversationId = created.id;
     }
 
     const { error: msgError } = await supabaseAdmin.from("wa_messages").insert({
-      conversation_id: conversationId,
-      tenant_id: msg.tenantId,
-      wa_message_id: msg.waMessageId,
-      direction: msg.fromMe ? "out" : "in",
-      body: msg.body,
-      sent_at: msg.sentAt,
+      conversation_id: conversationId, tenant_id: msg.tenantId, wa_message_id: msg.waMessageId,
+      direction: msg.fromMe ? "out" : "in", body: msg.body, sent_at: msg.sentAt,
     });
-    if (msgError && msgError.code !== "23505") {
-      failures.push(`message: ${msgError.message}`);
+    if (msgError) {
+      // Another worker can win a race between the duplicate check and insert.
+      if (msgError.code === "23505") continue;
+      failures.push("message: " + msgError.message);
       continue;
     }
     saved += 1;
 
-    if (!msg.fromMe && msg.phone && !msgError) {
+    if (!msg.fromMe && msg.phone) {
       try {
         const { autoReply } = await import("@/lib/auto-reply.server");
-        await autoReply({
-          tenantId: msg.tenantId,
-          phone: msg.phone,
-          name: msg.name,
-          text: msg.body,
-          conversationId: conversationId as string,
-          waAccountId: msg.waAccountId,
-        });
+        await autoReply({ tenantId: msg.tenantId, phone: msg.phone, name: msg.name, text: msg.body, conversationId: conversationId as string, waAccountId: msg.waAccountId });
       } catch (e) {
-        console.error("auto-reply failed", e);
+        console.error("auto-reply failed", msg.tenantId, e);
       }
     }
   }
