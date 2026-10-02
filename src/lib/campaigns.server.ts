@@ -23,7 +23,7 @@ export async function launchCampaign(tenantId: string, campaignId: string) {
     .select("id, segment, message_a, message_b, status")
     .eq("tenant_id", tenantId).eq("id", campaignId).maybeSingle();
   if (!campaign) return { ok: false as const, error: "Campaign not found." };
-  if (campaign.status === "sent") return { ok: false as const, error: "This campaign has already been sent." };
+  if (campaign.status !== "draft") return { ok: false as const, error: "This campaign has already been launched." };
 
   const guests = await audience(tenantId, campaign.segment as Segment);
   if (guests.length === 0) return { ok: false as const, error: "No guests match this segment yet." };
