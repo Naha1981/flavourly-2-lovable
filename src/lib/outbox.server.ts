@@ -15,6 +15,7 @@ export async function enqueueOutbox(input: {
   scheduledFor?: Date;
   campaignId?: string;
   variant?: "a" | "b";
+  conversationId?: string;
 }) {
   const c = await db();
   const base = input.scheduledFor ?? new Date();
@@ -34,6 +35,7 @@ export async function enqueueOutbox(input: {
     status,
     campaign_id: input.campaignId ?? null,
     variant: input.variant ?? null,
+    conversation_id: input.conversationId ?? null,
   }).select("id").single();
 
   if (error) {
@@ -62,7 +64,7 @@ export async function processOutbox(limit = 50) {
   const now = new Date();
   const { data: due, error } = await c
     .from("outbox_jobs")
-    .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status")
+    .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id")
     .in("status", ["pending", "quiet_hours_delayed"])
     .lte("scheduled_for", now.toISOString())
     .order("scheduled_for", { ascending: true })
@@ -93,11 +95,22 @@ export async function processOutbox(limit = 50) {
 
     const res = await sendWhatsApp(job.tenant_id, job.recipient_phone, job.message_text);
     if (res.ok) {
-      await c.from("outbox_jobs").update({
-        status: "sent",
-        sent_at: new Date().toISOString(),
-        error: null,
-      }).eq("id", job.id);
+      await c.from("outbox_jobs").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", job.id);
+      if (job.conversation_id) {
+        const sentAt = new Date().toISOString();
+        await c.from("wa_messages").insert({
+          conversation_id: job.conversation_id,
+          tenant_id: job.tenant_id,
+          wa_message_id: res.data.messageId ?? null,
+          direction: "out",
+          body: job.message_text,
+          sent_at: sentAt,
+        });
+        await c.from("wa_conversations").update({
+          last_message: job.message_text.slice(0, 400),
+          last_message_at: sentAt,
+        }).eq("tenant_id", job.tenant_id).eq("id", job.conversation_id);
+      }
       stats.sent += 1;
     } else if (job.attempts + 1 >= MAX_ATTEMPTS) {
       await c.from("outbox_jobs").update({ status: "failed", error: res.error }).eq("id", job.id);
