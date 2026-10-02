@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const tenant = z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/);
+export type { ApprovalRequest } from "./approval.server";
+
 const guard = async (tenantId: string) => {
   const { authorizeTenant, MANAGERS } = await import("./tenant-auth.server");
   await authorizeTenant(tenantId, MANAGERS);
