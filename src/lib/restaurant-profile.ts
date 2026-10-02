@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 
 import { demoRestaurant } from "./mock-data";
+import {
+  getRestaurantProfile,
+  updateRestaurantProfile,
+  type RestaurantProfileRecord,
+} from "./restaurant-profile.functions";
 
-/**
- * Restaurant workspace profile. Stored in the browser for now; swap load/save
- * for backend calls when a database is connected — the hook API stays the same.
- */
 export type RestaurantProfile = {
   slug: string;
   name: string;
@@ -22,17 +24,15 @@ export type RestaurantProfile = {
   aiTested: boolean;
 };
 
-const KEY = "flavourly.profile.v1";
-
 export const defaultProfile: RestaurantProfile = {
   slug: demoRestaurant.slug,
   name: demoRestaurant.name,
-  ownerName: "Warren",
+  ownerName: "",
   city: demoRestaurant.city,
   cuisine: demoRestaurant.cuisine,
-  hours: "Tue–Sun 12:00–22:00, closed Mondays",
-  averageCheck: 615,
-  notes: "Private room seats 40. Corkage R80. Parking in the basement.",
+  hours: "",
+  averageCheck: 0,
+  notes: "",
   managerPhone: "",
   waAccountId: null,
   waConnected: false,
@@ -43,38 +43,83 @@ export const defaultProfile: RestaurantProfile = {
 export const slugify = (v: string) =>
   v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "restaurant";
 
-/** Writes into the stored profile outside React (used right after sign-in). */
-export function patchStoredProfile(patch: Partial<RestaurantProfile>) {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const current = raw ? { ...defaultProfile, ...JSON.parse(raw) } : defaultProfile;
-    localStorage.setItem(KEY, JSON.stringify({ ...current, ...patch }));
-  } catch {
-    /* storage unavailable */
-  }
+/** Legacy no-op kept so older callers do not write tenant state into the browser. */
+export function patchStoredProfile(_patch: Partial<RestaurantProfile>) {
+  return;
+}
+
+function mergeRecord(record: RestaurantProfileRecord): RestaurantProfile {
+  return {
+    ...defaultProfile,
+    slug: record.tenantId,
+    name: record.name,
+    ownerName: record.ownerName,
+    city: record.city,
+    cuisine: record.cuisine,
+    hours: record.hours,
+    averageCheck: record.averageCheck,
+    notes: record.notes,
+    managerPhone: record.managerPhone,
+    waAccountId: record.waAccountId,
+  };
 }
 
 export function useRestaurantProfile() {
+  const load = useServerFn(getRestaurantProfile);
+  const save = useServerFn(updateRestaurantProfile);
   const [profile, setProfile] = useState<RestaurantProfile>(defaultProfile);
   const [ready, setReady] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setProfile({ ...defaultProfile, ...JSON.parse(raw) });
-    } catch {
-      /* ignore */
-    }
-    setReady(true);
-  }, []);
+    let active = true;
+    load()
+      .then((record) => {
+        if (!active || !record) return;
+        setProfile((prev) => ({
+          ...mergeRecord(record),
+          testSent: prev.testSent,
+          aiTested: prev.aiTested,
+          waConnected: prev.waConnected,
+        }));
+      })
+      .catch((error) => console.error("restaurant profile load failed", error))
+      .finally(() => {
+        if (active) setReady(true);
+      });
 
-  const update = useCallback((patch: Partial<RestaurantProfile>) => {
-    setProfile((prev) => {
-      const next = { ...prev, ...patch };
-      localStorage.setItem(KEY, JSON.stringify(next));
-      return next;
-    });
-  }, []);
+    return () => {
+      active = false;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [load]);
+
+  const update = useCallback(
+    (patch: Partial<RestaurantProfile>) => {
+      setProfile((prev) => {
+        const next = { ...prev, ...patch, slug: prev.slug };
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+          void save({
+            data: {
+              tenantId: next.slug,
+              name: next.name,
+              ownerName: next.ownerName,
+              city: next.city,
+              cuisine: next.cuisine,
+              hours: next.hours,
+              averageCheck: next.averageCheck,
+              notes: next.notes,
+              managerPhone: next.managerPhone,
+              waAccountId: next.waAccountId,
+            },
+          }).catch((error) => console.error("restaurant profile save failed", error));
+        }, 500);
+        return next;
+      });
+    },
+    [save],
+  );
 
   return { profile, update, ready };
 }
