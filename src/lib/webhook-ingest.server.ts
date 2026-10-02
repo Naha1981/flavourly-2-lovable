@@ -153,7 +153,15 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
     if (!msg.fromMe && msg.phone) {
       try {
         const { autoReply } = await import("@/lib/auto-reply.server");
-        await autoReply({ tenantId: msg.tenantId, phone: msg.phone, name: msg.name, text: msg.body, conversationId: conversationId as string, waAccountId: msg.waAccountId });
+        await autoReply({
+          tenantId: msg.tenantId,
+          phone: msg.phone,
+          name: msg.name,
+          text: msg.body,
+          conversationId: conversationId as string,
+          waAccountId: msg.waAccountId,
+          waMessageId: msg.waMessageId,
+        });
       } catch (e) {
         console.error("auto-reply failed", msg.tenantId, e);
       }
