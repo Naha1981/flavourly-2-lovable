@@ -31,6 +31,7 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settin
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
 import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as DashboardWaitlistRouteImport } from './routes/dashboard.waitlist'
+import { Route as DashboardWhatsappHealthRouteImport } from './routes/dashboard.whatsapp-health'
 import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
@@ -151,6 +152,11 @@ const DashboardWaitlistRoute = DashboardWaitlistRouteImport.update({
   path: '/waitlist',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardWhatsappHealthRoute = DashboardWhatsappHealthRouteImport.update({
+  id: '/whatsapp-health',
+  path: '/whatsapp-health',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const GeoClaimTokenRoute = GeoClaimTokenRouteImport.update({
   id: '/geo-claim/$token',
   path: '/geo-claim/$token',
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
+  '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
+  '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
+  '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/dashboard/social'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
+    | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/dashboard/social'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
+    | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -387,6 +398,7 @@ export interface FileRouteTypes {
     | '/dashboard/social'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
+    | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
     | '/legal/privacy'
     | '/legal/terms'
@@ -577,6 +589,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWaitlistRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/whatsapp-health': {
+      id: '/dashboard/whatsapp-health'
+      path: '/whatsapp-health'
+      fullPath: '/dashboard/whatsapp-health'
+      preLoaderRoute: typeof DashboardWhatsappHealthRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/geo-claim/$token': {
       id: '/geo-claim/$token'
       path: '/geo-claim/$token'
@@ -654,6 +673,7 @@ interface DashboardRouteChildren {
   DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardVoiceRoute: typeof DashboardVoiceRoute
   DashboardWaitlistRoute: typeof DashboardWaitlistRoute
+  DashboardWhatsappHealthRoute: typeof DashboardWhatsappHealthRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardIntelligenceMenuMatrixRoute: typeof DashboardIntelligenceMenuMatrixRoute
 }
@@ -669,6 +689,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSocialRoute: DashboardSocialRoute,
   DashboardVoiceRoute: DashboardVoiceRoute,
   DashboardWaitlistRoute: DashboardWaitlistRoute,
+  DashboardWhatsappHealthRoute: DashboardWhatsappHealthRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardIntelligenceMenuMatrixRoute: DashboardIntelligenceMenuMatrixRoute,
 }

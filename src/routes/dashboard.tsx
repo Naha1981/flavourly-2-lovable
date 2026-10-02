@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+  Activity,
   BarChart3,
   Clock3,
   Home,
@@ -35,6 +36,7 @@ const nav = [
   { to: "/dashboard/reputation", label: "Reputation", icon: ShieldAlert, exact: false },
   { to: "/dashboard/social", label: "Social", icon: Send, exact: false },
   { to: "/dashboard/replies", label: "AI desk", icon: Sparkles, exact: false },
+  { to: "/dashboard/whatsapp-health", label: "WA health", icon: Activity, exact: false },
   { to: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 

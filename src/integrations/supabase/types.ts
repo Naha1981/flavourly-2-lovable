@@ -26,6 +26,7 @@ export type Database = {
           last_message: string | null
           last_message_at: string
           next_action: string | null
+          preferences: Json | null
           sentiment: string | null
           status: string
           summary: string | null
@@ -44,6 +45,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string
           next_action?: string | null
+          preferences?: Json | null
           sentiment?: string | null
           status?: string
           summary?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string
           next_action?: string | null
+          preferences?: Json | null
           sentiment?: string | null
           status?: string
           summary?: string | null
@@ -108,6 +111,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_webhook_events: {
+        Row: {
+          error: string | null
+          event_count: number
+          id: string
+          last_retry_at: string | null
+          raw_body: string | null
+          received_at: string
+          retry_count: number
+          saved: number
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          error?: string | null
+          event_count?: number
+          id?: string
+          last_retry_at?: string | null
+          raw_body?: string | null
+          received_at?: string
+          retry_count?: number
+          saved?: number
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          error?: string | null
+          event_count?: number
+          id?: string
+          last_retry_at?: string | null
+          raw_body?: string | null
+          received_at?: string
+          retry_count?: number
+          saved?: number
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
