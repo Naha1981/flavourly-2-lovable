@@ -5,6 +5,7 @@ import {
   BarChart3,
   ClipboardCheck,
   Clock3,
+  CreditCard,
   Home,
   Inbox,
   Megaphone,
@@ -38,6 +39,7 @@ const nav = [
   { to: "/dashboard/social", label: "Social", icon: Send, exact: false },
   { to: "/dashboard/replies", label: "AI desk", icon: Sparkles, exact: false },
   { to: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck, exact: false },
+  { to: "/dashboard/billing", label: "Billing", icon: CreditCard, exact: false },
   { to: "/dashboard/whatsapp-health", label: "WA health", icon: Activity, exact: false },
   { to: "/dashboard/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
