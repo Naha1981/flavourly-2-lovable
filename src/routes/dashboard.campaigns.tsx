@@ -236,9 +236,9 @@ function CampaignCard({
           <p className="text-xs text-muted-foreground">{SEGMENT_LABEL[c.segment]}</p>
         </div>
         <span
-          className={`rounded-full px-2.5 py-0.5 text-xs ${c.status === "sent" ? "bg-forest-soft text-forest" : "bg-secondary text-muted-foreground"}`}
+          className={`rounded-full px-2.5 py-0.5 text-xs ${c.status === "sent" ? "bg-forest-soft text-forest" : c.status === "queued" ? "bg-gold-soft text-foreground" : "bg-secondary text-muted-foreground"}`}
         >
-          {c.status === "sent" ? "Sent" : "Draft"}
+          {c.status === "sent" ? "Sent" : c.status === "queued" ? "Queued" : "Draft"}
         </span>
       </div>
       <p className="whitespace-pre-wrap rounded-xl bg-card p-3 text-sm text-muted-foreground">
@@ -273,9 +273,11 @@ function CampaignCard({
             </p>
           )}
         </>
+      ) : c.status === "queued" ? (
+        <p className="text-sm text-muted-foreground">Campaign is queued. Messages held for approval will appear in Approvals.</p>
       ) : (
         <Button onClick={launch} disabled={busy}>
-          <Send className="size-4" /> {busy ? "Sending…" : "Send campaign"}
+          <Send className="size-4" /> {busy ? "Launching…" : "Send campaign"}
         </Button>
       )}
       {msg && (
