@@ -64,7 +64,7 @@ export async function processOutbox(limit = 50) {
   const now = new Date();
   const { data: due, error } = await c
     .from("outbox_jobs")
-    .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id")
+    .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id, campaign_id")
     .in("status", ["pending", "quiet_hours_delayed"])
     .lte("scheduled_for", now.toISOString())
     .order("scheduled_for", { ascending: true })
@@ -96,6 +96,13 @@ export async function processOutbox(limit = 50) {
     const res = await sendWhatsApp(job.tenant_id, job.recipient_phone, job.message_text);
     if (res.ok) {
       await c.from("outbox_jobs").update({ status: "sent", sent_at: new Date().toISOString(), error: null }).eq("id", job.id);
+      if (job.campaign_id) {
+        await c.from("campaigns").update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+        }).eq("tenant_id", job.tenant_id).eq("id", job.campaign_id).eq("status", "queued");
+      }
+
       if (job.conversation_id) {
         const sentAt = new Date().toISOString();
         await c.from("wa_messages").insert({
