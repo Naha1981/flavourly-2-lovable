@@ -98,6 +98,53 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_requests: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          id: string
+          incident_id: string | null
+          rating: number | null
+          reservation_id: string
+          state: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          id?: string
+          incident_id?: string | null
+          rating?: number | null
+          reservation_id: string
+          state?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          id?: string
+          incident_id?: string | null
+          rating?: number | null
+          reservation_id?: string
+          state?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_requests_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
@@ -308,6 +355,51 @@ export type Database = {
           scheduled_for?: string
           sent_at?: string | null
           status?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      reputation_incidents: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          feedback_text: string | null
+          id: string
+          rating: number
+          recovery_voucher_cents: number | null
+          recovery_voucher_code: string | null
+          resolution_status: string
+          resolved_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          feedback_text?: string | null
+          id?: string
+          rating: number
+          recovery_voucher_cents?: number | null
+          recovery_voucher_code?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          feedback_text?: string | null
+          id?: string
+          rating?: number
+          recovery_voucher_cents?: number | null
+          recovery_voucher_code?: string | null
+          resolution_status?: string
+          resolved_at?: string | null
           tenant_id?: string
         }
         Relationships: []
