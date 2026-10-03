@@ -644,41 +644,62 @@ export type Database = {
       tenant_profiles: {
         Row: {
           auto_replies_enabled: boolean
+          average_check_cents: number | null
+          city: string | null
           created_at: string
+          cuisine: string | null
           geofence_radius_m: number
           google_review_url: string | null
+          hours: string | null
           latitude: number | null
           longitude: number | null
           manager_phone: string | null
           name: string
+          notes: string | null
+          owner_name: string | null
           tenant_id: string
           wa_account_id: string | null
+          wa_operator_tenant_token: string | null
           whatsapp_phone: string | null
         }
         Insert: {
           auto_replies_enabled?: boolean
+          average_check_cents?: number | null
+          city?: string | null
           created_at?: string
+          cuisine?: string | null
           geofence_radius_m?: number
           google_review_url?: string | null
+          hours?: string | null
           latitude?: number | null
           longitude?: number | null
           manager_phone?: string | null
           name: string
+          notes?: string | null
+          owner_name?: string | null
           tenant_id: string
           wa_account_id?: string | null
+          wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
         }
         Update: {
           auto_replies_enabled?: boolean
+          average_check_cents?: number | null
+          city?: string | null
           created_at?: string
+          cuisine?: string | null
           geofence_radius_m?: number
           google_review_url?: string | null
+          hours?: string | null
           latitude?: number | null
           longitude?: number | null
           manager_phone?: string | null
           name?: string
+          notes?: string | null
+          owner_name?: string | null
           tenant_id?: string
           wa_account_id?: string | null
+          wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
         }
         Relationships: []
