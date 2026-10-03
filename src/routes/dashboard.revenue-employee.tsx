@@ -267,6 +267,29 @@ function RevenueEmployeePage() {
         </div>
       </section>
 
+      <section className="glass-card rounded-2xl border border-border p-5">
+        <div className="flex items-center gap-2">
+          <Database className="size-5" />
+          <div>
+            <h2 className="font-display text-xl">Recent evidence</h2>
+            <p className="text-sm text-muted-foreground">Observed facts and external signals feeding the employee.</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-2">
+          {snapshot.evidence.slice(0, 8).map((item) => (
+            <div key={item.id} className="rounded-xl border border-border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">{item.title}</p>
+                <Badge variant="outline">{item.evidenceState}</Badge>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.content}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{item.provider}</p>
+            </div>
+          ))}
+          {!snapshot.evidence.length && <p className="text-sm text-muted-foreground">No evidence captured yet.</p>}
+        </div>
+      </section>
+
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <div className="glass-card rounded-2xl border border-border p-5">
           <h2 className="font-display text-xl">Needs your approval</h2>
