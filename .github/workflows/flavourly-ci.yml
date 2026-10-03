@@ -16,8 +16,8 @@ jobs:
           cache: npm
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      - run: bun run build
       - run: bunx --package @typescript/native-preview tsgo --noEmit
       - run: npm run lint
       - run: npm run typecheck
       - run: bunx vitest run
-      - run: npm run build
