@@ -296,9 +296,9 @@ function RevenueEmployeePage() {
           <div className="mt-4 grid gap-3">
             {pendingActions.map((action) => (
               <div key={action.id} className="rounded-xl border border-border p-4">
-                <p className="font-medium">{String(action.payload.campaignName ?? "Revenue action")}</p>
+                <p className="font-medium">{String(action.payload['campaignName'] ?? "Revenue action")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {String(action.payload.message ?? "Controlled action ready for review.")}
+                  {String(action.payload['message'] ?? "Controlled action ready for review.")}
                 </p>
                 <div className="mt-3">
                   <Button
