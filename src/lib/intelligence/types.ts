@@ -38,7 +38,7 @@ export type RevenueOpportunity = {
   recommendedAction: string;
   status: "open" | "approved" | "executed" | "dismissed" | "expired";
   createdAt: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null | string[]>;
 };
 
 export type RevenueAction = {
@@ -46,7 +46,7 @@ export type RevenueAction = {
   opportunityId: string | null;
   actionType: string;
   status: "pending_approval" | "approved" | "rejected" | "executed" | "failed";
-  payload: Record<string, any>;
+  payload: Record<string, string | number | boolean | null | string[]>;
   resultSummary: string | null;
   externalRef: string | null;
   createdAt: string;
