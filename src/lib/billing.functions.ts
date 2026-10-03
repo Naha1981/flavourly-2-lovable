@@ -5,7 +5,7 @@ const tenant = z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/);
 const tier = z.enum(["starter", "casual", "premium", "signature", "group"]);
 
 const guard = async (tenantId: string) => {
-  const { authorizeTenant, MANAGERS } = await import("../tenant-auth.server");
+  const { authorizeTenant, MANAGERS } = await import("./tenant-auth.server");
   await authorizeTenant(tenantId, MANAGERS);
 };
 
