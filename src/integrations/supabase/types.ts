@@ -770,6 +770,59 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_entries: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          id: string
+          offer_expires_at: string | null
+          offer_reservation_id: string | null
+          party_size: number
+          requested_date: string
+          requested_time: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          id?: string
+          offer_expires_at?: string | null
+          offer_reservation_id?: string | null
+          party_size: number
+          requested_date: string
+          requested_time?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          id?: string
+          offer_expires_at?: string | null
+          offer_reservation_id?: string | null
+          party_size?: number
+          requested_date?: string
+          requested_time?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_entries_offer_reservation_id_fkey"
+            columns: ["offer_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -785,6 +838,35 @@ export type Database = {
           p_tenant: string
         }
         Returns: boolean
+      }
+      claim_waitlist_offer: {
+        Args: {
+          p_date: string
+          p_party_size: number
+          p_reservation_id: string
+          p_tenant: string
+          p_ttl_minutes?: number
+        }
+        Returns: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          id: string
+          offer_expires_at: string | null
+          offer_reservation_id: string | null
+          party_size: number
+          requested_date: string
+          requested_time: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "waitlist_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       loyalty_balance: {
         Args: { p_customer: string; p_tenant: string }
