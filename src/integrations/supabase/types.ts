@@ -414,6 +414,7 @@ export type Database = {
           attempts: number
           automated: boolean
           campaign_id: string | null
+          conversation_id: string | null
           created_at: string
           dedupe_key: string | null
           error: string | null
@@ -430,6 +431,7 @@ export type Database = {
           attempts?: number
           automated?: boolean
           campaign_id?: string | null
+          conversation_id?: string | null
           created_at?: string
           dedupe_key?: string | null
           error?: string | null
@@ -446,6 +448,7 @@ export type Database = {
           attempts?: number
           automated?: boolean
           campaign_id?: string | null
+          conversation_id?: string | null
           created_at?: string
           dedupe_key?: string | null
           error?: string | null
@@ -464,6 +467,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbox_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
             referencedColumns: ["id"]
           },
         ]
