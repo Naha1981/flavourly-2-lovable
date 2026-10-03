@@ -12,12 +12,14 @@ function daysBetween(a: Date, b: Date) {
 function birthdayTarget(birthday: string, now: Date): { days: number; year: number } | null {
   if (!/^\d{2}-\d{2}$/.test(birthday)) return null;
   const [month, day] = birthday.split("-").map(Number);
+  const safeMonth = month ?? 0;
+  const safeDay = day ?? 0;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let year = now.getFullYear();
-  let target = new Date(year, month - 1, day);
+  let target = new Date(year, safeMonth - 1, safeDay);
   if (target < today) {
     year += 1;
-    target = new Date(year, month - 1, day);
+    target = new Date(year, safeMonth - 1, safeDay);
   }
   const days = daysBetween(today, target);
   return days >= 0 && days <= BIRTHDAY_WINDOW_DAYS ? { days, year } : null;

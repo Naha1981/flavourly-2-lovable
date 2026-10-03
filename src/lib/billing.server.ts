@@ -1,6 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
-import { db } from "../db.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   canUseService,
   isPlanTier,
@@ -11,7 +11,7 @@ import {
   TIER_MONTHLY_MESSAGES,
   type BillingStatus,
   type PlanTier,
-} from "./provider";
+} from "./billing/provider";
 
 const LIVE_BASE_URL = "https://www.payfast.co.za/eng/process";
 const SANDBOX_BASE_URL = "https://sandbox.payfast.co.za/eng/process";
@@ -61,7 +61,7 @@ function tierFromPaymentId(value: string): PlanTier | null {
 }
 
 export async function getBillingStatus(tenantId: string) {
-  const c = await db();
+  const c = supabaseAdmin;
   const { data: tenant, error } = await c.from("tenant_profiles")
     .select("plan_tier, plan_status, trial_ends_at, payfast_subscription_token")
     .eq("tenant_id", tenantId).maybeSingle();
@@ -159,7 +159,7 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
 
 export async function cancelSubscription(tenantId: string) {
   assertPayFastConfigured();
-  const c = await db();
+  const c = supabaseAdmin;
   const { data: tenant } = await c.from("tenant_profiles")
     .select("payfast_subscription_token").eq("tenant_id", tenantId).maybeSingle();
 
@@ -198,20 +198,20 @@ export async function verifyPayFastWebhook(request: Request) {
   const expected = md5(signatureInput(data, env("PAYFAST_PASSPHRASE")));
   if (!safeEqual(expected, providedSignature)) throw new Error("PayFast signature mismatch.");
 
-  if (data.merchant_id !== env("PAYFAST_MERCHANT_ID")) {
+  if (data["merchant_id"] !== env("PAYFAST_MERCHANT_ID")) {
     throw new Error("PayFast merchant mismatch.");
   }
 
-  const amount = Number(data.amount_gross ?? "0");
-  const tier = tierFromPaymentId(data.m_payment_id ?? "");
-  const tenantId = data.custom_str1 || data.m_payment_id?.split(":")[0] || "";
+  const amount = Number(data["amount_gross"] ?? "0");
+  const tier = tierFromPaymentId(data["m_payment_id"] ?? "");
+  const tenantId = data["custom_str1"] || data["m_payment_id"]?.split(":")[0] || "";
   if (!tenantId || !tier) throw new Error("PayFast payload missing tenant/tier.");
 
   const expectedAmount = TIER_MONTHLY_CENTS[tier] / 100;
   if (Math.abs(amount - expectedAmount) > 0.01) throw new Error("PayFast amount mismatch.");
 
-  const status = (data.payment_status ?? "").toLowerCase();
-  const c = await db();
+  const status = (data["payment_status"] ?? "").toLowerCase();
+  const c = supabaseAdmin;
   const { data: tenant } = await c.from("tenant_profiles")
     .select("tenant_id, plan_status, payfast_subscription_token")
     .eq("tenant_id", tenantId).maybeSingle();
@@ -221,8 +221,8 @@ export async function verifyPayFastWebhook(request: Request) {
     await c.from("tenant_profiles").update({
       plan_tier: tier,
       plan_status: "active",
-      payfast_customer_token: data.token || null,
-      payfast_subscription_token: data.token || null,
+      payfast_customer_token: data["token"] || null,
+      payfast_subscription_token: data["token"] || null,
     }).eq("tenant_id", tenantId);
     return { ok: true as const, tenantId, status: "active" as const };
   }

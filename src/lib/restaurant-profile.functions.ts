@@ -56,7 +56,7 @@ async function firstTenantForUser(userId: string): Promise<string | null> {
     .eq("user_id", userId)
     .order("created_at")
     .limit(1);
-  return data?.[0]?.tenant_id ? String(data[0].tenant_id) : null;
+  return data?.[0]?.tenant_id ? String(data[0]["tenant_id"]) : null;
 }
 
 export const getRestaurantProfile = createServerFn({ method: "POST" })

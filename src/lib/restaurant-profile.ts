@@ -94,32 +94,43 @@ export function useRestaurantProfile() {
     };
   }, [load]);
 
+  const persist = useCallback(async (value: RestaurantProfile) => {
+    await save({
+      data: {
+        tenantId: value.slug,
+        name: value.name,
+        ownerName: value.ownerName,
+        city: value.city,
+        cuisine: value.cuisine,
+        hours: value.hours,
+        averageCheck: value.averageCheck,
+        notes: value.notes,
+        managerPhone: value.managerPhone,
+        waAccountId: value.waAccountId,
+      },
+    });
+  }, [save]);
+
+  const saveNow = useCallback(async (patch: Partial<RestaurantProfile> = {}) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const next = { ...profile, ...patch, slug: profile.slug };
+    setProfile(next);
+    await persist(next);
+  }, [persist, profile]);
+
   const update = useCallback(
     (patch: Partial<RestaurantProfile>) => {
       setProfile((prev) => {
         const next = { ...prev, ...patch, slug: prev.slug };
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
-          void save({
-            data: {
-              tenantId: next.slug,
-              name: next.name,
-              ownerName: next.ownerName,
-              city: next.city,
-              cuisine: next.cuisine,
-              hours: next.hours,
-              averageCheck: next.averageCheck,
-              notes: next.notes,
-              managerPhone: next.managerPhone,
-              waAccountId: next.waAccountId,
-            },
-          }).catch((error) => console.error("restaurant profile save failed", error));
+          void persist(next).catch((error) => console.error("restaurant profile save failed", error));
         }, 500);
         return next;
       });
     },
-    [save],
+    [persist],
   );
 
-  return { profile, update, ready };
+  return { profile, update, saveNow, ready };
 }

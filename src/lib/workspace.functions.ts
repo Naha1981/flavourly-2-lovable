@@ -28,12 +28,12 @@ export const myWorkspace = createServerFn({ method: "POST" })
     const { data: t } = await c
       .from("tenant_profiles")
       .select("name")
-      .eq("tenant_id", m.tenant_id)
+      .eq("tenant_id", m["tenant_id"])
       .maybeSingle();
     return {
-      tenantId: m.tenant_id as string,
-      name: (t?.name as string | undefined) ?? (m.tenant_id as string),
-      role: m.role as string,
+      tenantId: m["tenant_id"] as string,
+      name: (t?.name as string | undefined) ?? (m["tenant_id"] as string),
+      role: m["role"] as string,
     };
   });
 
@@ -56,12 +56,12 @@ export const createWorkspace = createServerFn({ method: "POST" })
       const { data: t } = await c
         .from("tenant_profiles")
         .select("name")
-        .eq("tenant_id", existing[0].tenant_id)
+        .eq("tenant_id", existing[0]["tenant_id"])
         .maybeSingle();
       return {
-        tenantId: existing[0].tenant_id as string,
+        tenantId: existing[0]["tenant_id"] as string,
         name: (t?.name as string | undefined) ?? data.restaurantName,
-        role: existing[0].role as string,
+        role: existing[0]["role"] as string,
       };
     }
 

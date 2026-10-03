@@ -13,14 +13,14 @@ export type ApprovalRequest = {
 
 function mapRow(row: Record<string, unknown>): ApprovalRequest {
   return {
-    id: String(row.id),
-    outboxJobId: String(row.outbox_job_id),
-    recipientPhone: String(row.recipient_phone),
-    messageText: String(row.message_text),
-    riskLevel: String(row.risk_level) as "yellow" | "red",
-    reason: String(row.reason),
-    status: String(row.status) as ApprovalRequest["status"],
-    requestedAt: String(row.requested_at),
+    id: String(row["id"]),
+    outboxJobId: String(row["outbox_job_id"]),
+    recipientPhone: String(row["recipient_phone"]),
+    messageText: String(row["message_text"]),
+    riskLevel: String(row["risk_level"]) as "yellow" | "red",
+    reason: String(row["reason"]),
+    status: String(row["status"]) as ApprovalRequest["status"],
+    requestedAt: String(row["requested_at"]),
   };
 }
 
@@ -59,13 +59,14 @@ export async function resolveApproval(input: {
   approvalId: string;
   approved: boolean;
   resolvedBy: string;
+  editedMessage?: string;
 }) {
   const c = await db();
   const { data: request } = await c.from("approval_requests")
     .select("id, outbox_job_id, status")
     .eq("tenant_id", input.tenantId).eq("id", input.approvalId).maybeSingle();
   if (!request) return { ok: false as const, error: "Approval request not found." };
-  if (request.status !== "pending") return { ok: false as const, error: "This approval has already been resolved." };
+  if (request["status"] !== "pending") return { ok: false as const, error: "This approval has already been resolved." };
 
   const nextStatus = input.approved ? "approved" : "rejected";
   const { data: updated } = await c.from("approval_requests").update({
@@ -76,16 +77,20 @@ export async function resolveApproval(input: {
   if (!updated?.length) return { ok: false as const, error: "Another manager already resolved this request." };
 
   if (input.approved) {
-    await c.from("outbox_jobs").update({
+    const jobPatch: Record<string, unknown> = {
       status: "pending",
       scheduled_for: new Date().toISOString(),
       error: null,
-    }).eq("tenant_id", input.tenantId).eq("id", request.outbox_job_id);
+    };
+    const editedMessage = input.editedMessage?.trim();
+    if (editedMessage) jobPatch["message_text"] = editedMessage;
+    await c.from("outbox_jobs").update(jobPatch)
+      .eq("tenant_id", input.tenantId).eq("id", request["outbox_job_id"]);
   } else {
     await c.from("outbox_jobs").update({
       status: "rejected",
       error: "Rejected by manager.",
-    }).eq("tenant_id", input.tenantId).eq("id", request.outbox_job_id);
+    }).eq("tenant_id", input.tenantId).eq("id", request["outbox_job_id"]);
   }
   return { ok: true as const, status: nextStatus };
 }

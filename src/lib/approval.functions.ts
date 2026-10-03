@@ -23,9 +23,16 @@ export const resolveApprovalRequest = createServerFn({ method: "POST" })
     approvalId: z.string().uuid(),
     approved: z.boolean(),
     resolvedBy: z.string().trim().min(1).max(120),
+    messageText: z.string().trim().min(1).max(4000).optional(),
   }).parse(d))
   .handler(async ({ data }) => {
     await guard(data.tenantId);
     const { resolveApproval } = await import("./approval.server");
-    return resolveApproval(data);
+    return resolveApproval({
+      tenantId: data.tenantId,
+      approvalId: data.approvalId,
+      approved: data.approved,
+      resolvedBy: data.resolvedBy,
+      ...(data.messageText ? { editedMessage: data.messageText } : {}),
+    });
   });

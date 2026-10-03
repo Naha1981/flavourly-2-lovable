@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/billing/webhook")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const { assertPayFastSource, verifyPayFastWebhook } = await import("@/lib/billing/billing.server");
+          const { assertPayFastSource, verifyPayFastWebhook } = await import("@/lib/billing.server");
           assertPayFastSource(request);
           const result = await verifyPayFastWebhook(request);
           return Response.json(result);

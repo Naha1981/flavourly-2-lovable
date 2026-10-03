@@ -40,14 +40,15 @@ export async function autoReply(input: {
 
   const decision = decideApproval(reply);
   if (decision.outcome === "require_approval") {
-    const held = await enqueueOutbox({
+    const outboxInput: Parameters<typeof enqueueOutbox>[0] = {
       tenantId: input.tenantId,
       phone: input.phone,
       text: reply,
       automated: true,
-      dedupeKey: input.waMessageId ? "autoreply:" + input.waMessageId : undefined,
       conversationId: input.conversationId,
-    });
+    };
+    if (input.waMessageId) outboxInput.dedupeKey = "autoreply:" + input.waMessageId;
+    const held = await enqueueOutbox(outboxInput);
     await c.from("wa_conversations").update({ status: "needs_approval" })
       .eq("tenant_id", input.tenantId).eq("id", input.conversationId);
     return { replied: false, heldForApproval: held.approvalRequired };

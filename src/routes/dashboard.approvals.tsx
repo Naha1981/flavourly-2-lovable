@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, ShieldAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { listApprovals, resolveApprovalRequest, type ApprovalRequest } from "@/lib/approval.functions";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { dashMeta, PageTitle } from "./dashboard";
@@ -19,6 +20,8 @@ function ApprovalsPage() {
   const resolve = useServerFn(resolveApprovalRequest);
   const [items, setItems] = useState<ApprovalRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -43,10 +46,12 @@ function ApprovalsPage() {
           approvalId: item.id,
           approved,
           resolvedBy: profile.ownerName || "Restaurant manager",
+          ...(editingId === item.id && drafts[item.id]?.trim() ? { messageText: drafts[item.id].trim() } : {}),
         },
       });
       if (!result.ok) return setError(result.error);
       setItems((prev) => prev.filter((x) => x.id !== item.id));
+      setEditingId((current) => current === item.id ? null : current);
     } finally {
       setBusy(null);
     }
@@ -68,9 +73,30 @@ function ApprovalsPage() {
               </span>
               <span className="text-xs text-muted-foreground">To {item.recipientPhone}</span>
             </div>
-            <div className="rounded-xl bg-card p-4 text-sm leading-6 text-foreground whitespace-pre-wrap">{item.messageText}</div>
+            {editingId === item.id ? (
+              <div className="grid gap-2">
+                <Textarea
+                  rows={5}
+                  value={drafts[item.id] ?? item.messageText}
+                  onChange={(event) => setDrafts((prev) => ({ ...prev, [item.id]: event.target.value }))}
+                  aria-label="Edit reply before sending"
+                />
+                <p className="text-xs text-muted-foreground">Edit the reply, then approve it. The edited text is what will be sent.</p>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-card p-4 text-sm leading-6 text-foreground whitespace-pre-wrap">{item.messageText}</div>
+            )}
             <p className="text-sm text-muted-foreground">{item.reason}</p>
             <div className="flex flex-wrap gap-2">
+              {editingId === item.id ? (
+                <Button variant="outline" onClick={() => setEditingId(null)} disabled={busy === item.id}>
+                  Cancel edit
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => { setEditingId(item.id); setDrafts((prev) => ({ ...prev, [item.id]: item.messageText })); }} disabled={busy === item.id}>
+                  Edit reply
+                </Button>
+              )}
               <Button onClick={() => void act(item, true)} disabled={busy === item.id}>
                 <Check className="size-4" /> Approve & send
               </Button>

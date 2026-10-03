@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { useState } from "react";
 import { Check, CheckCircle2, Circle } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
@@ -33,7 +34,8 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { step } = Route.useSearch();
   const navigate = useNavigate({ from: "/onboarding" });
-  const { profile, update, ready } = useRestaurantProfile();
+  const { profile, update, saveNow, ready } = useRestaurantProfile();
+  const [savingProfile, setSavingProfile] = useState(false);
   const go = (s: Step) => navigate({ search: { step: s } });
   const idx = steps.indexOf(step);
 
@@ -73,7 +75,15 @@ function Onboarding() {
               className="grid gap-5"
               onSubmit={(e) => {
                 e.preventDefault();
-                go("whatsapp");
+                setSavingProfile(true);
+                void (async () => {
+                  try {
+                    await saveNow();
+                    go("whatsapp");
+                  } finally {
+                    setSavingProfile(false);
+                  }
+                })();
               }}
             >
               <Heading title="Tell us about your restaurant" sub="This is how Flavourly will talk about you to guests." />
@@ -84,12 +94,13 @@ function Onboarding() {
                 <Field id="cuisine" label="Cuisine" value={profile.cuisine} onChange={(v) => update({ cuisine: v })} />
                 <Field id="hours" label="Opening hours" value={profile.hours} onChange={(v) => update({ hours: v })} required />
                 <Field id="check" label="Average spend per guest (R)" type="number" value={String(profile.averageCheck || "")} onChange={(v) => update({ averageCheck: Number(v) || 0 })} />
+                <Field id="manager-phone" label="Manager WhatsApp" type="tel" value={profile.managerPhone} onChange={(v) => update({ managerPhone: v })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="notes">House notes guests often ask about</Label>
                 <Textarea id="notes" rows={3} value={profile.notes} onChange={(e) => update({ notes: e.target.value })} />
               </div>
-              <Button type="submit" size="lg" className="w-full rounded-full sm:w-fit">Continue</Button>
+              <Button type="submit" disabled={savingProfile} size="lg" className="w-full rounded-full sm:w-fit">{savingProfile ? "Saving…" : "Continue"}</Button>
             </form>
           ) : step === "whatsapp" ? (
             <div className="grid gap-6">

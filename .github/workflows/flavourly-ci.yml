@@ -14,8 +14,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - uses: oven-sh/setup-bun@v2
       - run: npm ci
+      - run: bunx tsgo --noEmit
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test
+      - run: bunx vitest run
       - run: npm run build

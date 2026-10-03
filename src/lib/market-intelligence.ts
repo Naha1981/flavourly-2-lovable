@@ -24,9 +24,18 @@ export function compareMenus(
 ): MenuComparison {
   const restaurant = new Map(restaurantItems.map((item) => [normalize(item.name), item.name]));
   const competitor = new Map(competitorItems.map((item) => [normalize(item.name), item.name]));
-  const matched = [...restaurant.keys()].filter((key) => competitor.has(key)).map((key) => restaurant.get(key) as string);
-  const onlyRestaurant = [...restaurant.keys()].filter((key) => !competitor.has(key)).map((key) => restaurant.get(key) as string);
-  const onlyCompetitor = [...competitor.keys()].filter((key) => !restaurant.has(key)).map((key) => competitor.get(key) as string);
+  const matched = [...restaurant.keys()]
+    .filter((key) => competitor.has(key))
+    .map((key) => restaurant.get(key))
+    .filter((value): value is string => Boolean(value));
+  const onlyRestaurant = [...restaurant.keys()]
+    .filter((key) => !competitor.has(key))
+    .map((key) => restaurant.get(key))
+    .filter((value): value is string => Boolean(value));
+  const onlyCompetitor = [...competitor.keys()]
+    .filter((key) => !restaurant.has(key))
+    .map((key) => competitor.get(key))
+    .filter((value): value is string => Boolean(value));
   const denominator = new Set([...restaurant.keys(), ...competitor.keys()]).size;
   return {
     matched,
