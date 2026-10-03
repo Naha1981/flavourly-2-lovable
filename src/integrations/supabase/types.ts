@@ -370,6 +370,7 @@ export type Database = {
           rating: number
           recovery_voucher_cents: number | null
           recovery_voucher_code: string | null
+          recovery_voucher_used_at: string | null
           resolution_status: string
           resolved_at: string | null
           tenant_id: string
@@ -384,6 +385,7 @@ export type Database = {
           rating: number
           recovery_voucher_cents?: number | null
           recovery_voucher_code?: string | null
+          recovery_voucher_used_at?: string | null
           resolution_status?: string
           resolved_at?: string | null
           tenant_id: string
@@ -398,6 +400,7 @@ export type Database = {
           rating?: number
           recovery_voucher_cents?: number | null
           recovery_voucher_code?: string | null
+          recovery_voucher_used_at?: string | null
           resolution_status?: string
           resolved_at?: string | null
           tenant_id?: string
@@ -476,6 +479,7 @@ export type Database = {
           tenant_id: string
           token: string
           voucher_code: string | null
+          voucher_used_at: string | null
         }
         Insert: {
           client_lat?: number | null
@@ -492,6 +496,7 @@ export type Database = {
           tenant_id: string
           token: string
           voucher_code?: string | null
+          voucher_used_at?: string | null
         }
         Update: {
           client_lat?: number | null
@@ -508,6 +513,7 @@ export type Database = {
           tenant_id?: string
           token?: string
           voucher_code?: string | null
+          voucher_used_at?: string | null
         }
         Relationships: [
           {
