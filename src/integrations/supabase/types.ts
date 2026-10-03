@@ -59,6 +59,42 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          created_at: string
+          id: string
+          message_a: string
+          message_b: string | null
+          name: string
+          segment: string
+          sent_at: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_a: string
+          message_b?: string | null
+          name: string
+          segment: string
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_a?: string
+          message_b?: string | null
+          name?: string
+          segment?: string
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           birthday: string | null
@@ -318,6 +354,7 @@ export type Database = {
         Row: {
           attempts: number
           automated: boolean
+          campaign_id: string | null
           created_at: string
           dedupe_key: string | null
           error: string | null
@@ -328,10 +365,12 @@ export type Database = {
           sent_at: string | null
           status: string
           tenant_id: string
+          variant: string | null
         }
         Insert: {
           attempts?: number
           automated?: boolean
+          campaign_id?: string | null
           created_at?: string
           dedupe_key?: string | null
           error?: string | null
@@ -342,10 +381,12 @@ export type Database = {
           sent_at?: string | null
           status?: string
           tenant_id: string
+          variant?: string | null
         }
         Update: {
           attempts?: number
           automated?: boolean
+          campaign_id?: string | null
           created_at?: string
           dedupe_key?: string | null
           error?: string | null
@@ -356,8 +397,17 @@ export type Database = {
           sent_at?: string | null
           status?: string
           tenant_id?: string
+          variant?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "outbox_jobs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reputation_incidents: {
         Row: {
