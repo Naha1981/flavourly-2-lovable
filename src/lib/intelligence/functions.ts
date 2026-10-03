@@ -21,7 +21,9 @@ export const runRevenueEmployeeFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await guard(data.tenantId);
     const { runRevenueEmployee } = await import("./revenue-employee.server");
-    return runRevenueEmployee({ tenantId: data.tenantId, objective: data.objective });
+    return data.objective
+      ? runRevenueEmployee({ tenantId: data.tenantId, objective: data.objective })
+      : runRevenueEmployee({ tenantId: data.tenantId });
   });
 
 export const askRevenueEmployeeFn = createServerFn({ method: "POST" })
