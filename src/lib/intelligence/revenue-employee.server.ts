@@ -20,28 +20,28 @@ const defaultConfig: Config = {
 };
 
 const mapOpportunity = (row: Record<string, unknown>): RevenueOpportunity => ({
-  id: String(row.id),
-  opportunityType: String(row.opportunity_type),
-  title: String(row.title),
-  description: String(row.description),
-  evidenceSummary: row.evidence_summary ? String(row.evidence_summary) : null,
-  estimatedImpactCents: row.estimated_impact_cents === null ? null : Number(row.estimated_impact_cents),
-  confidence: row.confidence === null ? null : Number(row.confidence),
-  recommendedAction: String(row.recommended_action),
-  status: row.status as RevenueOpportunity["status"],
-  createdAt: String(row.created_at),
-  metadata: (row.metadata as Record<string, unknown> | null) ?? {},
+  id: String(row['id']),
+  opportunityType: String(row['opportunity_type']),
+  title: String(row['title']),
+  description: String(row['description']),
+  evidenceSummary: row['evidence_summary'] ? String(row['evidence_summary']) : null,
+  estimatedImpactCents: row['estimated_impact_cents'] === null ? null : Number(row['estimated_impact_cents']),
+  confidence: row['confidence'] === null ? null : Number(row['confidence']),
+  recommendedAction: String(row['recommended_action']),
+  status: row['status'] as RevenueOpportunity["status"],
+  createdAt: String(row['created_at']),
+  metadata: (row['metadata'] as Record<string, unknown> | null) ?? {},
 });
 
 const mapAction = (row: Record<string, unknown>): RevenueAction => ({
-  id: String(row.id),
-  opportunityId: row.opportunity_id ? String(row.opportunity_id) : null,
-  actionType: String(row.action_type),
-  status: row.status as RevenueAction["status"],
-  payload: (row.payload as Record<string, unknown> | null) ?? {},
-  resultSummary: row.result_summary ? String(row.result_summary) : null,
-  externalRef: row.external_ref ? String(row.external_ref) : null,
-  createdAt: String(row.created_at),
+  id: String(row['id']),
+  opportunityId: row['opportunity_id'] ? String(row['opportunity_id']) : null,
+  actionType: String(row['action_type']),
+  status: row['status'] as RevenueAction["status"],
+  payload: (row['payload'] as Record<string, unknown> | null) ?? {},
+  resultSummary: row['result_summary'] ? String(row['result_summary']) : null,
+  externalRef: row['external_ref'] ? String(row['external_ref']) : null,
+  createdAt: String(row['created_at']),
 });
 
 const money = (cents: number | null | undefined) =>
@@ -249,7 +249,7 @@ async function localAnalysis(tenantId: string, restaurantName: string) {
     (customer) => customer.last_visit_at && Date.now() - new Date(String(customer.last_visit_at)).getTime() >= 60 * 86400000,
   );
   if (dormant.length) {
-    const historicalSpend = dormant.reduce((sum, row) => sum + Number(row.total_spend_cents ?? 0), 0);
+    const historicalSpend = dormant.reduce((sum, row) => sum + Number(row['total_spend_cents'] ?? 0), 0);
     const evidence = await recordEvidence({
       tenantId,
       sourceType: "customer_data",
@@ -287,7 +287,7 @@ async function localAnalysis(tenantId: string, restaurantName: string) {
 
   const incidents = incidentsRes.data ?? [];
   if (incidents.length) {
-    const severe = incidents.filter((row) => Number(row.rating) <= 2).length;
+    const severe = incidents.filter((row) => Number(row['rating']) <= 2).length;
     const evidence = await recordEvidence({
       tenantId,
       sourceType: "reputation",
@@ -318,8 +318,8 @@ async function localAnalysis(tenantId: string, restaurantName: string) {
   }
 
   const upcomingCovers = (reservationsRes.data ?? [])
-    .filter((row) => new Date(String(row.reservation_date) + "T12:00:00").getTime() >= Date.now() - 7 * 86400000)
-    .reduce((sum, row) => sum + Number(row.party_size ?? 0), 0);
+    .filter((row) => new Date(String(row['reservation_date']) + "T12:00:00").getTime() >= Date.now() - 7 * 86400000)
+    .reduce((sum, row) => sum + Number(row['party_size'] ?? 0), 0);
   if (upcomingCovers) {
     const evidence = await recordEvidence({
       tenantId,
@@ -346,10 +346,10 @@ function extractSignals(data: unknown) {
     const row = item as Record<string, unknown>;
     return [
       {
-        title: String(row.title ?? row.type ?? "External signal"),
-        content: String(row.content ?? row.text ?? row.summary ?? "Observed external signal."),
-        url: row.url ? String(row.url) : null,
-        confidence: row.confidence === undefined ? 0.55 : Number(row.confidence),
+        title: String(row['title'] ?? row['type'] ?? "External signal"),
+        content: String(row['content'] ?? row['text'] ?? row['summary'] ?? "Observed external signal."),
+        url: row['url'] ? String(row['url']) : null,
+        confidence: row['confidence'] === undefined ? 0.55 : Number(row['confidence']),
       },
     ];
   });
@@ -550,11 +550,11 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
     .maybeSingle();
 
   if (!action) return { ok: false as const, error: "Action not found." };
-  if (action.status !== "pending_approval") return { ok: false as const, error: "This action has already been resolved." };
+  if (action['status'] !== "pending_approval") return { ok: false as const, error: "This action has already been resolved." };
   if (!input.approvedBy.trim()) return { ok: false as const, error: "Approver identity is required." };
 
-  const payload = (action.payload as Record<string, unknown>) ?? {};
-  if (action.action_type !== "create_campaign_draft") {
+  const payload = (action['payload'] as Record<string, unknown>) ?? {};
+  if (action['action_type'] !== "create_campaign_draft") {
     return { ok: false as const, error: "Unsupported Revenue Employee action." };
   }
 
@@ -592,12 +592,12 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
     .eq("tenant_id", input.tenantId)
     .eq("id", input.actionId);
 
-  if (action.opportunity_id) {
+  if (action['opportunity_id']) {
     await c
       .from("revenue_opportunities")
       .update({ status: "executed", addressed_at: new Date().toISOString() })
       .eq("tenant_id", input.tenantId)
-      .eq("id", action.opportunity_id);
+      .eq("id", action['opportunity_id']);
   }
 
   return { ok: true as const, result: "Campaign draft created. Review it in Campaigns before sending." };
