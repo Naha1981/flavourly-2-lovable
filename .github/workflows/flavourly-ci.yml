@@ -18,17 +18,6 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bunx --package @typescript/native-preview tsgo --noEmit
-      - run: npx eslint \
-          src/lib/intelligence/revenue-employee.server.ts \
-          src/lib/intelligence/functions.ts \
-          src/lib/intelligence/types.ts \
-          src/integrations/supabase/types.ts \
-          src/lib/restaurant-profile.functions.ts \
-          src/lib/market-intelligence.ts \
-          src/routes/login.tsx \
-          src/routes/signup.tsx \
-          src/routes/dashboard.tsx \
-          src/routes/dashboard.approvals.tsx \
-          src/routes/dashboard.revenue-employee.tsx
+      - run: npx eslint src/lib/intelligence/revenue-employee.server.ts src/lib/intelligence/functions.ts src/lib/intelligence/types.ts src/integrations/supabase/types.ts src/lib/restaurant-profile.functions.ts src/lib/market-intelligence.ts src/routes/login.tsx src/routes/signup.tsx src/routes/dashboard.tsx src/routes/dashboard.approvals.tsx src/routes/dashboard.revenue-employee.tsx
       - run: npm run typecheck
       - run: bunx vitest run
