@@ -19,3 +19,5 @@ jobs:
       - run: bun run build
       - run: bunx --package @typescript/native-preview tsgo --noEmit
       - run: npx eslint . --rule 'prettier/prettier: off'
+      - run: npm run typecheck
+      - run: bunx vitest run
