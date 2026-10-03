@@ -103,7 +103,7 @@ async function createOpportunity(input: {
   estimatedImpactCents?: number | null;
   confidence: number;
   recommendedAction: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
   evidenceIds: string[];
 }) {
   const c = await db();
@@ -146,8 +146,8 @@ async function createOpportunity(input: {
     approval_required: true,
     payload: {
       campaignName: input.title,
-      segment: input.metadata?.segment ?? "dormant_30",
-      message: input.metadata?.message ?? input.recommendedAction,
+      segment: input.metadata?.['segment'] ?? "dormant_30",
+      message: input.metadata?.['message'] ?? input.recommendedAction,
     },
   });
   if (actionError) throw new Error(actionError.message);
@@ -340,7 +340,7 @@ async function localAnalysis(tenantId: string, restaurantName: string) {
 function extractSignals(data: unknown) {
   if (!data || typeof data !== "object") return [];
   const value = data as Record<string, unknown>;
-  const list = Array.isArray(value.signals) ? value.signals : Array.isArray(value.results) ? value.results : [];
+  const list = Array.isArray(value['signals']) ? value['signals'] : Array.isArray(value['results']) ? value['results'] : [];
   return list.slice(0, 20).flatMap((item) => {
     if (!item || typeof item !== "object") return [];
     const row = item as Record<string, unknown>;
@@ -553,7 +553,7 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
   if (action['status'] !== "pending_approval") return { ok: false as const, error: "This action has already been resolved." };
   if (!input.approvedBy.trim()) return { ok: false as const, error: "Approver identity is required." };
 
-  const payload = (action['payload'] as Record<string, unknown>) ?? {};
+  const payload = (action['payload'] as Record<string, any>) ?? {};
   if (action['action_type'] !== "create_campaign_draft") {
     return { ok: false as const, error: "Unsupported Revenue Employee action." };
   }
