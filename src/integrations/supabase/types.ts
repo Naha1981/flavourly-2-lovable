@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      approval_requests: {
+        Row: {
+          id: string
+          message_text: string
+          outbox_job_id: string
+          reason: string
+          recipient_phone: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_level: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          id?: string
+          message_text: string
+          outbox_job_id: string
+          reason: string
+          recipient_phone: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          id?: string
+          message_text?: string
+          outbox_job_id?: string
+          reason?: string
+          recipient_phone?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_outbox_job_id_fkey"
+            columns: ["outbox_job_id"]
+            isOneToOne: true
+            referencedRelation: "outbox_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_drafts: {
         Row: {
           booking_date: string | null
@@ -101,9 +151,12 @@ export type Database = {
           created_at: string
           id: string
           is_vip: boolean
+          last_birthday_reward_sent_at: string | null
+          last_reactivation_sent_at: string | null
           last_visit_at: string | null
           name: string | null
           phone: string
+          preferences: Json
           tenant_id: string
           total_spend_cents: number
           visit_count: number
@@ -113,9 +166,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_vip?: boolean
+          last_birthday_reward_sent_at?: string | null
+          last_reactivation_sent_at?: string | null
           last_visit_at?: string | null
           name?: string | null
           phone: string
+          preferences?: Json
           tenant_id: string
           total_spend_cents?: number
           visit_count?: number
@@ -125,9 +181,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_vip?: boolean
+          last_birthday_reward_sent_at?: string | null
+          last_reactivation_sent_at?: string | null
           last_visit_at?: string | null
           name?: string | null
           phone?: string
+          preferences?: Json
           tenant_id?: string
           total_spend_cents?: number
           visit_count?: number
@@ -658,6 +717,7 @@ export type Database = {
           notes: string | null
           owner_name: string | null
           tenant_id: string
+          timezone: string
           wa_account_id: string | null
           wa_operator_tenant_token: string | null
           whatsapp_phone: string | null
@@ -678,6 +738,7 @@ export type Database = {
           notes?: string | null
           owner_name?: string | null
           tenant_id: string
+          timezone?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
@@ -698,6 +759,7 @@ export type Database = {
           notes?: string | null
           owner_name?: string | null
           tenant_id?: string
+          timezone?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
