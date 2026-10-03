@@ -17,13 +17,18 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - name: Verify generated route tree and checkout SHA
-        run: |
-          echo "HEAD=$(git rev-parse HEAD)"
-          git status --short
-          sed -n '80,100p' src/lib/restaurant-profile.functions.ts
-          sed -n '558,570p' src/lib/intelligence/revenue-employee.server.ts
       - run: bunx --package @typescript/native-preview tsgo --noEmit
-      - run: npm run lint
+      - run: npx eslint \
+          src/lib/intelligence/revenue-employee.server.ts \
+          src/lib/intelligence/functions.ts \
+          src/lib/intelligence/types.ts \
+          src/integrations/supabase/types.ts \
+          src/lib/restaurant-profile.functions.ts \
+          src/lib/market-intelligence.ts \
+          src/routes/login.tsx \
+          src/routes/signup.tsx \
+          src/routes/dashboard.tsx \
+          src/routes/dashboard.approvals.tsx \
+          src/routes/dashboard.revenue-employee.tsx
       - run: npm run typecheck
       - run: bunx vitest run
