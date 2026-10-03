@@ -314,6 +314,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          attendance_confirmed_at: string | null
           created_at: string
           customer_confirmed_at: string | null
           customer_name: string
@@ -328,6 +329,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          attendance_confirmed_at?: string | null
           created_at?: string
           customer_confirmed_at?: string | null
           customer_name: string
@@ -342,6 +344,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          attendance_confirmed_at?: string | null
           created_at?: string
           customer_confirmed_at?: string | null
           customer_name?: string
