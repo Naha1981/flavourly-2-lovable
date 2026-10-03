@@ -562,9 +562,9 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
     .from("campaigns")
     .insert({
       tenant_id: input.tenantId,
-      name: String(payload.campaignName ?? "Flavourly Revenue Employee Campaign"),
-      segment: String(payload.segment ?? "dormant_30"),
-      message_a: String(payload.message ?? "Flavourly recommends a controlled guest follow-up."),
+      name: String(payload['campaignName'] ?? "Flavourly Revenue Employee Campaign"),
+      segment: String(payload['segment'] ?? "dormant_30"),
+      message_a: String(payload['message'] ?? "Flavourly recommends a controlled guest follow-up."),
       status: "draft",
     })
     .select("id")
