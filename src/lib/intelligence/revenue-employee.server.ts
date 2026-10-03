@@ -30,7 +30,7 @@ const mapOpportunity = (row: Record<string, unknown>): RevenueOpportunity => ({
   recommendedAction: String(row['recommended_action']),
   status: row['status'] as RevenueOpportunity["status"],
   createdAt: String(row['created_at']),
-  metadata: (row['metadata'] as Record<string, unknown> | null) ?? {},
+  metadata: (row['metadata'] as RevenueOpportunity['metadata'] | null) ?? {},
 });
 
 const mapAction = (row: Record<string, unknown>): RevenueAction => ({
@@ -38,7 +38,7 @@ const mapAction = (row: Record<string, unknown>): RevenueAction => ({
   opportunityId: row['opportunity_id'] ? String(row['opportunity_id']) : null,
   actionType: String(row['action_type']),
   status: row['status'] as RevenueAction["status"],
-  payload: (row['payload'] as Record<string, unknown> | null) ?? {},
+  payload: (row['payload'] as RevenueAction['payload'] | null) ?? {},
   resultSummary: row['result_summary'] ? String(row['result_summary']) : null,
   externalRef: row['external_ref'] ? String(row['external_ref']) : null,
   createdAt: String(row['created_at']),
