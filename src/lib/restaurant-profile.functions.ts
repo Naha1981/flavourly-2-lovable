@@ -83,15 +83,15 @@ export const updateRestaurantProfile = createServerFn({ method: "POST" })
     await authorizeTenant(data.tenantId);
     const c = await db();
     const patch: Record<string, unknown> = {};
-    if (data.name !== undefined) patch.name = data.name;
-    if (data.ownerName !== undefined) patch.owner_name = data.ownerName;
-    if (data.city !== undefined) patch.city = data.city;
-    if (data.cuisine !== undefined) patch.cuisine = data.cuisine;
-    if (data.hours !== undefined) patch.hours = data.hours;
-    if (data.averageCheck !== undefined) patch.average_check_cents = Math.round(data.averageCheck * 100);
-    if (data.notes !== undefined) patch.notes = data.notes;
-    if (data.managerPhone !== undefined) patch.manager_phone = data.managerPhone;
-    if (data.waAccountId !== undefined) patch.wa_account_id = data.waAccountId;
+    if (data.name !== undefined) patch["name"] = data.name;
+    if (data.ownerName !== undefined) patch["owner_name"] = data.ownerName;
+    if (data.city !== undefined) patch["city"] = data.city;
+    if (data.cuisine !== undefined) patch["cuisine"] = data.cuisine;
+    if (data.hours !== undefined) patch["hours"] = data.hours;
+    if (data.averageCheck !== undefined) patch["average_check_cents"] = Math.round(data.averageCheck * 100);
+    if (data.notes !== undefined) patch["notes"] = data.notes;
+    if (data.managerPhone !== undefined) patch["manager_phone"] = data.managerPhone;
+    if (data.waAccountId !== undefined) patch["wa_account_id"] = data.waAccountId;
 
     const { data: row, error } = await c
       .from("tenant_profiles")
