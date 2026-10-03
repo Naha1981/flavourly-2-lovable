@@ -22,7 +22,7 @@ import {
 
 import { Logo } from "@/components/brand/logo";
 import { supabase } from "@/integrations/supabase/client";
-import { isAuthRequired, signOut } from "@/lib/auth-client";
+import { signOut } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -51,20 +51,38 @@ const nav = [
 /** When login is enforced, send signed-out visitors to /login. Runs in the browser because the session lives there. */
 function useAuthGate() {
   const navigate = useNavigate();
-  const [state, setState] = useState<"checking" | "open" | "authed">("checking");
+  const [state, setState] = useState<"checking" | "authed">("checking");
+
   useEffect(() => {
     let alive = true;
-    void (async () => {
-      if (!(await isAuthRequired())) return alive && setState("open");
+
+    const check = async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive) return;
-      if (data.session) setState("authed");
-      else navigate({ to: "/login", search: { redirect: window.location.pathname } });
-    })();
+      if (data.session) {
+        setState("authed");
+      } else {
+        await navigate({ to: "/login", search: { redirect: window.location.pathname } });
+      }
+    };
+
+    void check();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!alive) return;
+      if (session) {
+        setState("authed");
+      } else {
+        void navigate({ to: "/login", search: { redirect: window.location.pathname } });
+      }
+    });
+
     return () => {
       alive = false;
+      data.subscription.unsubscribe();
     };
   }, [navigate]);
+
   return { state, navigate };
 }
 
