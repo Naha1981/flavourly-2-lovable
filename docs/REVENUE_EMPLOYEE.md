@@ -109,3 +109,6 @@ New deployments default to `approval_only`.
 
 Material customer-facing actions must not be sent directly by an LLM or external agent runtime.
 
+
+
+CI verification branch: no application logic changes.
