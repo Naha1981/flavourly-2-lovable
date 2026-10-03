@@ -103,7 +103,7 @@ async function createOpportunity(input: {
   estimatedImpactCents?: number | null;
   confidence: number;
   recommendedAction: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null | string[]>;
   evidenceIds: string[];
 }) {
   const c = await db();
@@ -553,7 +553,7 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
   if (action['status'] !== "pending_approval") return { ok: false as const, error: "This action has already been resolved." };
   if (!input.approvedBy.trim()) return { ok: false as const, error: "Approver identity is required." };
 
-  const payload = (action['payload'] as Record<string, any>) ?? {};
+  const payload = (action['payload'] as Record<string, string | number | boolean | null | string[]>) ?? {};
   if (action['action_type'] !== "create_campaign_draft") {
     return { ok: false as const, error: "Unsupported Revenue Employee action." };
   }
