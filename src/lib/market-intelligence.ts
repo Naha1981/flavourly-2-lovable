@@ -53,7 +53,15 @@ export function pricePosition(
   if (!valid.length) return { medianCents: null, deltaPercent: null };
   const sorted = [...valid].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  const median = sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  const upper = sorted[mid];
+  if (upper === undefined) return { medianCents: null, deltaPercent: null };
+  const median =
+    sorted.length % 2
+      ? upper
+      : (() => {
+          const lower = sorted[mid - 1];
+          return lower === undefined ? upper : Math.round((lower + upper) / 2);
+        })();
   return {
     medianCents: median,
     deltaPercent: median ? Math.round(((restaurantPriceCents - median) / median) * 1000) / 10 : null,
