@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { enterWorkspace, isAuthRequired } from "@/lib/auth-client";
+import { enterWorkspace } from "@/lib/auth-client";
 
 const searchSchema = z.object({
   plan: z.string().optional(),
@@ -42,11 +42,6 @@ function SignupPage() {
   const submit = async (form: HTMLFormElement) => {
     setBusy(true);
     try {
-      if (!(await isAuthRequired())) {
-        toast.success("Workspace created — let's set up your restaurant.");
-        navigate({ to: "/onboarding", search: { step: "profile" } });
-        return;
-      }
       const f = new FormData(form);
       const restaurant = String(f.get("restaurant") ?? "").trim();
       const email = String(f.get("email") ?? "").trim();
