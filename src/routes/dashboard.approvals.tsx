@@ -40,13 +40,14 @@ function ApprovalsPage() {
     setBusy(item.id);
     setError(null);
     try {
+      const editedMessage = editingId === item.id ? drafts[item.id]?.trim() : undefined;
       const result = await resolve({
         data: {
           tenantId: profile.slug,
           approvalId: item.id,
           approved,
           resolvedBy: profile.ownerName || "Restaurant manager",
-          ...(editingId === item.id && drafts[item.id]?.trim() ? { messageText: drafts[item.id].trim() } : {}),
+          ...(editedMessage ? { messageText: editedMessage } : {}),
         },
       });
       if (!result.ok) return setError(result.error);
