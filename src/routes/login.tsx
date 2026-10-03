@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { enterWorkspace, isAuthRequired } from "@/lib/auth-client";
+import { enterWorkspace } from "@/lib/auth-client";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -38,12 +38,6 @@ function LoginPage() {
   const submit = async (form: HTMLFormElement) => {
     setBusy(true);
     try {
-      // Until REQUIRE_AUTH is switched on the app keeps its open demo behaviour.
-      if (!(await isAuthRequired())) {
-        toast.success("Welcome back.");
-        navigate({ to: "/dashboard" });
-        return;
-      }
       const f = new FormData(form);
       const { error } = await supabase.auth.signInWithPassword({
         email: String(f.get("email") ?? "").trim(),
