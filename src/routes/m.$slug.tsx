@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { MessageCircle, Sparkles } from "lucide-react";
 
-import { getPublicMenu } from "@/lib/menu.functions";
+import { getPublicMenu, type PublicMenu } from "@/lib/menu.functions";
 import { formatZAR } from "@/lib/south-africa";
 
 export const Route = createFileRoute("/m/$slug")({
@@ -34,7 +34,7 @@ const FILTERS = [
 const flagLabel = (f: string) => f.replace("_", " ");
 
 function PublicMenuPage() {
-  const menu = Route.useLoaderData();
+  const menu: PublicMenu | null = Route.useLoaderData();
   const [cat, setCat] = useState<string>(menu?.categories[0]?.id ?? "");
   const [filter, setFilter] = useState<string>("all");
 
