@@ -726,12 +726,7 @@ export type Database = {
           name: string
           notes: string | null
           owner_name: string | null
-          plan_status: string
-          plan_tier: string
-          payfast_customer_token: string | null
-          payfast_subscription_token: string | null
           tenant_id: string
-          trial_ends_at: string
           timezone: string
           wa_account_id: string | null
           wa_operator_tenant_token: string | null
@@ -752,12 +747,7 @@ export type Database = {
           name: string
           notes?: string | null
           owner_name?: string | null
-          plan_status?: string
-          plan_tier?: string
-          payfast_customer_token?: string | null
-          payfast_subscription_token?: string | null
           tenant_id: string
-          trial_ends_at?: string
           timezone?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
@@ -778,12 +768,7 @@ export type Database = {
           name?: string
           notes?: string | null
           owner_name?: string | null
-          plan_status?: string
-          plan_tier?: string
-          payfast_customer_token?: string | null
-          payfast_subscription_token?: string | null
           tenant_id?: string
-          trial_ends_at?: string
           timezone?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
