@@ -240,6 +240,57 @@ export type Database = {
           },
         ]
       }
+      intelligence_evidence: {
+        Row: {
+          confidence: number | null
+          content: string
+          created_at: string
+          evidence_state: string
+          fingerprint: string
+          id: string
+          metadata: Json
+          observed_at: string
+          provider: string
+          published_at: string | null
+          source_type: string
+          source_url: string | null
+          tenant_id: string
+          title: string
+        }
+        Insert: {
+          confidence?: number | null
+          content: string
+          created_at?: string
+          evidence_state?: string
+          fingerprint: string
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          provider: string
+          published_at?: string | null
+          source_type: string
+          source_url?: string | null
+          tenant_id: string
+          title: string
+        }
+        Update: {
+          confidence?: number | null
+          content?: string
+          created_at?: string
+          evidence_state?: string
+          fingerprint?: string
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          provider?: string
+          published_at?: string | null
+          source_type?: string
+          source_url?: string | null
+          tenant_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       loyalty_ledger: {
         Row: {
           created_at: string
@@ -578,6 +629,235 @@ export type Database = {
             columns: ["source_draft_id"]
             isOneToOne: true
             referencedRelation: "booking_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_actions: {
+        Row: {
+          action_type: string
+          approval_required: boolean
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          error: string | null
+          executed_at: string | null
+          external_ref: string | null
+          id: string
+          opportunity_id: string | null
+          payload: Json
+          result_summary: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          action_type: string
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          error?: string | null
+          executed_at?: string | null
+          external_ref?: string | null
+          id?: string
+          opportunity_id?: string | null
+          payload?: Json
+          result_summary?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          action_type?: string
+          approval_required?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          error?: string | null
+          executed_at?: string | null
+          external_ref?: string | null
+          id?: string
+          opportunity_id?: string | null
+          payload?: Json
+          result_summary?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_actions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_agent_runs: {
+        Row: {
+          error: string | null
+          evidence_count: number
+          finished_at: string | null
+          id: string
+          metadata: Json
+          mode: string
+          objective: string
+          opportunities_found: number
+          started_at: string
+          status: string
+          steps: number
+          summary: string | null
+          tenant_id: string
+          tool_calls: number
+        }
+        Insert: {
+          error?: string | null
+          evidence_count?: number
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          mode: string
+          objective: string
+          opportunities_found?: number
+          started_at?: string
+          status?: string
+          steps?: number
+          summary?: string | null
+          tenant_id: string
+          tool_calls?: number
+        }
+        Update: {
+          error?: string | null
+          evidence_count?: number
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string
+          objective?: string
+          opportunities_found?: number
+          started_at?: string
+          status?: string
+          steps?: number
+          summary?: string | null
+          tenant_id?: string
+          tool_calls?: number
+        }
+        Relationships: []
+      }
+      revenue_employee_config: {
+        Row: {
+          created_at: string
+          daily_run_limit: number
+          external_research_enabled: boolean
+          max_steps: number
+          max_tool_calls: number
+          mode: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          daily_run_limit?: number
+          external_research_enabled?: boolean
+          max_steps?: number
+          max_tool_calls?: number
+          mode?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          daily_run_limit?: number
+          external_research_enabled?: boolean
+          max_steps?: number
+          max_tool_calls?: number
+          mode?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_employee_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenant_profiles"
+            referencedColumns: ["tenant_id"]
+          },
+        ]
+      }
+      revenue_opportunities: {
+        Row: {
+          addressed_at: string | null
+          confidence: number | null
+          created_at: string
+          description: string
+          estimated_impact_cents: number | null
+          evidence_summary: string | null
+          id: string
+          metadata: Json
+          opportunity_type: string
+          recommended_action: string
+          status: string
+          tenant_id: string
+          title: string
+        }
+        Insert: {
+          addressed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          description: string
+          estimated_impact_cents?: number | null
+          evidence_summary?: string | null
+          id?: string
+          metadata?: Json
+          opportunity_type: string
+          recommended_action: string
+          status?: string
+          tenant_id: string
+          title: string
+        }
+        Update: {
+          addressed_at?: string | null
+          confidence?: number | null
+          created_at?: string
+          description?: string
+          estimated_impact_cents?: number | null
+          evidence_summary?: string | null
+          id?: string
+          metadata?: Json
+          opportunity_type?: string
+          recommended_action?: string
+          status?: string
+          tenant_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      revenue_opportunity_evidence: {
+        Row: {
+          evidence_id: string
+          opportunity_id: string
+        }
+        Insert: {
+          evidence_id: string
+          opportunity_id: string
+        }
+        Update: {
+          evidence_id?: string
+          opportunity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_opportunity_evidence_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "intelligence_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_opportunity_evidence_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_opportunities"
             referencedColumns: ["id"]
           },
         ]
