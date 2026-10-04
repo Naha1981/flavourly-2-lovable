@@ -21,12 +21,16 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StoriesRouteImport } from './routes/stories'
 import { Route as ClaimSlugRouteImport } from './routes/claim.$slug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardApprovalsRouteImport } from './routes/dashboard.approvals'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardCampaignsRouteImport } from './routes/dashboard.campaigns'
 import { Route as DashboardInboxRouteImport } from './routes/dashboard.inbox'
+import { Route as DashboardMarketRouteImport } from './routes/dashboard.market'
 import { Route as DashboardMenuRouteImport } from './routes/dashboard.menu'
 import { Route as DashboardRedeemRouteImport } from './routes/dashboard.redeem'
 import { Route as DashboardRepliesRouteImport } from './routes/dashboard.replies'
 import { Route as DashboardReputationRouteImport } from './routes/dashboard.reputation'
+import { Route as DashboardRevenueEmployeeRouteImport } from './routes/dashboard.revenue-employee'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
 import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
@@ -37,9 +41,12 @@ import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
+import { Route as ApiPublicBillingWebhookRouteImport } from './routes/api/public/billing/webhook'
+import { Route as ApiPublicCronCustomerLifecycleRouteImport } from './routes/api/public/cron/customer-lifecycle'
 import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public/cron/milestones'
 import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
 import { Route as ApiPublicCronRemindersRouteImport } from './routes/api/public/cron/reminders'
+import { Route as ApiPublicCronRevenueEmployeeRouteImport } from './routes/api/public/cron/revenue-employee'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -102,6 +109,16 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardApprovalsRoute = DashboardApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBillingRoute = DashboardBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
@@ -110,6 +127,11 @@ const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
 const DashboardInboxRoute = DashboardInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMarketRoute = DashboardMarketRouteImport.update({
+  id: '/market',
+  path: '/market',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMenuRoute = DashboardMenuRouteImport.update({
@@ -132,6 +154,12 @@ const DashboardReputationRoute = DashboardReputationRouteImport.update({
   path: '/reputation',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardRevenueEmployeeRoute =
+  DashboardRevenueEmployeeRouteImport.update({
+    id: '/revenue-employee',
+    path: '/revenue-employee',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -183,6 +211,17 @@ const DashboardIntelligenceMenuMatrixRoute =
     path: '/intelligence/menu-matrix',
     getParentRoute: () => DashboardRoute,
   } as any)
+const ApiPublicBillingWebhookRoute = ApiPublicBillingWebhookRouteImport.update({
+  id: '/api/public/billing/webhook',
+  path: '/api/public/billing/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCronCustomerLifecycleRoute =
+  ApiPublicCronCustomerLifecycleRouteImport.update({
+    id: '/api/public/cron/customer-lifecycle',
+    path: '/api/public/cron/customer-lifecycle',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronMilestonesRoute = ApiPublicCronMilestonesRouteImport.update({
   id: '/api/public/cron/milestones',
   path: '/api/public/cron/milestones',
@@ -198,6 +237,12 @@ const ApiPublicCronRemindersRoute = ApiPublicCronRemindersRouteImport.update({
   path: '/api/public/cron/reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronRevenueEmployeeRoute =
+  ApiPublicCronRevenueEmployeeRouteImport.update({
+    id: '/api/public/cron/revenue-employee',
+    path: '/api/public/cron/revenue-employee',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksWhatsappRoute =
   ApiPublicWebhooksWhatsappRouteImport.update({
     id: '/api/public/webhooks/whatsapp',
@@ -217,12 +262,16 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/approvals': typeof DashboardApprovalsRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/redeem': typeof DashboardRedeemRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
+  '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -234,9 +283,12 @@ export interface FileRoutesByFullPath {
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
+  '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
+  '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -250,12 +302,16 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/approvals': typeof DashboardApprovalsRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/redeem': typeof DashboardRedeemRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
+  '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -267,9 +323,12 @@ export interface FileRoutesByTo {
   '/m/$slug': typeof MSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
+  '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
+  '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -285,12 +344,16 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
   '/claim/$slug': typeof ClaimSlugRoute
+  '/dashboard/approvals': typeof DashboardApprovalsRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/campaigns': typeof DashboardCampaignsRoute
   '/dashboard/inbox': typeof DashboardInboxRoute
+  '/dashboard/market': typeof DashboardMarketRoute
   '/dashboard/menu': typeof DashboardMenuRoute
   '/dashboard/redeem': typeof DashboardRedeemRoute
   '/dashboard/replies': typeof DashboardRepliesRoute
   '/dashboard/reputation': typeof DashboardReputationRoute
+  '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
@@ -302,9 +365,12 @@ export interface FileRoutesById {
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
+  '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
+  '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
   '/api/public/cron/milestones': typeof ApiPublicCronMilestonesRoute
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
+  '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -321,12 +387,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/approvals'
+    | '/dashboard/billing'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/market'
     | '/dashboard/menu'
     | '/dashboard/redeem'
     | '/dashboard/replies'
     | '/dashboard/reputation'
+    | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -338,9 +408,12 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/billing/webhook'
+    | '/api/public/cron/customer-lifecycle'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
+    | '/api/public/cron/revenue-employee'
     | '/api/public/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -354,12 +427,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/approvals'
+    | '/dashboard/billing'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/market'
     | '/dashboard/menu'
     | '/dashboard/redeem'
     | '/dashboard/replies'
     | '/dashboard/reputation'
+    | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -371,9 +448,12 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard'
     | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/billing/webhook'
+    | '/api/public/cron/customer-lifecycle'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
+    | '/api/public/cron/revenue-employee'
     | '/api/public/webhooks/whatsapp'
   id:
     | '__root__'
@@ -388,12 +468,16 @@ export interface FileRouteTypes {
     | '/signup'
     | '/stories'
     | '/claim/$slug'
+    | '/dashboard/approvals'
+    | '/dashboard/billing'
     | '/dashboard/campaigns'
     | '/dashboard/inbox'
+    | '/dashboard/market'
     | '/dashboard/menu'
     | '/dashboard/redeem'
     | '/dashboard/replies'
     | '/dashboard/reputation'
+    | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
     | '/dashboard/voice'
@@ -405,9 +489,12 @@ export interface FileRouteTypes {
     | '/m/$slug'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
+    | '/api/public/billing/webhook'
+    | '/api/public/cron/customer-lifecycle'
     | '/api/public/cron/milestones'
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
+    | '/api/public/cron/revenue-employee'
     | '/api/public/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -427,9 +514,12 @@ export interface RootRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
   MSlugRoute: typeof MSlugRoute
+  ApiPublicBillingWebhookRoute: typeof ApiPublicBillingWebhookRoute
+  ApiPublicCronCustomerLifecycleRoute: typeof ApiPublicCronCustomerLifecycleRoute
   ApiPublicCronMilestonesRoute: typeof ApiPublicCronMilestonesRoute
   ApiPublicCronOutboxRoute: typeof ApiPublicCronOutboxRoute
   ApiPublicCronRemindersRoute: typeof ApiPublicCronRemindersRoute
+  ApiPublicCronRevenueEmployeeRoute: typeof ApiPublicCronRevenueEmployeeRoute
   ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
@@ -519,6 +609,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/approvals': {
+      id: '/dashboard/approvals'
+      path: '/approvals'
+      fullPath: '/dashboard/approvals'
+      preLoaderRoute: typeof DashboardApprovalsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/campaigns': {
       id: '/dashboard/campaigns'
       path: '/campaigns'
@@ -531,6 +635,13 @@ declare module '@tanstack/react-router' {
       path: '/inbox'
       fullPath: '/dashboard/inbox'
       preLoaderRoute: typeof DashboardInboxRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/market': {
+      id: '/dashboard/market'
+      path: '/market'
+      fullPath: '/dashboard/market'
+      preLoaderRoute: typeof DashboardMarketRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/menu': {
@@ -559,6 +670,13 @@ declare module '@tanstack/react-router' {
       path: '/reputation'
       fullPath: '/dashboard/reputation'
       preLoaderRoute: typeof DashboardReputationRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/revenue-employee': {
+      id: '/dashboard/revenue-employee'
+      path: '/revenue-employee'
+      fullPath: '/dashboard/revenue-employee'
+      preLoaderRoute: typeof DashboardRevenueEmployeeRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/settings': {
@@ -631,6 +749,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIntelligenceMenuMatrixRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/api/public/billing/webhook': {
+      id: '/api/public/billing/webhook'
+      path: '/api/public/billing/webhook'
+      fullPath: '/api/public/billing/webhook'
+      preLoaderRoute: typeof ApiPublicBillingWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/customer-lifecycle': {
+      id: '/api/public/cron/customer-lifecycle'
+      path: '/api/public/cron/customer-lifecycle'
+      fullPath: '/api/public/cron/customer-lifecycle'
+      preLoaderRoute: typeof ApiPublicCronCustomerLifecycleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/milestones': {
       id: '/api/public/cron/milestones'
       path: '/api/public/cron/milestones'
@@ -652,6 +784,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/revenue-employee': {
+      id: '/api/public/cron/revenue-employee'
+      path: '/api/public/cron/revenue-employee'
+      fullPath: '/api/public/cron/revenue-employee'
+      preLoaderRoute: typeof ApiPublicCronRevenueEmployeeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/whatsapp': {
       id: '/api/public/webhooks/whatsapp'
       path: '/api/public/webhooks/whatsapp'
@@ -663,12 +802,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteChildren {
+  DashboardApprovalsRoute: typeof DashboardApprovalsRoute
+  DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardCampaignsRoute: typeof DashboardCampaignsRoute
   DashboardInboxRoute: typeof DashboardInboxRoute
+  DashboardMarketRoute: typeof DashboardMarketRoute
   DashboardMenuRoute: typeof DashboardMenuRoute
   DashboardRedeemRoute: typeof DashboardRedeemRoute
   DashboardRepliesRoute: typeof DashboardRepliesRoute
   DashboardReputationRoute: typeof DashboardReputationRoute
+  DashboardRevenueEmployeeRoute: typeof DashboardRevenueEmployeeRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
   DashboardVoiceRoute: typeof DashboardVoiceRoute
@@ -679,12 +822,16 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardApprovalsRoute: DashboardApprovalsRoute,
+  DashboardBillingRoute: DashboardBillingRoute,
   DashboardCampaignsRoute: DashboardCampaignsRoute,
   DashboardInboxRoute: DashboardInboxRoute,
+  DashboardMarketRoute: DashboardMarketRoute,
   DashboardMenuRoute: DashboardMenuRoute,
   DashboardRedeemRoute: DashboardRedeemRoute,
   DashboardRepliesRoute: DashboardRepliesRoute,
   DashboardReputationRoute: DashboardReputationRoute,
+  DashboardRevenueEmployeeRoute: DashboardRevenueEmployeeRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
   DashboardVoiceRoute: DashboardVoiceRoute,
@@ -714,21 +861,14 @@ const rootRouteChildren: RootRouteChildren = {
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
   MSlugRoute: MSlugRoute,
+  ApiPublicBillingWebhookRoute: ApiPublicBillingWebhookRoute,
+  ApiPublicCronCustomerLifecycleRoute: ApiPublicCronCustomerLifecycleRoute,
   ApiPublicCronMilestonesRoute: ApiPublicCronMilestonesRoute,
   ApiPublicCronOutboxRoute: ApiPublicCronOutboxRoute,
   ApiPublicCronRemindersRoute: ApiPublicCronRemindersRoute,
+  ApiPublicCronRevenueEmployeeRoute: ApiPublicCronRevenueEmployeeRoute,
   ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
