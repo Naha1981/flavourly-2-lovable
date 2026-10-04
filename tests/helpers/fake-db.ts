@@ -1,0 +1,74 @@
+/**
+ * Tiny in-memory stand-in for the Supabase query builder, covering only the
+ * calls the server code uses. Lets flow tests run without a real database.
+ */
+type Row = Record<string, unknown>;
+type Filter = (r: Row) => boolean;
+
+export type FakeDb = ReturnType<typeof createFakeDb>;
+
+export function createFakeDb(uniques: Record<string, string[][]> = {}) {
+  const tables: Record<string, Row[]> = {};
+  let seq = 0;
+  const t = (name: string) => (tables[name] ??= []);
+
+  function from(table: string) {
+    let op: "select" | "insert" | "update" = "select";
+    let payload: Row | Row[] | null = null;
+    let returning = false;
+    let single: "one" | "maybe" | null = null;
+    let limitN: number | null = null;
+    const filters: Filter[] = [];
+
+    const exec = () => {
+      const rows = t(table);
+      if (op === "insert") {
+        const items = (Array.isArray(payload) ? payload : [payload!]).map((p) => ({
+          id: `id-${++seq}`,
+          created_at: new Date().toISOString(),
+          requested_at: new Date().toISOString(),
+          status: undefined,
+          ...p,
+        }));
+        for (const item of items) {
+          if (item["status"] === undefined) delete item["status"];
+          for (const cols of uniques[table] ?? []) {
+            if (cols.some((c) => item[c] == null)) continue;
+            if (rows.some((r) => cols.every((c) => r[c] === item[c])))
+              return { data: null, error: { code: "23505", message: "duplicate key" } };
+          }
+          rows.push(item);
+        }
+        const out = returning ? items : null;
+        return { data: single && out ? out[0] : out, error: null };
+      }
+      let matched = rows.filter((r) => filters.every((f) => f(r)));
+      if (op === "update") {
+        for (const r of matched) Object.assign(r, payload);
+      }
+      if (limitN != null) matched = matched.slice(0, limitN);
+      if (op === "update" && !returning) return { data: null, error: null };
+      if (single) return { data: matched[0] ?? null, error: null };
+      return { data: matched.map((r) => ({ ...r })), error: null };
+    };
+
+    const b = {
+      select() { if (op !== "select") returning = true; return b; },
+      insert(p: Row | Row[]) { op = "insert"; payload = p; return b; },
+      update(p: Row) { op = "update"; payload = p; return b; },
+      eq(c: string, v: unknown) { filters.push((r) => r[c] === v); return b; },
+      in(c: string, v: unknown[]) { filters.push((r) => v.includes(r[c])); return b; },
+      lte(c: string, v: string) { filters.push((r) => String(r[c]) <= v); return b; },
+      order() { return b; },
+      limit(n: number) { limitN = n; return b; },
+      single() { single = "one"; return Promise.resolve(exec()); },
+      maybeSingle() { single = "maybe"; return Promise.resolve(exec()); },
+      then<T>(res: (v: ReturnType<typeof exec>) => T, rej?: (e: unknown) => T) {
+        return Promise.resolve(exec()).then(res, rej);
+      },
+    };
+    return b;
+  }
+
+  return { from, tables, rows: t };
+}
