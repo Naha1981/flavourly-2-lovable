@@ -726,8 +726,13 @@ export type Database = {
           name: string
           notes: string | null
           owner_name: string | null
+          payfast_customer_token: string | null
+          payfast_subscription_token: string | null
+          plan_status: string
+          plan_tier: string
           tenant_id: string
           timezone: string
+          trial_ends_at: string
           wa_account_id: string | null
           wa_operator_tenant_token: string | null
           whatsapp_phone: string | null
@@ -747,8 +752,13 @@ export type Database = {
           name: string
           notes?: string | null
           owner_name?: string | null
+          payfast_customer_token?: string | null
+          payfast_subscription_token?: string | null
+          plan_status?: string
+          plan_tier?: string
           tenant_id: string
           timezone?: string
+          trial_ends_at?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
@@ -768,8 +778,13 @@ export type Database = {
           name?: string
           notes?: string | null
           owner_name?: string | null
+          payfast_customer_token?: string | null
+          payfast_subscription_token?: string | null
+          plan_status?: string
+          plan_tier?: string
           tenant_id?: string
           timezone?: string
+          trial_ends_at?: string
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
