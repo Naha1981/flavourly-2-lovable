@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { sanitizeTelemetry } from "../src/lib/telemetry/sanitizer";
 
 describe("privacy-first telemetry sanitizer", () => {
