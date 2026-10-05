@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { slugify } from "./restaurant-profile";
 
 export type Workspace = { tenantId: string; name: string; role: string };
 
@@ -45,39 +44,6 @@ export const createWorkspace = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<Workspace> => {
     const { db } = await import("./db.server");
-    const c = await db();
-
-    const { data: existing } = await c
-      .from("tenant_members")
-      .select("tenant_id, role")
-      .eq("user_id", context.userId)
-      .limit(1);
-    if (existing?.[0]) {
-      const { data: t } = await c
-        .from("tenant_profiles")
-        .select("name")
-        .eq("tenant_id", existing[0]["tenant_id"])
-        .maybeSingle();
-      return {
-        tenantId: existing[0]["tenant_id"] as string,
-        name: (t?.name as string | undefined) ?? data.restaurantName,
-        role: existing[0]["role"] as string,
-      };
-    }
-
-    const base = slugify(data.restaurantName);
-    for (let i = 0; i < 6; i++) {
-      const slug = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
-      const { error } = await c
-        .from("tenant_profiles")
-        .insert({ tenant_id: slug, name: data.restaurantName });
-      if (error?.code === "23505") continue; // slug taken, try another
-      if (error) throw error;
-      const { error: mErr } = await c
-        .from("tenant_members")
-        .insert({ tenant_id: slug, user_id: context.userId, role: "owner" });
-      if (mErr) throw mErr;
-      return { tenantId: slug, name: data.restaurantName, role: "owner" };
-    }
-    throw new Error("Couldn't reserve a unique restaurant address. Please try again.");
+    const { ensureWorkspace } = await import("./workspace.server");
+    return ensureWorkspace(await db(), context.userId, data.restaurantName);
   });
