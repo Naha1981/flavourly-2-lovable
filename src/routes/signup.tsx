@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { enterWorkspace } from "@/lib/auth-client";
+import { validateSignup } from "@/lib/auth-rules";
 
 const searchSchema = z.object({
   plan: z.string().optional(),
@@ -46,8 +47,9 @@ function SignupPage() {
       const restaurant = String(f.get("restaurant") ?? "").trim();
       const email = String(f.get("email") ?? "").trim();
       const password = String(f.get("password") ?? "");
-      if (!restaurant || !email || password.length < 8) {
-        toast.error("Add your restaurant, an email, and a password of at least 8 characters.");
+      const invalid = validateSignup({ restaurant, email, password });
+      if (invalid) {
+        toast.error(invalid);
         return;
       }
       const { data, error } = await supabase.auth.signUp({

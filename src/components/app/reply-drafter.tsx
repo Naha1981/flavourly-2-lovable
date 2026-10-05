@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CalendarCheck, Copy, HelpCircle, Loader2, MessageSquareWarning, Send, Sparkles, Wand2 } from "lucide-react";
@@ -44,7 +44,12 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
   const [busy, setBusy] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ intent: string; reply: string } | null>(null);
+  const [result, setResult] = useState<{ intent: string; reply: string; menuItems?: number } | null>(null);
+  const policyKey = `flavourly:policies:${profile.slug}`;
+  const [policies, setPolicies] = useState("");
+  useEffect(() => {
+    setPolicies(localStorage.getItem(policyKey) ?? "");
+  }, [policyKey]);
 
   const run = async () => {
     if (!message.trim() || busy) return;
@@ -56,6 +61,8 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
           message,
           intent,
           guestName: guestName || undefined,
+          tenantId: profile.slug || undefined,
+          policies: policies.trim() || undefined,
           restaurant: {
             name: profile.name,
             city: profile.city || undefined,
@@ -69,7 +76,7 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
       });
       if (!res.ok) setError(res.error);
       else {
-        setResult({ intent: res.intent, reply: res.reply });
+        setResult({ intent: res.intent, reply: res.reply, menuItems: "menuItems" in res ? res.menuItems : 0 });
         onDrafted?.();
       }
     } catch {
@@ -124,6 +131,21 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
           />
         </div>
         {!compact && (
+          <div className="grid gap-2">
+            <Label htmlFor="house-policies">House policies the reply must follow</Label>
+            <Textarea
+              id="house-policies"
+              rows={3}
+              value={policies}
+              onChange={(e) => {
+                setPolicies(e.target.value);
+                localStorage.setItem(policyKey, e.target.value);
+              }}
+              placeholder="R200 deposit for 8+ guests. Corkage R80. Kitchen closes 21:30. No split bills over 10."
+            />
+          </div>
+        )}
+        {!compact && (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="guest-name">Guest name (optional)</Label>
@@ -156,6 +178,11 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
         )}
         {result && (
           <>
+            <p className="text-xs text-muted-foreground">
+              {result.menuItems
+                ? `Grounded in ${result.menuItems} dishes from your menu${policies.trim() ? " and your house policies" : ""}.`
+                : "No menu loaded yet — the draft avoids naming dishes or prices. Add your menu under Menu."}
+            </p>
             <Textarea
               rows={6}
               value={result.reply}

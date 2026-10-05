@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { enterWorkspace } from "@/lib/auth-client";
+import { postLoginPath, signInErrorMessage } from "@/lib/auth-rules";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -44,11 +45,7 @@ function LoginPage() {
         password: String(f.get("password") ?? ""),
       });
       if (error) {
-        toast.error(
-          error.message.includes("Email not confirmed")
-            ? "Confirm your email first, then sign in."
-            : "That email and password don't match.",
-        );
+        toast.error(signInErrorMessage(error.message));
         return;
       }
       const ws = await enterWorkspace();
@@ -59,7 +56,7 @@ function LoginPage() {
         return;
       }
       toast.success("Welcome back.");
-      navigate({ to: redirect && redirect.startsWith("/dashboard") ? redirect : "/dashboard" });
+      navigate({ to: postLoginPath(redirect) });
     } catch {
       toast.error("Couldn't sign you in. Please try again.");
     } finally {

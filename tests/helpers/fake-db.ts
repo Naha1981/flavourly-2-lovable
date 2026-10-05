@@ -7,6 +7,15 @@ type Filter = (r: Row) => boolean;
 
 export type FakeDb = ReturnType<typeof createFakeDb>;
 
+/** Column defaults mirroring the real migrations, applied on insert. */
+const DEFAULTS: Record<string, () => Row> = {
+  outbox_jobs: () => ({ status: "pending", attempts: 0, automated: true, sent_at: null, error: null }),
+  approval_requests: () => ({ status: "pending", requested_at: new Date().toISOString(), resolved_at: null, resolved_by: null }),
+  wa_conversations: () => ({ status: "open", urgency: "medium", intent: "other", unread: 0 }),
+  wa_webhook_events: () => ({ status: "processed", retry_count: 0, event_count: 0, saved: 0 }),
+  tenant_profiles: () => ({ auto_replies_enabled: false, plan_tier: "starter", plan_status: "trialing" }),
+};
+
 export function createFakeDb(uniques: Record<string, string[][]> = {}) {
   const tables: Record<string, Row[]> = {};
   let seq = 0;
@@ -26,12 +35,10 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
         const items = (Array.isArray(payload) ? payload : [payload!]).map((p) => ({
           id: `id-${++seq}`,
           created_at: new Date().toISOString(),
-          requested_at: new Date().toISOString(),
-          status: undefined,
+          ...(DEFAULTS[table]?.() ?? {}),
           ...p,
         }));
         for (const item of items) {
-          if (item["status"] === undefined) delete item["status"];
           for (const cols of uniques[table] ?? []) {
             if (cols.some((c) => item[c] == null)) continue;
             if (rows.some((r) => cols.every((c) => r[c] === item[c])))
