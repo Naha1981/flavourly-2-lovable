@@ -9,6 +9,10 @@ export type DraftInput = {
   message: string;
   intent: ReplyIntent;
   guestName?: string | undefined;
+  /** Menu lines from the database, so the reply never invents dishes or prices. */
+  menuFacts?: string | undefined;
+  /** House policies (deposits, corkage, kids, cancellations…) written by staff. */
+  policies?: string | undefined;
   restaurant: {
     name: string;
     city?: string | undefined;
@@ -23,6 +27,29 @@ export type DraftInput = {
 export type DraftResult =
   | { ok: true; intent: Exclude<ReplyIntent, "auto">; reply: string }
   | { ok: false; error: string; status?: number | undefined };
+
+export type MenuFactRow = {
+  name: string;
+  description: string | null;
+  price_cents: number;
+  is_available: boolean;
+  dietary_flags: string[] | null;
+};
+
+/** One line per dish: name, price in rand, dietary tags, sold-out flag. */
+export function buildMenuFacts(items: MenuFactRow[]): string {
+  return items
+    .map((i) => {
+      const tags = (i.dietary_flags ?? []).map((f) => f.replace("_", " ")).join(", ");
+      return [
+        `- ${i.name} — R${(i.price_cents / 100).toFixed(2).replace(/\.00$/, "")}`,
+        tags ? ` (${tags})` : "",
+        i.is_available ? "" : " [SOLD OUT today]",
+        i.description ? `: ${i.description.slice(0, 120)}` : "",
+      ].join("");
+    })
+    .join("\n");
+}
 
 const MODEL = "openai/gpt-6-astra";
 
@@ -49,6 +76,10 @@ export async function generateReplyDraft(input: DraftInput): Promise<DraftResult
     r.hours ? `Opening hours: ${r.hours}.` : "",
     r.averageCheck ? `Average spend per guest: R${r.averageCheck}.` : "",
     r.notes ? `House notes: ${r.notes}` : "",
+    input.policies ? `House policies (follow exactly):\n${input.policies}` : "",
+    input.menuFacts
+      ? `Current menu (the only dishes and prices you may mention; never offer SOLD OUT items):\n${input.menuFacts}`
+      : "No menu is loaded: do not name specific dishes or prices; say the team will share the menu.",
     "Voice: warm, confident, South African English, like a great front-of-house manager. Short sentences, no corporate filler, at most one emoji, no hashtags.",
     "Bookings: confirm details (date, time, party size, name) and offer a specific time when unclear. Never invent confirmed availability — phrase it as a hold pending confirmation.",
     "FAQs: answer directly using the facts above; if a fact is unknown, say the team will confirm shortly.",
