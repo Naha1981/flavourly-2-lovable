@@ -2,6 +2,13 @@ import { assignVariant, ATTRIBUTION_WINDOW_DAYS } from "./campaigns";
 import { db } from "./db.server";
 import { enqueueOutbox } from "./outbox.server";
 
+export const CAMPAIGN_ATTRIBUTION_RULE =
+  `Guest spend recorded within ${ATTRIBUTION_WINDOW_DAYS} days of campaign send. ` +
+  "Association under a stated rule, not proof of causation.";
+export const CAMPAIGN_BASELINE_RULE =
+  "Variant A recipients as the comparison group: " +
+  "incremental = (spend per B recipient - spend per A recipient) x B recipients.";
+
 type Segment = "all" | "vip" | "dormant_30" | "dormant_60";
 
 async function audience(tenantId: string, segment: Segment) {
@@ -63,6 +70,13 @@ export type CampaignSummary = {
   bookings: number;
   revenueCents: number;
   variantB: { sentCount: number; bookings: number; revenueCents: number } | undefined;
+  /** Spec section 17: kinds reported separately, never one mixed total. */
+  measurement: {
+    linkedRevenueCents: number;
+    attributionRule: string;
+    incrementalRevenueCents: number | null;
+    baselineRule: string | null;
+  };
 };
 
 async function attribution(tenantId: string, campaignId: string, sentAt: string) {
@@ -72,7 +86,8 @@ async function attribution(tenantId: string, campaignId: string, sentAt: string)
   const { data: jobs } = await c.from("outbox_jobs")
     .select("recipient_phone, variant").eq("campaign_id", campaignId).eq("status", "sent");
   const recipients = jobs ?? [];
-  if (recipients.length === 0) return { total: zero(), b: undefined as CampaignSummary["variantB"] };
+  if (recipients.length === 0)
+    return { total: zero(), a: zero(), b: undefined as CampaignSummary["variantB"] };
 
   const phones = [...new Set(recipients.map((r) => r.recipient_phone as string))];
   const { data: custs } = await c.from("customers").select("id, phone")
@@ -111,8 +126,9 @@ async function attribution(tenantId: string, campaignId: string, sentAt: string)
 
   const hasB = recipients.some((r) => r.variant === "b");
   const total = rollUp(new Set(phones));
+  const a = rollUp(new Set(recipients.filter((r) => r.variant !== "b").map((r) => r.recipient_phone as string)));
   const b = hasB ? rollUp(new Set(recipients.filter((r) => r.variant === "b").map((r) => r.recipient_phone as string))) : undefined;
-  return { total, b };
+  return { total, a, b };
 }
 
 const zero = () => ({ sentCount: 0, bookings: 0, revenueCents: 0 });
@@ -126,7 +142,15 @@ export async function listCampaignsWithAttribution(tenantId: string): Promise<Ca
   for (const r of rows ?? []) {
     const sent = r.status === "sent" && r.sent_at
       ? await attribution(tenantId, r.id, r.sent_at as string)
-      : { total: zero(), b: undefined };
+      : { total: zero(), a: zero(), b: undefined };
+    // Incremental needs a comparison group: only measurable when the campaign
+    // ran an A/B test with sends on both arms.
+    let incrementalRevenueCents: number | null = null;
+    if (sent.b && sent.a.sentCount > 0 && sent.b.sentCount > 0) {
+      const perA = sent.a.revenueCents / sent.a.sentCount;
+      const perB = sent.b.revenueCents / sent.b.sentCount;
+      incrementalRevenueCents = Math.round((perB - perA) * sent.b.sentCount);
+    }
     out.push({
       id: r.id,
       name: r.name,
@@ -140,6 +164,12 @@ export async function listCampaignsWithAttribution(tenantId: string): Promise<Ca
       bookings: sent.total.bookings,
       revenueCents: sent.total.revenueCents,
       variantB: sent.b,
+      measurement: {
+        linkedRevenueCents: sent.total.revenueCents,
+        attributionRule: CAMPAIGN_ATTRIBUTION_RULE,
+        incrementalRevenueCents,
+        baselineRule: incrementalRevenueCents === null ? null : CAMPAIGN_BASELINE_RULE,
+      },
     });
   }
   return out;

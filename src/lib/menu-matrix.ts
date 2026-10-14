@@ -25,6 +25,8 @@ export type MatrixSummary = {
   items: MatrixItem[];
   avgVolume: number;
   avgMarginCents: number;
+  /** Spec section 17: item sales x price is observed sales evidence. */
+  revenueMeasureKind: "observed_sales";
   revenueCents30d: number;
   profitCents30d: number;
   missingCostCount: number;
@@ -48,6 +50,7 @@ export function classifyMenu(inputs: MatrixInput[]): MatrixSummary {
       items: [],
       avgVolume: 0,
       avgMarginCents: 0,
+      revenueMeasureKind: "observed_sales" as const,
       revenueCents30d: 0,
       profitCents30d: 0,
       missingCostCount: 0,
@@ -94,6 +97,7 @@ export function classifyMenu(inputs: MatrixInput[]): MatrixSummary {
     items,
     avgVolume: Math.round(avgVolume),
     avgMarginCents: Math.round(avgMarginCents),
+    revenueMeasureKind: "observed_sales" as const,
     revenueCents30d: items.reduce((s, i) => s + i.revenueCents30d, 0),
     profitCents30d: items.reduce((s, i) => s + i.profitCents30d, 0),
     missingCostCount: items.filter((i) => !i.costKnown).length,
