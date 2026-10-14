@@ -35,6 +35,9 @@ export async function autoReply(input: {
     .maybeSingle();
   if (!venue?.auto_replies_enabled) return { replied: false };
 
+  const { isOptedOut } = await import("./opt-out.server");
+  if (await isOptedOut(input.tenantId, input.phone)) return { replied: false };
+
   const reply = await decide(input, (venue.name as string) ?? "us");
   if (!reply) return { replied: false };
 

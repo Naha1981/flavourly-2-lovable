@@ -14,6 +14,7 @@ const DEFAULTS: Record<string, () => Row> = {
   wa_conversations: () => ({ status: "open", urgency: "medium", intent: "other", unread: 0 }),
   wa_webhook_events: () => ({ status: "processed", retry_count: 0, event_count: 0, saved: 0 }),
   tenant_profiles: () => ({ auto_replies_enabled: false, plan_tier: "starter", plan_status: "trialing" }),
+  wa_opt_outs: () => ({ opted_out_at: new Date().toISOString(), source: "whatsapp_keyword" }),
 };
 
 export function createFakeDb(uniques: Record<string, string[][]> = {}) {
@@ -22,7 +23,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
   const t = (name: string) => (tables[name] ??= []);
 
   function from(table: string) {
-    let op: "select" | "insert" | "update" = "select";
+    let op: "select" | "insert" | "update" | "delete" = "select";
     let payload: Row | Row[] | null = null;
     let returning = false;
     let single: "one" | "maybe" | null = null;
@@ -49,6 +50,11 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
         const out = returning ? items : null;
         return { data: single && out ? out[0] : out, error: null };
       }
+      if (op === "delete") {
+        const keep = rows.filter((r) => !filters.every((f) => f(r)));
+        tables[table] = keep;
+        return { data: null, error: null };
+      }
       let matched = rows.filter((r) => filters.every((f) => f(r)));
       if (op === "update") {
         for (const r of matched) Object.assign(r, payload);
@@ -63,6 +69,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
       select() { if (op !== "select") returning = true; return b; },
       insert(p: Row | Row[]) { op = "insert"; payload = p; return b; },
       update(p: Row) { op = "update"; payload = p; return b; },
+      delete() { op = "delete"; return b; },
       eq(c: string, v: unknown) { filters.push((r) => r[c] === v); return b; },
       in(c: string, v: unknown[]) { filters.push((r) => v.includes(r[c])); return b; },
       lte(c: string, v: string) { filters.push((r) => String(r[c]) <= v); return b; },
