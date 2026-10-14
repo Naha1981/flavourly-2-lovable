@@ -25,6 +25,12 @@ async function currentUserId(): Promise<string | null> {
   return error || !data.user ? null : data.user.id;
 }
 
+/** Authenticated user's id for audit fields, or null when auth is disabled (local/demo). */
+export async function actorId(): Promise<string | null> {
+  if (!authRequired()) return null;
+  return currentUserId();
+}
+
 export async function requireUser(): Promise<string | null> {
   if (!authRequired()) return null;
   const id = await currentUserId();

@@ -109,6 +109,18 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
       if (duplicate) continue;
     }
 
+    if (!msg.fromMe && msg.phone) {
+      const { optOutKeyword, recordOptOut, recordOptIn } = await import("@/lib/opt-out.server");
+      const keyword = optOutKeyword(msg.body);
+      if (keyword === "stop") {
+        await recordOptOut(msg.tenantId, msg.phone);
+        (msg as Incoming & { optAction?: "stop" | "start" }).optAction = "stop";
+      } else if (keyword === "start") {
+        await recordOptIn(msg.tenantId, msg.phone);
+        (msg as Incoming & { optAction?: "stop" | "start" }).optAction = "start";
+      }
+    }
+
     const { intent, urgency } = classify(msg.body);
     const { data: existing, error: findError } = await supabaseAdmin
       .from("wa_conversations").select("id, unread, status").eq("tenant_id", msg.tenantId).eq("chat_id", msg.chatId).maybeSingle();
@@ -150,7 +162,15 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
     }
     saved += 1;
 
-    if (!msg.fromMe && msg.phone) {
+    const optAction = (msg as Incoming & { optAction?: "stop" | "start" }).optAction;
+    if (optAction === "stop") {
+      // The STOP message stays saved for the audit trail; the conversation is
+      // closed and nothing automated may answer.
+      await supabaseAdmin.from("wa_conversations").update({ status: "resolved" })
+        .eq("tenant_id", msg.tenantId).eq("id", conversationId);
+    }
+
+    if (!msg.fromMe && msg.phone && !optAction) {
       try {
         const { autoReply } = await import("@/lib/auto-reply.server");
         await autoReply({

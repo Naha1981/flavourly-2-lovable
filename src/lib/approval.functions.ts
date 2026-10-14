@@ -22,17 +22,20 @@ export const resolveApprovalRequest = createServerFn({ method: "POST" })
     tenantId: tenant,
     approvalId: z.string().uuid(),
     approved: z.boolean(),
-    resolvedBy: z.string().trim().min(1).max(120),
+    // Accepted for local/demo only; production always records the authenticated user.
+    resolvedBy: z.string().trim().min(1).max(120).optional(),
     messageText: z.string().trim().min(1).max(4000).optional(),
   }).parse(d))
   .handler(async ({ data }) => {
     await guard(data.tenantId);
+    const { actorId } = await import("./tenant-auth.server");
+    const resolvedBy = (await actorId()) ?? data.resolvedBy ?? "unknown";
     const { resolveApproval } = await import("./approval.server");
     return resolveApproval({
       tenantId: data.tenantId,
       approvalId: data.approvalId,
       approved: data.approved,
-      resolvedBy: data.resolvedBy,
+      resolvedBy,
       ...(data.messageText ? { editedMessage: data.messageText } : {}),
     });
   });

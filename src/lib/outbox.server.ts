@@ -83,7 +83,7 @@ export async function processOutbox(limit = 50) {
     }
 
     const { data: claimed } = await c.from("outbox_jobs")
-      .update({ status: "processing", attempts: job.attempts + 1 })
+      .update({ status: "processing" })
       .eq("id", job.id)
       .in("status", ["pending", "quiet_hours_delayed"])
       .select("id")
@@ -91,6 +91,15 @@ export async function processOutbox(limit = 50) {
     if (!claimed) {
       stats.skipped += 1;
       continue;
+    }
+
+    if (job.automated) {
+      const { isOptedOut } = await import("./opt-out.server");
+      if (await isOptedOut(job.tenant_id as string, job.recipient_phone as string)) {
+        await c.from("outbox_jobs").update({ status: "opted_out", error: null }).eq("id", job.id);
+        stats.skipped += 1;
+        continue;
+      }
     }
 
     const res = await sendWhatsApp(job.tenant_id, job.recipient_phone, job.message_text);
@@ -119,12 +128,21 @@ export async function processOutbox(limit = 50) {
         }).eq("tenant_id", job.tenant_id).eq("id", job.conversation_id);
       }
       stats.sent += 1;
+    } else if ("waking" in res && res.waking) {
+      // Operator cold start: not a real attempt. Retry shortly without burning one.
+      await c.from("outbox_jobs").update({
+        status: "pending",
+        error: res.error,
+        scheduled_for: new Date(Date.now() + RETRY_MS).toISOString(),
+      }).eq("id", job.id);
+      stats.retried += 1;
     } else if (job.attempts + 1 >= MAX_ATTEMPTS) {
-      await c.from("outbox_jobs").update({ status: "failed", error: res.error }).eq("id", job.id);
+      await c.from("outbox_jobs").update({ status: "failed", attempts: job.attempts + 1, error: res.error }).eq("id", job.id);
       stats.failed += 1;
     } else {
       await c.from("outbox_jobs").update({
         status: "pending",
+        attempts: job.attempts + 1,
         error: res.error,
         scheduled_for: new Date(Date.now() + RETRY_MS).toISOString(),
       }).eq("id", job.id);
