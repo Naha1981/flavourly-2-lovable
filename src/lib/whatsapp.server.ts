@@ -5,7 +5,9 @@
 import { APP_URL, db } from "./db.server";
 
 const APP_ID = "flavourly";
-type OpResult<T> = { ok: true; data: T } | { ok: false; error: string; status?: number };
+type OpResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; status?: number; waking?: boolean };
 type Credential = "platform" | { tenantToken: string };
 
 const tokenInflight = new Map<string, Promise<string | null>>();
@@ -45,12 +47,19 @@ async function op<T>(
       const message = typeof body["message"] === "string"
         ? String(body["message"])
         : "WhatsApp service error (" + res.status + ")";
-      return { ok: false, error: message, status: res.status };
+      // Render free-tier cold starts surface as gateway errors while the
+      // operator boots. Callers can show a "waking" state instead of a failure.
+      const waking = res.status === 502 || res.status === 503 || res.status === 504;
+      return { ok: false, error: message, status: res.status, waking };
     }
     return { ok: true, data: body as T };
   } catch (error) {
     console.error("operator unreachable", path, error);
-    return { ok: false, error: "Couldn't reach the WhatsApp service. It may be waking up — try again in a moment." };
+    return {
+      ok: false,
+      error: "Couldn't reach the WhatsApp service. It may be waking up — try again in a moment.",
+      waking: true,
+    };
   }
 }
 
@@ -188,6 +197,22 @@ export async function pairingCode(tenantId: string, waAccountId: string, phoneNu
   return op<{ pairingCode?: string; code?: string }>(
     tenantId, "/accounts/" + encodeURIComponent(waAccountId) + "/pairing-code",
     { method: "POST", body: JSON.stringify({ phoneNumber }) }, { tenantToken: token },
+  );
+}
+
+export async function disconnect(tenantId: string, waAccountId: string) {
+  const token = await ensureTenantToken(tenantId);
+  if (!token) return { ok: false as const, error: "WhatsApp tenant credential is not available." };
+  return op<{ status?: string }>(
+    tenantId, "/accounts/" + encodeURIComponent(waAccountId) + "/disconnect", { method: "POST" }, { tenantToken: token },
+  );
+}
+
+export async function reset(tenantId: string, waAccountId: string) {
+  const token = await ensureTenantToken(tenantId);
+  if (!token) return { ok: false as const, error: "WhatsApp tenant credential is not available." };
+  return op<{ status?: string }>(
+    tenantId, "/accounts/" + encodeURIComponent(waAccountId) + "/reset", { method: "POST" }, { tenantToken: token },
   );
 }
 

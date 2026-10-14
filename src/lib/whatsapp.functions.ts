@@ -55,3 +55,17 @@ export const sendWhatsAppText = createServerFn({ method: "POST" })
     await guard(data.tenantId);
     return wa.sendText(data.tenantId, data.waAccountId, data.to.replace(/\D/g, ""), data.text);
   });
+
+export const disconnectWhatsApp = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ tenantId: tenant, waAccountId: z.string().min(1).max(100) }).parse(d))
+  .handler(async ({ data }) => {
+    await guard(data.tenantId);
+    return wa.disconnect(data.tenantId, data.waAccountId);
+  });
+
+export const resetWhatsAppAccount = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ tenantId: tenant, waAccountId: z.string().min(1).max(100) }).parse(d))
+  .handler(async ({ data }) => {
+    await guard(data.tenantId);
+    return wa.reset(data.tenantId, data.waAccountId);
+  });
