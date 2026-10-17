@@ -97,7 +97,7 @@ function LoginPage() {
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <span className="text-xs text-muted-foreground">Forgot it? Ask your owner</span>
+            <Link to="/forgot-password" className="text-xs font-medium text-forest hover:underline">Forgot password?</Link>
           </div>
           <Input
             id="password"
