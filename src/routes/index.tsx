@@ -198,9 +198,7 @@ function HeroExperience() {
             <Badge
               variant="outline"
               className="rounded-full border-forest/20 bg-forest/5 text-forest"
-            >
-              Live demo
-            </Badge>
+            >Live</Badge>
           </div>
 
           <div className="mt-5 space-y-3">
@@ -455,7 +453,7 @@ function MagicLink() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full px-7">
               <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-                Open a live restaurant demo <ArrowRight className="ml-1 h-4 w-4" />
+                See Flavourly live in a restaurant <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="rounded-full">
@@ -723,7 +721,7 @@ function FinalCta() {
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="rounded-full px-8 text-base">
             <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-              See the restaurant demo <ArrowRight className="ml-1 h-4 w-4" />
+              See Flavourly in a restaurant <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
           <Button
