@@ -18,6 +18,7 @@ import {
   Sparkles,
   Ticket,
   UtensilsCrossed,
+  Workflow,
 } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
@@ -111,6 +112,14 @@ function DashboardLayout() {
               <Icon className="size-4" strokeWidth={1.6} /> {label}
             </Link>
           ))}
+          <a
+            href="https://canvas.nahalabs.co.za/#/t/flavourly"
+            target="_blank"
+            rel="noopener"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Workflow className="size-4" strokeWidth={1.6} /> Journey map ↗
+          </a>
         </nav>
         {state === "authed" && (
           <button
@@ -143,6 +152,14 @@ function DashboardLayout() {
             <Icon className="size-5" strokeWidth={1.6} /> {label}
           </Link>
         ))}
+        <a
+          href="https://canvas.nahalabs.co.za/#/t/flavourly"
+          target="_blank"
+          rel="noopener"
+          className="grid min-w-[4.5rem] flex-1 place-items-center gap-0.5 py-2.5 text-[11px] text-muted-foreground"
+        >
+          <Workflow className="size-5" strokeWidth={1.6} /> Journey map
+        </a>
       </nav>
     </div>
   );
