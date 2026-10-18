@@ -12,7 +12,7 @@ describe("tenant isolation guard", () => {
     const blocks = src.split(/(?=export const \w+ = createServerFn)/).slice(1);
     for (const b of blocks) {
       const name = /export const (\w+)/.exec(b)?.[1] ?? "unknown";
-      const [head, handler = ""] = b.split(".handler");
+      const [head = "", handler = ""] = b.split(".handler");
       if (!/tenantId/.test(head)) continue;
       it(`${f} ${name} authorises the tenant`, () => {
         expect(/(await \w*(guard|authorize|ownerOnly)\w*\(|authorizeTenant\()/.test(handler)).toBe(true);
