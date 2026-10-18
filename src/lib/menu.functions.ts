@@ -164,6 +164,8 @@ export const listMenuAdmin = createServerFn({ method: "POST" })
       items: MenuItemRow[];
       pairings: PairingRow[];
     }> => {
+      const { authorizeTenant } = await import("./tenant-auth.server");
+      await authorizeTenant(data.tenantId);
       const { db } = await import("./db.server");
       const c = await db();
       const [cats, items, pairs] = await Promise.all([
