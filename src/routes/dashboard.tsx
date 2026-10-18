@@ -22,6 +22,7 @@ import {
 
 import { Logo } from "@/components/brand/logo";
 import { supabase } from "@/integrations/supabase/client";
+import { WorkspaceSwitcher } from "@/components/app/team-panel";
 import { signOut } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/dashboard")({
@@ -99,6 +100,7 @@ function DashboardLayout() {
         <Link to="/">
           <Logo />
         </Link>
+        <WorkspaceSwitcher />
         <nav className="mt-8 grid gap-1">
           {nav.map(({ to, label, icon: Icon, exact }) => (
             <Link
@@ -126,6 +128,7 @@ function DashboardLayout() {
           <Link to="/">
             <Logo />
           </Link>
+          <div className="w-40"><WorkspaceSwitcher /></div>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-10">
           <Outlet />

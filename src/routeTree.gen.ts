@@ -39,6 +39,7 @@ import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as DashboardWaitlistRouteImport } from './routes/dashboard.waitlist'
 import { Route as DashboardWhatsappHealthRouteImport } from './routes/dashboard.whatsapp-health'
 import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
+import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
@@ -202,6 +203,11 @@ const GeoClaimTokenRoute = GeoClaimTokenRouteImport.update({
   path: '/geo-claim/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinTokenRoute = JoinTokenRouteImport.update({
+  id: '/join/$token',
+  path: '/join/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
@@ -334,6 +341,7 @@ export interface FileRoutesByTo {
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
   '/geo-claim/$token': typeof GeoClaimTokenRoute
+  '/join/$token': typeof JoinTokenRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
@@ -423,6 +432,7 @@ export interface FileRouteTypes {
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
+    | '/join/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
+    | '/join/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
@@ -508,6 +519,7 @@ export interface FileRouteTypes {
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
     | '/geo-claim/$token'
+    | '/join/$token'
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
@@ -537,6 +549,7 @@ export interface RootRouteChildren {
   StoriesRoute: typeof StoriesRoute
   ClaimSlugRoute: typeof ClaimSlugRoute
   GeoClaimTokenRoute: typeof GeoClaimTokenRoute
+  JoinTokenRoute: typeof JoinTokenRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
   MSlugRoute: typeof MSlugRoute
@@ -761,6 +774,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GeoClaimTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join/$token': {
+      id: '/join/$token'
+      path: '/join/$token'
+      fullPath: '/join/$token'
+      preLoaderRoute: typeof JoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/legal/privacy': {
       id: '/legal/privacy'
       path: '/legal/privacy'
@@ -900,6 +920,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoriesRoute: StoriesRoute,
   ClaimSlugRoute: ClaimSlugRoute,
   GeoClaimTokenRoute: GeoClaimTokenRoute,
+  JoinTokenRoute: JoinTokenRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
   MSlugRoute: MSlugRoute,

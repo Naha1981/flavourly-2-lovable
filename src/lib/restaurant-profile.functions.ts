@@ -54,9 +54,10 @@ async function firstTenantForUser(userId: string): Promise<string | null> {
     .from("tenant_members")
     .select("tenant_id, created_at")
     .eq("user_id", userId)
-    .order("created_at")
-    .limit(1);
-  return data?.[0]?.tenant_id ? String(data[0]["tenant_id"]) : null;
+    .order("created_at");
+  const { pickTenant } = await import("./active-workspace.server");
+  const m = pickTenant(data);
+  return m?.tenant_id ? String(m.tenant_id) : null;
 }
 
 export const getRestaurantProfile = createServerFn({ method: "POST" })

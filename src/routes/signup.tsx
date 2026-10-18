@@ -13,6 +13,7 @@ import { validateSignup } from "@/lib/auth-rules";
 
 const searchSchema = z.object({
   plan: z.string().optional(),
+  join: z.string().regex(/^[a-f0-9]{48}$/).optional(),
 });
 
 export const Route = createFileRoute("/signup")({
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/signup")({
 });
 
 function SignupPage() {
-  const { plan } = Route.useSearch();
+  const { plan, join } = Route.useSearch();
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
@@ -47,7 +48,7 @@ function SignupPage() {
       const restaurant = String(f.get("restaurant") ?? "").trim();
       const email = String(f.get("email") ?? "").trim();
       const password = String(f.get("password") ?? "");
-      const invalid = validateSignup({ restaurant, email, password });
+      const invalid = validateSignup({ restaurant: join ? "Joining a team" : restaurant, email, password });
       if (invalid) {
         toast.error(invalid);
         return;
@@ -67,7 +68,12 @@ function SignupPage() {
       if (!data.session) {
         // Email confirmation is on: the workspace is created on first sign-in.
         toast.success("Check your email to confirm your address, then sign in.");
-        navigate({ to: "/login", search: {} });
+        navigate({ to: "/login", search: join ? { redirect: `/join/${join}` } : {} });
+        return;
+      }
+      if (join) {
+        toast.success("Account created.");
+        navigate({ to: "/join/$token", params: { token: join } });
         return;
       }
       await enterWorkspace(restaurant);
@@ -104,10 +110,12 @@ function SignupPage() {
         }}
         className="grid gap-4"
       >
-        <div className="grid gap-2">
-          <Label htmlFor="restaurant">Restaurant name</Label>
-          <Input id="restaurant" name="restaurant" placeholder="Marble" />
-        </div>
+        {!join && (
+          <div className="grid gap-2">
+            <Label htmlFor="restaurant">Restaurant name</Label>
+            <Input id="restaurant" name="restaurant" placeholder="Marble" />
+          </div>
+        )}
         <div className="grid gap-2">
           <Label htmlFor="name">Your name</Label>
           <Input id="name" name="name" placeholder="Warren Dlamini" />

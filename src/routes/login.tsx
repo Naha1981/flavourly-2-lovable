@@ -48,7 +48,12 @@ function LoginPage() {
         toast.error(signInErrorMessage(error.message));
         return;
       }
-      const ws = await enterWorkspace();
+      const joining = redirect?.startsWith("/join/") ?? false;
+      const ws = joining ? null : await enterWorkspace();
+      if (joining) {
+        navigate({ to: redirect as string });
+        return;
+      }
       if (!ws) {
         toast.error(
           "No restaurant is linked to this account yet. Start a free trial to create one.",

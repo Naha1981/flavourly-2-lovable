@@ -20,9 +20,9 @@ export const myWorkspace = createServerFn({ method: "POST" })
       .from("tenant_members")
       .select("tenant_id, role, created_at")
       .eq("user_id", context.userId)
-      .order("created_at")
-      .limit(1);
-    const m = data?.[0];
+      .order("created_at");
+    const { pickTenant } = await import("./active-workspace.server");
+    const m = pickTenant(data);
     if (!m) return null;
     const { data: t } = await c
       .from("tenant_profiles")
