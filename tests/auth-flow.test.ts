@@ -100,6 +100,17 @@ describe("protected dashboard access", () => {
     }
   };
 
+  it("fails closed when no authentication environment flags are set", async () => {
+    delete process.env["REQUIRE_AUTH"];
+    delete process.env["ALLOW_INSECURE_DEMO"];
+    delete process.env["PUBLIC_APP_URL"];
+
+    const { authRequired, authorizeTenant } = await import("@/lib/tenant-auth.server");
+    expect(authRequired()).toBe(true);
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(401);
+  });
+
+
   it("blocks signed-out visitors with 401", async () => {
     const { authorizeTenant, requireUser } = await import("@/lib/tenant-auth.server");
     expect(await status(requireUser())).toBe(401);
