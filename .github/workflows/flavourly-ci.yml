@@ -26,9 +26,14 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Audit dependencies (all dependency types)
-        run: bun audit --audit-level=high | tee bun-audit-all.txt
+        run: bun audit | tee bun-audit-all.txt
       - name: Audit runtime dependencies
-        run: bun audit --audit-level=high --prod | tee bun-audit-runtime.txt
+        run: |
+          bun audit --prod | tee bun-audit-runtime.txt
+          if grep -Eiq '^[[:space:]]*(high|critical):' bun-audit-runtime.txt; then
+            echo "High/critical runtime dependency advisories must be fixed or explicitly justified."
+            exit 1
+          fi
       - name: Upload dependency audit evidence
         if: always()
         uses: actions/upload-artifact@v4
