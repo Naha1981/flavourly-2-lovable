@@ -12,12 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: npm
+          node-version: 22
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run build
-      - run: bunx --package @typescript/native-preview tsgo --noEmit
+      - run: bun run typecheck
       - run: "npx eslint . --rule 'prettier/prettier: off'"
-      - run: npm run typecheck
-      - run: bunx vitest run
+      - run: bun run test
+      - run: bun run build

@@ -310,14 +310,16 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Use Node.js 22 and Bun so local installs match CI. Install Bun from https://bun.sh/docs/installation.
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+bun run dev
 ```
+
+CI runs typecheck, ESLint, Vitest, and the production Vite build in that order. The separate `e2e/` package has not yet been added to the frozen root install; see the handover checklist for the remaining e2e reproducibility gate.
 
 
 ## Authentication safety
