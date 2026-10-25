@@ -17,8 +17,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_VERSION: 8.24.3
+          GITLEAKS_CONFIG: .gitleaks.toml
       - name: Scan complete repository history, not just the PR diff
-        run: /tmp/gitleaks-8.24.3/gitleaks git --redact --verbose
+        run: /tmp/gitleaks-8.24.3/gitleaks git --redact --verbose --config .gitleaks.toml
       - uses: actions/setup-node@v6
         with:
           node-version: 22
