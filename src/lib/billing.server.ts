@@ -1,6 +1,7 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { db } from "./db.server";
 import {
   canUseService,
   isPlanTier,
@@ -12,6 +13,16 @@ import {
   type BillingStatus,
   type PlanTier,
 } from "./billing/provider";
+import {
+  apiSignature,
+  apiTimestamp,
+  checkoutQuery,
+  ipAllowed,
+  itnPostbackBody,
+  parseItnBody,
+  trustedClientIp,
+  verifyItnSignature,
+} from "./payfast.server";
 
 const LIVE_BASE_URL = "https://www.payfast.co.za/eng/process";
 const SANDBOX_BASE_URL = "https://sandbox.payfast.co.za/eng/process";
@@ -20,38 +31,24 @@ function env(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
-function phpUrlEncode(value: string) {
-  return encodeURIComponent(value)
-    .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase())
-    .replace(/%20/g, "+")
-    .replace(/~/g, "%7E");
-}
-
-function signatureInput(data: Record<string, string>, passphrase: string) {
-  const keys = Object.keys(data).filter((key) => data[key] !== "").sort();
-  const pairs = keys.map((key) => phpUrlEncode(key) + "=" + phpUrlEncode(data[key] ?? ""));
-  return pairs.join("&") + (passphrase ? "&passphrase=" + phpUrlEncode(passphrase) : "");
-}
-
-function md5(value: string) {
-  return createHash("md5").update(value).digest("hex");
-}
-
-function safeEqual(a: string, b: string) {
-  const left = Buffer.from(a, "utf8");
-  const right = Buffer.from(b, "utf8");
-  return left.length === right.length && timingSafeEqual(left, right);
-}
-
 function publicAppUrl() {
   const value = env("PUBLIC_APP_URL");
   if (!value) throw new Error("PUBLIC_APP_URL is required for PayFast billing.");
   return value.replace(/\/$/, "");
 }
 
+export function isPayFastSandbox() {
+  return env("PAYFAST_SANDBOX") === "true";
+}
+
 function assertPayFastConfigured() {
   if (!env("PAYFAST_MERCHANT_ID") || !env("PAYFAST_MERCHANT_KEY")) {
     throw new Error("PayFast merchant credentials are not configured.");
+  }
+  // Without a passphrase the signature is an MD5 of public values and anyone
+  // can forge a payment notification. Live mode must therefore have one.
+  if (!isPayFastSandbox() && !env("PAYFAST_PASSPHRASE")) {
+    throw new Error("PAYFAST_PASSPHRASE is required when PAYFAST_SANDBOX is not 'true'.");
   }
 }
 
@@ -149,12 +146,31 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
     custom_str2: tier,
   };
 
-  const signature = md5(signatureInput(data, passphrase));
-  const query = Object.entries({ ...data, signature })
-    .map(([key, value]) => phpUrlEncode(key) + "=" + phpUrlEncode(value))
-    .join("&");
+  const query = checkoutQuery(data, passphrase);
 
   return { redirectUrl: base + "?" + query };
+}
+
+async function cancelAtPayFast(token: string) {
+  const timestamp = apiTimestamp();
+  const merchantId = env("PAYFAST_MERCHANT_ID");
+  const signature = apiSignature(
+    { "merchant-id": merchantId, version: "v1", timestamp },
+    env("PAYFAST_PASSPHRASE"),
+  );
+  const url =
+    "https://api.payfast.co.za/subscriptions/" +
+    encodeURIComponent(token) +
+    "/cancel" +
+    (isPayFastSandbox() ? "?testing=true" : "");
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { "merchant-id": merchantId, version: "v1", timestamp, signature },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    throw new Error("PayFast refused to cancel the subscription (HTTP " + response.status + ").");
+  }
 }
 
 export async function cancelSubscription(tenantId: string) {
@@ -163,40 +179,44 @@ export async function cancelSubscription(tenantId: string) {
   const { data: tenant } = await c.from("tenant_profiles")
     .select("payfast_subscription_token").eq("tenant_id", tenantId).maybeSingle();
 
-  await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
-
-  if (!tenant?.payfast_subscription_token) return;
-  const sandbox = env("PAYFAST_SANDBOX") === "true";
-  const endpoint = (sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za")
-    + "/subscriptions/" + encodeURIComponent(tenant.payfast_subscription_token) + "/update";
-
-  const response = await fetch(endpoint, {
-    method: "PUT",
-    headers: { "content-type": "application/json", version: "v1" },
-    body: JSON.stringify({
-      merchantId: env("PAYFAST_MERCHANT_ID"),
-      passphrase: env("PAYFAST_PASSPHRASE"),
-      status: 2,
-    }),
-  });
-  if (!response.ok) console.error("PayFast cancel request failed", response.status);
+  // Cancel at PayFast FIRST. If that fails we must not tell the restaurant it
+  // is cancelled while PayFast keeps charging their card.
+  if (tenant?.payfast_subscription_token) {
+    await cancelAtPayFast(tenant.payfast_subscription_token);
+  }
+  const { error } = await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
+  if (error) throw new Error(error.message);
 }
 
-export async function verifyPayFastWebhook(request: Request) {
+/** Asks PayFast to confirm it really sent this notification. */
+async function postbackValidate(pairs: Array<[string, string]>, fetchImpl: typeof fetch) {
+  const host = isPayFastSandbox() ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za";
+  const response = await fetchImpl(host + "/eng/query/validate", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: itnPostbackBody(pairs),
+    signal: AbortSignal.timeout(8_000),
+  });
+  const text = (await response.text()).trim();
+  if (!response.ok || text !== "VALID") throw new Error("PayFast postback validation failed.");
+}
+
+export type PayFastResult =
+  | { ok: true; tenantId: string; status: "active" | "canceled" | "past_due" | "ignored" | "duplicate" | "stale" };
+
+export async function verifyPayFastWebhook(
+  request: Request,
+  deps: { fetchImpl?: typeof fetch } = {},
+): Promise<PayFastResult> {
   assertPayFastConfigured();
   const raw = await request.text();
-  const params = new URLSearchParams(raw);
-  const data: Record<string, string> = {};
-  let providedSignature = "";
+  const pairs = parseItnBody(raw);
 
-  for (const [key, value] of params.entries()) {
-    if (key === "signature") providedSignature = value;
-    else data[key] = value;
+  if (!verifyItnSignature(pairs, env("PAYFAST_PASSPHRASE"))) {
+    throw new Error("PayFast signature missing or mismatched.");
   }
-
-  if (!providedSignature) throw new Error("Missing PayFast signature.");
-  const expected = md5(signatureInput(data, env("PAYFAST_PASSPHRASE")));
-  if (!safeEqual(expected, providedSignature)) throw new Error("PayFast signature mismatch.");
+  const data: Record<string, string> = {};
+  for (const [key, value] of pairs) if (key !== "signature") data[key] = value;
 
   if (data["merchant_id"] !== env("PAYFAST_MERCHANT_ID")) {
     throw new Error("PayFast merchant mismatch.");
@@ -206,51 +226,94 @@ export async function verifyPayFastWebhook(request: Request) {
   const tier = tierFromPaymentId(data["m_payment_id"] ?? "");
   const tenantId = data["custom_str1"] || data["m_payment_id"]?.split(":")[0] || "";
   if (!tenantId || !tier) throw new Error("PayFast payload missing tenant/tier.");
+  const idTenant = data["m_payment_id"]?.split(":")[0];
+  if (idTenant && idTenant !== tenantId) throw new Error("PayFast tenant fields disagree.");
 
   const expectedAmount = TIER_MONTHLY_CENTS[tier] / 100;
   if (Math.abs(amount - expectedAmount) > 0.01) throw new Error("PayFast amount mismatch.");
 
+  await postbackValidate(pairs, deps.fetchImpl ?? fetch);
+
   const status = (data["payment_status"] ?? "").toLowerCase();
+  const pfPaymentId = data["pf_payment_id"] ?? "";
   const c = supabaseAdmin;
+  const events = await db();
+
   const { data: tenant } = await c.from("tenant_profiles")
     .select("tenant_id, plan_status, payfast_subscription_token")
     .eq("tenant_id", tenantId).maybeSingle();
   if (!tenant) throw new Error("Unknown Flavourly tenant.");
 
+  // Replay protection: the same PayFast payment + status is applied once.
+  if (pfPaymentId) {
+    const { data: seen, error: seenError } = await events.from("billing_events")
+      .select("id").eq("pf_payment_id", pfPaymentId).eq("payment_status", status).maybeSingle();
+    if (seenError) throw new Error("billing_events lookup failed: " + seenError.message);
+    if (seen) return { ok: true, tenantId, status: "duplicate" };
+  }
+
+  const record = async (applied: string) => {
+    if (!pfPaymentId) return;
+    await events.from("billing_events").upsert(
+      {
+        tenant_id: tenantId,
+        pf_payment_id: pfPaymentId,
+        payment_status: status,
+        applied_status: applied,
+        subscription_token: data["token"] || null,
+        amount_gross: Number.isFinite(amount) ? amount : null,
+      },
+      { onConflict: "pf_payment_id,payment_status", ignoreDuplicates: true },
+    );
+  };
+
   if (status === "complete") {
-    await c.from("tenant_profiles").update({
+    // A late COMPLETE for a subscription we already cancelled must not revive it.
+    const token = data["token"] || null;
+    if (tenant.plan_status === "canceled" && token && token === tenant.payfast_subscription_token) {
+      await record("stale");
+      return { ok: true, tenantId, status: "stale" };
+    }
+    const { error } = await c.from("tenant_profiles").update({
       plan_tier: tier,
       plan_status: "active",
-      payfast_customer_token: data["token"] || null,
-      payfast_subscription_token: data["token"] || null,
+      payfast_customer_token: token,
+      payfast_subscription_token: token,
     }).eq("tenant_id", tenantId);
-    return { ok: true as const, tenantId, status: "active" as const };
+    if (error) throw new Error(error.message);
+    await record("active");
+    return { ok: true, tenantId, status: "active" };
   }
 
   if (status === "cancelled") {
-    await c.from("tenant_profiles").update({ plan_status: "canceled" })
-      .eq("tenant_id", tenantId);
-    return { ok: true as const, tenantId, status: "canceled" as const };
+    const { error } = await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
+    if (error) throw new Error(error.message);
+    await record("canceled");
+    return { ok: true, tenantId, status: "canceled" };
   }
 
   if (status === "failed") {
-    await c.from("tenant_profiles").update({ plan_status: "past_due" })
-      .eq("tenant_id", tenantId);
-    return { ok: true as const, tenantId, status: "past_due" as const };
+    // A failed renewal must not downgrade a tenant that was already cancelled.
+    if (tenant.plan_status === "canceled") {
+      await record("stale");
+      return { ok: true, tenantId, status: "stale" };
+    }
+    const { error } = await c.from("tenant_profiles").update({ plan_status: "past_due" }).eq("tenant_id", tenantId);
+    if (error) throw new Error(error.message);
+    await record("past_due");
+    return { ok: true, tenantId, status: "past_due" };
   }
 
-  return { ok: true as const, tenantId, status: "ignored" as const };
+  await record("ignored");
+  return { ok: true, tenantId, status: "ignored" };
 }
 
 export function assertPayFastSource(request: Request) {
-  const live = env("PAYFAST_SANDBOX") !== "true";
-  if (!live) return;
+  if (isPayFastSandbox()) return;
   const allow = env("PAYFAST_ALLOWED_IPS").split(",").map((x) => x.trim()).filter(Boolean);
   if (allow.length === 0) throw new Error("PAYFAST_ALLOWED_IPS must be configured for live ITN verification.");
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const remote = request.headers.get("x-real-ip")?.trim();
-  const source = forwarded || remote;
-  if (!source || !allow.includes(source)) throw new Error("PayFast source IP rejected.");
+  const source = trustedClientIp(request.headers);
+  if (!source || !ipAllowed(source, allow)) throw new Error("PayFast source IP rejected.");
 }
 
 export async function assertCanSendNow(tenantId: string) {
