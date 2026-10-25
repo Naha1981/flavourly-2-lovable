@@ -7,7 +7,7 @@ on:
       - ".github/dependency-remediation.trigger"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   remediate:
@@ -70,3 +70,15 @@ jobs:
             audit-runtime.txt
           if-no-files-found: warn
           retention-days: 14
+      - name: Commit verified dependency remediation
+        if: success()
+        run: |
+          if git diff --quiet -- package.json bun.lock; then
+            echo "No dependency changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json bun.lock
+          git commit -m "Security: remediate audited dependencies"
+          git push origin HEAD:hardening/client-handover-2026-10-25
