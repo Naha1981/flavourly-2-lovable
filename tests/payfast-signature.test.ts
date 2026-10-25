@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildPayFastSignature, createCheckout, verifyPayFastWebhook } from "@/lib/billing.server";
+
+const mockState = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock("@/lib/db.server", () => ({
+  db: async () => ({ rpc: mockState.rpc }),
+}));
 
 const managedEnv = [
   "PAYFAST_MERCHANT_ID",
@@ -11,6 +16,8 @@ const managedEnv = [
   "PUBLIC_APP_URL",
 ] as const;
 const previousEnv = new Map<string, string | undefined>();
+const originalFetch = globalThis.fetch;
+const mockFetch = vi.fn<typeof fetch>();
 
 function phpEncode(value: string) {
   return encodeURIComponent(value.trim())
@@ -29,6 +36,10 @@ beforeEach(() => {
   process.env["PAYFAST_PASSPHRASE"] = "test phrase";
   process.env["PAYFAST_SANDBOX"] = "true";
   process.env["PUBLIC_APP_URL"] = "https://app.example";
+  mockState.rpc.mockReset();
+  mockState.rpc.mockResolvedValue({ data: [{ accepted: true, outcome: "complete" }], error: null });
+  mockFetch.mockReset().mockResolvedValue(new Response("VALID", { status: 200 }));
+  globalThis.fetch = mockFetch;
 });
 
 afterEach(() => {
@@ -38,6 +49,7 @@ afterEach(() => {
     else process.env[key] = value;
   }
   previousEnv.clear();
+  globalThis.fetch = originalFetch;
 });
 
 describe("PayFast custom form signatures", () => {
@@ -80,13 +92,70 @@ describe("PayFast custom form signatures", () => {
     await expect(createCheckout("marble-jhb", "starter")).rejects.toThrow(/PAYFAST_PASSPHRASE/);
   });
 
+  it("accepts a valid signed recurring ITN after PayFast postback validation", async () => {
+    const data: Record<string, string> = {
+      m_payment_id: "marble-jhb:starter:checkout-uuid",
+      pf_payment_id: "1089250",
+      payment_status: "COMPLETE",
+      item_name: "Flavourly starter monthly subscription",
+      item_description: "Recurring subscription",
+      amount_gross: "499.00",
+      amount_fee: "-14.97",
+      amount_net: "484.03",
+      custom_str1: "marble-jhb",
+      custom_str2: "starter",
+      merchant_id: "10000100",
+      token: "subscription-token",
+    };
+    const signature = buildPayFastSignature(data, process.env["PAYFAST_PASSPHRASE"] ?? "");
+    const form = new URLSearchParams({ ...data, signature });
+    const result = await verifyPayFastWebhook(new Request("https://app.example/api/public/billing/webhook", {
+      method: "POST",
+      body: form.toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    }));
+
+    expect(result).toMatchObject({ ok: true, tenantId: "marble-jhb", status: "complete", replay: false });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://sandbox.payfast.co.za/eng/query/validate",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(mockState.rpc).toHaveBeenCalledWith("apply_payfast_itn", expect.objectContaining({
+      p_pf_payment_id: "1089250",
+      p_tenant_id: "marble-jhb",
+      p_payment_status: "COMPLETE",
+      p_tier: "starter",
+    }));
+  });
+
+  it("reports a duplicate result as a replay no-op", async () => {
+    mockState.rpc.mockResolvedValueOnce({ data: [{ accepted: false, outcome: "duplicate" }], error: null });
+    const data: Record<string, string> = {
+      m_payment_id: "marble-jhb:starter:checkout-uuid",
+      pf_payment_id: "1089250",
+      payment_status: "COMPLETE",
+      amount_gross: "499.00",
+      custom_str1: "marble-jhb",
+      custom_str2: "starter",
+      merchant_id: "10000100",
+      token: "subscription-token",
+    };
+    const signature = buildPayFastSignature(data, process.env["PAYFAST_PASSPHRASE"] ?? "");
+    const result = await verifyPayFastWebhook(new Request("https://app.example/api/public/billing/webhook", {
+      method: "POST",
+      body: new URLSearchParams({ ...data, signature }).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    }));
+    expect(result).toMatchObject({ ok: true, status: "duplicate", replay: true });
+  });
+
   it("rejects an ITN whose amount was changed after signing", async () => {
     const data: Record<string, string> = {
       m_payment_id: "marble-jhb:starter:checkout-uuid",
       pf_payment_id: "123456",
       payment_status: "COMPLETE",
       item_name: "Flavourly starter monthly subscription",
-      amount_gross: "4.99",
+      amount_gross: "499.00",
       custom_str1: "marble-jhb",
       custom_str2: "starter",
       merchant_id: "10000100",
@@ -108,7 +177,7 @@ describe("PayFast custom form signatures", () => {
       pf_payment_id: "123457",
       payment_status: "COMPLETE",
       item_name: "Flavourly starter monthly subscription",
-      amount_gross: "4.99",
+      amount_gross: "499.00",
       custom_str1: "marble-jhb",
       custom_str2: "starter",
       merchant_id: "10000100",
