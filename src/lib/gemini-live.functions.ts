@@ -103,7 +103,7 @@ export const runGeminiLiveTool = createServerFn({ method: "POST" })
         .object({
           tenantId: tenant,
           name: z.string(),
-          args: z.record(z.unknown()).default({}),
+          args: z.record(z.string(), z.unknown()).default({}),
         })
         .parse(data),
   )
