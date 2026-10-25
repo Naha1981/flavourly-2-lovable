@@ -327,3 +327,8 @@ CI runs typecheck, ESLint, Vitest, and the production Vite build in that order. 
 Server functions require a valid Supabase user session and tenant membership by default in development, preview, and production. Set `REQUIRE_AUTH=true` in deployed environments. The legacy `NODE_ENV` value is not an authentication control.
 
 `ALLOW_INSECURE_DEMO=true` is an explicit local/demo-only escape hatch and is ignored when `PUBLIC_APP_URL` is missing, invalid, or HTTPS. Never enable it for a client or internet-facing deployment. Do not put service-role keys or other secrets in `.env.example`; use your hosting provider's secret settings.
+
+
+## Client handover documentation
+
+See [docs/handover/README.md](docs/handover/README.md) for the architecture and verification status, [RUNBOOK.md](docs/handover/RUNBOOK.md) for incident triage, and [CLIENT_GUIDE.md](docs/handover/CLIENT_GUIDE.md) for restaurant-manager workflows. This documentation is not evidence that live environment settings, schedules, alerts, payments, or client acceptance have been verified.

@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env-example.mjs",
+    "check:test-focus": "node scripts/check-test-focus.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
