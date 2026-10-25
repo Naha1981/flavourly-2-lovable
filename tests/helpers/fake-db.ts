@@ -33,7 +33,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
     const exec = () => {
       const rows = t(table);
       if (op === "insert") {
-        const items = (Array.isArray(payload) ? payload : [payload!]).map((p) => ({
+        const items: Row[] = (Array.isArray(payload) ? payload : [payload!]).map((p): Row => ({
           id: `id-${++seq}`,
           created_at: new Date().toISOString(),
           ...(DEFAULTS[table]?.() ?? {}),
