@@ -44,12 +44,25 @@ export const setRevenueEmployeeModeFn = createServerFn({ method: "POST" })
     return setRevenueEmployeeMode(data.tenantId, data.mode);
   });
 
+export async function requireApprovalActorId(): Promise<string> {
+  const { actorId } = await import("../tenant-auth.server");
+  const id = await actorId();
+  if (!id) {
+    throw new Response(JSON.stringify({ error: "Please sign in." }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return id;
+}
+
 export const approveRevenueActionFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ tenantId: tenant, actionId: z.string().uuid(), approvedBy: z.string().trim().min(1).max(120) }).parse(d),
+    z.object({ tenantId: tenant, actionId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
     await guard(data.tenantId);
+    const approvedBy = await requireApprovalActorId();
     const { approveRevenueAction } = await import("./revenue-employee.server");
-    return approveRevenueAction(data);
+    return approveRevenueAction({ ...data, approvedBy });
   });

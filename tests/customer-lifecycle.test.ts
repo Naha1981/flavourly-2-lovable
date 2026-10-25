@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 function birthdayWindow(birthday: string, now: Date): number | null {
   if (!/^\d{2}-\d{2}$/.test(birthday)) return null;
-  const [month, day] = birthday.split("-").map(Number);
+  const [month, day] = birthday.split("-").map(Number) as [number, number];
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   let target = new Date(now.getFullYear(), month - 1, day);
   if (target < today) target = new Date(now.getFullYear() + 1, month - 1, day);

@@ -9,15 +9,44 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
         with:
-          node-version: 24
-          cache: npm
+          fetch-depth: 0
+      - name: Scan full Git history for leaked secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.24.3
+          GITLEAKS_CONFIG: .gitleaks.toml
+      - name: Scan complete repository history, not just the PR diff
+        run: /tmp/gitleaks-8.24.3/gitleaks git --redact --verbose --config .gitleaks.toml
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run build
-      - run: bunx --package @typescript/native-preview tsgo --noEmit
+      - name: Audit dependencies (all dependency types)
+        run: bun audit | tee bun-audit-all.txt
+      - name: Audit runtime dependencies
+        run: |
+          bun audit --prod | tee bun-audit-runtime.txt
+          if grep -Eiq '^[[:space:]]*(high|critical):' bun-audit-runtime.txt; then
+            echo "High/critical runtime dependency advisories must be fixed or explicitly justified."
+            exit 1
+          fi
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: |
+            bun-audit-all.txt
+            bun-audit-runtime.txt
+          if-no-files-found: warn
+          retention-days: 90
+      - run: bun run check:env
+      - run: bun run check:test-focus
+      - run: bun run typecheck
       - run: "npx eslint . --rule 'prettier/prettier: off'"
-      - run: npm run typecheck
-      - run: bunx vitest run
+      - run: bun run test
+      - run: bun run build

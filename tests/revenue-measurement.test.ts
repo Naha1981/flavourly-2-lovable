@@ -112,7 +112,7 @@ describe("campaign revenue measurement", () => {
   it("labels campaign revenue as linked and measures incremental lift vs variant A", async () => {
     await seedCampaign({ ab: true });
     const { listCampaignsWithAttribution } = await import("@/lib/campaigns.server");
-    const [c] = await listCampaignsWithAttribution(TENANT);
+    const c = (await listCampaignsWithAttribution(TENANT))[0]!;
     expect(c.revenueCents).toBe(8000);
     expect(c.measurement.linkedRevenueCents).toBe(c.revenueCents);
     expect(c.measurement.attributionRule).toContain("7 days");
@@ -124,7 +124,7 @@ describe("campaign revenue measurement", () => {
   it("reports no incremental figure when there is no comparison group", async () => {
     await seedCampaign({ ab: false });
     const { listCampaignsWithAttribution } = await import("@/lib/campaigns.server");
-    const [c] = await listCampaignsWithAttribution(TENANT);
+    const c = (await listCampaignsWithAttribution(TENANT))[0]!;
     expect(c.measurement.linkedRevenueCents).toBe(2000);
     expect(c.measurement.incrementalRevenueCents).toBeNull();
     expect(c.measurement.baselineRule).toBeNull();

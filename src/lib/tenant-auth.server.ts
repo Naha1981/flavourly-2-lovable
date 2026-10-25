@@ -6,9 +6,22 @@ export type TenantRole = "owner" | "manager" | "staff";
 export const ANY_ROLE: TenantRole[] = ["owner", "manager", "staff"];
 export const MANAGERS: TenantRole[] = ["owner", "manager"];
 
-/** Production is fail-closed. Local/demo environments can opt in with REQUIRE_AUTH=true. */
-export const authRequired = () =>
-  process.env["REQUIRE_AUTH"] === "true" || process.env["NODE_ENV"] === "production";
+/**
+ * Authentication is required by default in every environment.
+ * Only explicitly opted-in, non-HTTPS demo deployments can bypass it.
+ */
+export const authRequired = () => {
+  if (process.env["REQUIRE_AUTH"] === "true") return true;
+  if (process.env["ALLOW_INSECURE_DEMO"] !== "true") return true;
+  const publicAppUrl = process.env["PUBLIC_APP_URL"]?.trim();
+  if (!publicAppUrl) return true;
+
+  try {
+    return new URL(publicAppUrl).protocol === "https:";
+  } catch {
+    return true;
+  }
+};
 
 const deny = (status: 401 | 403, message: string) =>
   new Response(JSON.stringify({ error: message }), {
