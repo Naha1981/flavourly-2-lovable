@@ -16,7 +16,10 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-node@v4
+          GITLEAKS_VERSION: 8.24.3
+      - name: Scan complete repository history, not just the PR diff
+        run: /tmp/gitleaks-8.24.3/gitleaks git --redact --verbose
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
       - uses: oven-sh/setup-bun@v2
