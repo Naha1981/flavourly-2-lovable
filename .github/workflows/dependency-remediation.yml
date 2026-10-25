@@ -1,0 +1,72 @@
+name: One-time dependency remediation
+
+on:
+  push:
+    branches: [hardening/client-handover-2026-10-25]
+    paths:
+      - ".github/dependency-remediation.trigger"
+
+permissions:
+  contents: read
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: hardening/client-handover-2026-10-25
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - name: Install current frozen dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply advisory-backed dependency updates
+        run: bun audit fix --latest 2>&1 | tee audit-fix.log
+      - name: Verify updated lockfile is reproducible
+        run: bun install --frozen-lockfile
+      - name: Check environment inventory
+        run: bun run check:env
+      - name: Check no focused or skipped tests
+        run: bun run check:test-focus
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: "npx eslint . --rule 'prettier/prettier: off'"
+      - name: Unit tests
+        run: bun run test
+      - name: Production build
+        run: bun run build
+      - name: Capture complete audit output
+        if: always()
+        run: |
+          bun audit > audit-all.txt 2>&1 || true
+          bun audit --prod > audit-runtime.txt 2>&1 || true
+      - name: Fail if runtime high/critical advisories remain
+        if: always()
+        run: |
+          if [ ! -f audit-runtime.txt ]; then
+            echo "Runtime audit report is missing."
+            exit 1
+          fi
+          if grep -Eiq '^[[:space:]]*(high|critical):' audit-runtime.txt; then
+            echo "Unresolved high/critical runtime dependency advisories remain:"
+            cat audit-runtime.txt
+            exit 1
+          fi
+          echo "Runtime dependency audit passed: no high/critical advisory lines."
+      - name: Upload generated dependency lock and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-remediation-candidate
+          path: |
+            package.json
+            bun.lock
+            audit-fix.log
+            audit-all.txt
+            audit-runtime.txt
+          if-no-files-found: warn
+          retention-days: 14
