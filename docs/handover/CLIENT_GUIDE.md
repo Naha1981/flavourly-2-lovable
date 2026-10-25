@@ -44,4 +44,4 @@ Include restaurant name/slug, approximate time (SAST), what action you took, the
 
 ## Client sign-off
 
-The client should run the acceptance script in section 7 of the Definition of Done and record pass/fail per step before this guide is treated as approved for their restaurant.
+Run the [click-by-click Acceptance Script](ACCEPTANCE_SCRIPT.md) in the staging environment and record pass/fail per step before this guide is approved for the restaurant. Use only test guest accounts/numbers and sandbox billing until the owner authorises production testing.
