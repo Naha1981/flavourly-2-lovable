@@ -25,6 +25,20 @@ jobs:
           node-version: 22
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      - name: Audit dependencies (all dependency types)
+        run: bun audit --audit-level=high | tee bun-audit-all.txt
+      - name: Audit runtime dependencies
+        run: bun audit --audit-level=high --prod | tee bun-audit-runtime.txt
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: |
+            bun-audit-all.txt
+            bun-audit-runtime.txt
+          if-no-files-found: warn
+          retention-days: 90
       - run: bun run check:env
       - run: bun run check:test-focus
       - run: bun run typecheck
