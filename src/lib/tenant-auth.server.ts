@@ -11,6 +11,7 @@ export const MANAGERS: TenantRole[] = ["owner", "manager"];
  * Only explicitly opted-in, non-HTTPS demo deployments can bypass it.
  */
 export const authRequired = () => {
+  if (process.env["REQUIRE_AUTH"] === "true") return true;
   if (process.env["ALLOW_INSECURE_DEMO"] !== "true") return true;
   const publicAppUrl = process.env["PUBLIC_APP_URL"]?.trim();
   if (!publicAppUrl) return true;

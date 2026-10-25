@@ -36,6 +36,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env["REQUIRE_AUTH"];
+  delete process.env["ALLOW_INSECURE_DEMO"];
+  delete process.env["PUBLIC_APP_URL"];
 });
 
 describe("sign-up", () => {
@@ -108,6 +110,17 @@ describe("protected dashboard access", () => {
     const { authRequired, authorizeTenant } = await import("@/lib/tenant-auth.server");
     expect(authRequired()).toBe(true);
     expect(await status(authorizeTenant("marble-jhb"))).toBe(401);
+  });
+
+  it("allows bypass only when the demo override and a non-HTTPS URL are explicit", async () => {
+    const { authRequired } = await import("@/lib/tenant-auth.server");
+    process.env["REQUIRE_AUTH"] = "false";
+    process.env["ALLOW_INSECURE_DEMO"] = "true";
+    process.env["PUBLIC_APP_URL"] = "http://localhost:3000";
+    expect(authRequired()).toBe(false);
+
+    process.env["PUBLIC_APP_URL"] = "https://example.com";
+    expect(authRequired()).toBe(true);
   });
 
 
