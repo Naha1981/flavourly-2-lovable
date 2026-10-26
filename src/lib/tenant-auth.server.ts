@@ -6,9 +6,20 @@ export type TenantRole = "owner" | "manager" | "staff";
 export const ANY_ROLE: TenantRole[] = ["owner", "manager", "staff"];
 export const MANAGERS: TenantRole[] = ["owner", "manager"];
 
-/** Production is fail-closed. Local/demo environments can opt in with REQUIRE_AUTH=true. */
-export const authRequired = () =>
-  process.env["REQUIRE_AUTH"] === "true" || process.env["NODE_ENV"] === "production";
+/**
+ * Fail-closed: authentication is REQUIRED unless someone has explicitly opted
+ * in to the insecure demo mode (ALLOW_INSECURE_DEMO=true) on a non-https,
+ * non-production deployment. Forgetting an env var can therefore never open the
+ * app; it can only lock it down. Every server function reaches the database
+ * through the service role (RLS bypassed), so this switch is the tenant wall.
+ */
+export const authRequired = () => {
+  const demo = process.env["ALLOW_INSECURE_DEMO"] === "true";
+  const publicUrl = (process.env["PUBLIC_APP_URL"] ?? "").trim().toLowerCase();
+  const production = process.env["NODE_ENV"] === "production";
+  if (demo && !production && !publicUrl.startsWith("https://")) return false;
+  return true;
+};
 
 const deny = (status: 401 | 403, message: string) =>
   new Response(JSON.stringify({ error: message }), {
