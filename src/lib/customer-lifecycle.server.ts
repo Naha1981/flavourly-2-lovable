@@ -1,5 +1,6 @@
 import { db } from "./db.server";
 import { enqueueOutbox } from "./outbox.server";
+import { getCronWatermark, listAllTenants, rotateAfter, setCronWatermark } from "./tenants.server";
 
 const BIRTHDAY_WINDOW_DAYS = 7;
 const AT_RISK_MIN_DAYS = 120;
@@ -49,10 +50,28 @@ async function processTenant(
   now: Date,
 ): Promise<{ birthdays: number; reactivations: number; approvals: number; queued: number }> {
   const c = await db();
-  const { data: customers } = await c.from("customers")
-    .select("id, phone, name, birthday, last_visit_at, last_birthday_reward_sent_at, last_reactivation_sent_at")
-    .eq("tenant_id", tenantId)
-    .limit(5000);
+  // Paged: a bare .limit(5000) silently drops customers past the cap.
+  type CustomerRow = {
+    id: string;
+    phone: string | null;
+    name: string | null;
+    birthday: string | null;
+    last_visit_at: string | null;
+    last_birthday_reward_sent_at: string | null;
+    last_reactivation_sent_at: string | null;
+  };
+  const customers: CustomerRow[] = [];
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await c
+      .from("customers")
+      .select("id, phone, name, birthday, last_visit_at, last_birthday_reward_sent_at, last_reactivation_sent_at")
+      .eq("tenant_id", tenantId)
+      .range(from, from + 499);
+    if (error) throw error;
+    const page = (data ?? []) as CustomerRow[];
+    customers.push(...page);
+    if (page.length < 500) break;
+  }
 
   let birthdays = 0;
   let reactivations = 0;
@@ -116,17 +135,45 @@ async function processTenant(
 
 export async function runCustomerLifecycle() {
   const c = await db();
-  const { data: tenants } = await c.from("tenant_profiles").select("tenant_id, name").limit(100);
-  const totals = { tenants: 0, birthdays: 0, reactivations: 0, approvals: 0, queued: 0 };
+  const tenants = await listAllTenants(c, "tenant_id, name");
+  const totals = { tenants: 0, birthdays: 0, reactivations: 0, approvals: 0, queued: 0, remaining: 0, failed: 0 };
   const now = new Date();
+  // Bounded per invocation: stop starting new tenants once a budget is spent
+  // and report how many remain, so a large fleet degrades honestly instead of
+  // dying on a platform timeout mid-run. The persisted watermark resumes AFTER
+  // the last completed tenant, so every tenant is reached across invocations.
+  // Default 120s: below the 150s free-plan edge wall-clock limit (see
+  // supabase.com/docs/guides/functions/limits); Lovable Cloud server-route
+  // timeout itself is unpublished, so this stays env-configurable.
+  const budgetMs = Number(process.env["FLAVOURLY_CRON_TIME_BUDGET_MS"] || 120_000);
+  const maxTenants = Number(process.env["FLAVOURLY_CRON_MAX_TENANTS_PER_RUN"] || 0) || Infinity;
+  const deadline = Date.now() + budgetMs;
+  const watermark = await getCronWatermark(c, "customer-lifecycle");
+  const ordered = rotateAfter(tenants ?? [], (t) => String(t["tenant_id"]), watermark);
 
-  for (const tenant of tenants ?? []) {
-    const result = await processTenant(String(tenant.tenant_id), String(tenant.name ?? tenant.tenant_id), now);
+  let lastCompleted: string | null = null;
+  for (const tenant of ordered) {
+    if (totals.tenants >= maxTenants || Date.now() > deadline) break;
+    const tenantId = String(tenant["tenant_id"]);
+    try {
+      const result = await processTenant(
+        tenantId,
+        String(tenant["name"] ?? tenant["tenant_id"]),
+        now,
+      );
+      totals.birthdays += result.birthdays;
+      totals.reactivations += result.reactivations;
+      totals.approvals += result.approvals;
+      totals.queued += result.queued;
+    } catch (error) {
+      // Failure isolation: one restaurant's problem must not stop the fleet.
+      totals.failed += 1;
+      console.error("customer-lifecycle tenant failed", tenantId, error);
+    }
     totals.tenants += 1;
-    totals.birthdays += result.birthdays;
-    totals.reactivations += result.reactivations;
-    totals.approvals += result.approvals;
-    totals.queued += result.queued;
+    lastCompleted = tenantId;
   }
+  totals.remaining = ordered.length - totals.tenants;
+  if (lastCompleted) await setCronWatermark(c, "customer-lifecycle", lastCompleted);
   return totals;
 }

@@ -94,6 +94,35 @@ export function providerStatuses(): ProviderStatus[] {
   }));
 }
 
+/**
+ * Defense-in-depth for outbound provider calls (KNOWN_LIMITS #13).
+ * Provider URLs are operator-controlled env values today; validate scheme and
+ * reject userinfo so a malformed or smuggled value cannot pivot protocols or
+ * carry credentials. Private-network egress restrictions remain a deployment
+ * concern and are intentionally not hardcoded here.
+ */
+export function assertSafeProviderUrl(raw: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("Provider URL is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Provider URL must use http or https.");
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error("Provider URL must not contain credentials.");
+  }
+  // Never allow link-local / cloud-metadata literal targets - no legitimate
+  // provider lives there. Private-LAN and DNS-rebinding exposure remain a
+  // deployment-level concern (env-only URLs, operator-controlled).
+  const host = parsed.hostname.replace(/^\[|\]$/g, "");
+  if (host.startsWith("169.254.") || host === "metadata.google.internal") {
+    throw new Error("Provider URL must not target link-local or metadata addresses.");
+  }
+}
+
 function authHeaders(provider: ProviderKind) {
   const headers = new Headers({ "Content-Type": "application/json", Accept: "application/json" });
   const token = provider === "openpost" ? env("OPENPOST_API_TOKEN") : tokenMap[provider];
@@ -103,6 +132,11 @@ function authHeaders(provider: ProviderKind) {
 
 async function postJson(provider: ProviderKind, url: string, payload: Record<string, unknown>): Promise<ProviderResponse> {
   if (!url) return { provider, ok: false, error: "Provider is not configured." };
+  try {
+    assertSafeProviderUrl(url);
+  } catch (error) {
+    return { provider, ok: false, error: error instanceof Error ? error.message : "Provider URL rejected." };
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number(env("FLAVOURLY_PROVIDER_TIMEOUT_MS") || 8_000));
   try {
@@ -154,6 +188,11 @@ export async function askNahaLLM(messages: Array<{ role: "system" | "user"; cont
   const base = urlMap.nahallm;
   const key = tokenMap.nahallm;
   if (!base || !key) return null;
+  try {
+    assertSafeProviderUrl(base);
+  } catch {
+    return null;
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {

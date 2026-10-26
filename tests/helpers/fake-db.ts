@@ -19,6 +19,7 @@ const DEFAULTS: Record<string, () => Row> = {
 
 export function createFakeDb(uniques: Record<string, string[][]> = {}) {
   const tables: Record<string, Row[]> = {};
+  const injected: Array<{ table: string; op: string; error: Row }> = [];
   let seq = 0;
   const t = (name: string) => (tables[name] ??= []);
 
@@ -28,9 +29,16 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
     let returning = false;
     let single: "one" | "maybe" | null = null;
     let limitN: number | null = null;
+    let rangeFrom: number | null = null;
+    let rangeTo: number | null = null;
     const filters: Filter[] = [];
 
     const exec = () => {
+      const hit = injected.findIndex((i) => i.table === table && i.op === op);
+      if (hit >= 0) {
+        const err = injected.splice(hit, 1)[0]!.error;
+        return { data: null, error: err };
+      }
       const rows = t(table);
       if (op === "insert") {
         const items: Row[] = (Array.isArray(payload) ? payload : [payload!]).map((p): Row => ({
@@ -59,6 +67,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
       if (op === "update") {
         for (const r of matched) Object.assign(r, payload);
       }
+      if (rangeFrom != null && rangeTo != null) matched = matched.slice(rangeFrom, rangeTo + 1);
       if (limitN != null) matched = matched.slice(0, limitN);
       if (op === "update" && !returning) return { data: null, error: null };
       if (single) return { data: matched[0] ?? null, error: null };
@@ -80,6 +89,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
       not(c: string, op2: string, v: unknown) { filters.push((r) => op2 === "is" ? r[c] !== v : true); return b; },
       order() { return b; },
       limit(n: number) { limitN = n; return b; },
+      range(f: number, t2: number) { rangeFrom = f; rangeTo = t2; return b; },
       single() { single = "one"; return Promise.resolve(exec()); },
       maybeSingle() { single = "maybe"; return Promise.resolve(exec()); },
       then<T>(res: (v: ReturnType<typeof exec>) => T, rej?: (e: unknown) => T) {
@@ -89,5 +99,8 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
     return b;
   }
 
-  return { from, tables, rows: t };
+  const injectError = (table: string, op: "select" | "insert" | "update" | "delete", error: Row) =>
+    injected.push({ table, op, error });
+
+  return { from, tables, rows: t, injectError };
 }
