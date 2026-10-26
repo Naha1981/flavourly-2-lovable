@@ -78,15 +78,16 @@ export async function processOutbox(limit = 50) {
       .order("tenant_id", { ascending: true })
       .order("scheduled_for", { ascending: true })
       .limit(limit * 10);
-  let { data: candidates, error } = watermark
+  const first = watermark
     ? await base().gt("tenant_id", watermark)
     : await base();
-  if (error) throw error;
-  if (watermark && (candidates ?? []).length < limit) {
+  if (first.error) throw first.error;
+  let candidates = first.data ?? [];
+  if (watermark && candidates.length < limit) {
     // Wrap: serve tenants at or before the watermark with the remaining window.
     const { data: wrapped, error: wrapError } = await base().lte("tenant_id", watermark);
     if (wrapError) throw wrapError;
-    candidates = [...(candidates ?? []), ...(wrapped ?? [])];
+    candidates = [...candidates, ...(wrapped ?? [])];
   }
 
   type DueJob = {
