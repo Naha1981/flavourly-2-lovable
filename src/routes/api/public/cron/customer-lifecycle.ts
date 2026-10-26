@@ -9,7 +9,8 @@ export const Route = createFileRoute("/api/public/cron/customer-lifecycle")({
         const denied = await authenticateCronRequest(request);
         if (denied) return denied;
         const { runCustomerLifecycle } = await import("@/lib/customer-lifecycle.server");
-        return Response.json({ ok: true, result: await runCustomerLifecycle() });
+        const { withCronAlert } = await import("@/lib/alerts.server");
+        return Response.json({ ok: true, result: await withCronAlert("customer-lifecycle", () => runCustomerLifecycle()) });
       },
     },
   },

@@ -1,0 +1,35 @@
+name: Flavourly E2E (manual)
+
+# Browser-level acceptance tests. Manual dispatch only: they need the
+# LOVABLE_API_KEY GitHub secret (AI gateway for the QA agent) and either
+# spawn a local dev server or target the base URL provided at dispatch.
+# Nothing here runs on a schedule or on push.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to test (blank = spawn a local dev server)"
+        required: false
+        type: string
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Install e2e package dependencies
+        working-directory: e2e
+        run: bun install
+      - name: Install Chromium
+        working-directory: e2e
+        run: bunx playwright install chromium --with-deps
+      - name: Run smoke e2e
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: ${{ inputs.base_url }}
+          E2E_MODEL: ${{ vars.E2E_MODEL }}
+          LOVABLE_API_KEY: ${{ secrets.LOVABLE_API_KEY }}
+        run: bun run test:smoke

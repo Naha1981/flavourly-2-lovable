@@ -1,12 +1,14 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendAlert } from "./alerts.server";
 import { db } from "./db.server";
 import {
   canUseService,
   isPlanTier,
   PLAN_TIERS,
   quotaDecision,
+  quotaTelemetryEvents,
   TIER_HOURLY_MESSAGES,
   TIER_MONTHLY_CENTS,
   TIER_MONTHLY_MESSAGES,
@@ -116,6 +118,26 @@ export async function getBillingStatus(tenantId: string) {
   };
 }
 
+function emitQuotaTelemetry(tenantId: string, billing: Awaited<ReturnType<typeof getBillingStatus>>) {
+  // Non-destructive usage telemetry: a structured log line for the pipeline,
+  // plus a throttled owner alert only when a quota is fully reached.
+  for (const event of quotaTelemetryEvents(billing.plan, {
+    monthlyReserved: billing.monthlyReserved,
+    hourlyReserved: billing.hourlyReserved,
+  })) {
+    console.warn("[flavourly-quota]", JSON.stringify({ tenantId, ...event }));
+    if (event.level === "critical") {
+      void sendAlert(
+        "quota:" + tenantId + ":" + event.scope,
+        "warning",
+        "Message quota reached",
+        "Tenant " + tenantId + " hit its " + event.scope + " message limit (" +
+          event.used + "/" + event.limit + ").",
+      );
+    }
+  }
+}
+
 export async function assertCanQueueMessage(tenantId: string) {
   const billing = await getBillingStatus(tenantId);
   if (!billing.serviceAllowed) {
@@ -125,6 +147,7 @@ export async function assertCanQueueMessage(tenantId: string) {
     monthlyReserved: billing.monthlyReserved,
     hourlyReserved: billing.hourlyReserved,
   });
+  emitQuotaTelemetry(tenantId, billing);
   if (!decision.allowed) {
     if (decision.reason === "monthly_quota_exceeded") {
       throw new Error("Monthly message quota reached for the current plan.");
@@ -326,6 +349,7 @@ export async function assertCanSendNow(tenantId: string) {
     monthlyReserved: billing.monthlyReserved,
     hourlyReserved: billing.hourlyReserved,
   });
+  emitQuotaTelemetry(tenantId, billing);
   if (!decision.allowed) {
     throw new Error(
       decision.reason === "monthly_quota_exceeded"

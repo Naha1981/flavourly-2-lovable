@@ -10,6 +10,7 @@ export const Route = createFileRoute("/api/public/cron/revenue-employee")({
         if (denied) return denied;
 
         const { db } = await import("@/lib/db.server");
+        const { sendAlert } = await import("@/lib/alerts.server");
         const { runRevenueEmployee } = await import("@/lib/intelligence/revenue-employee.server");
         const { listAllTenants } = await import("@/lib/tenants.server");
         const c = await db();
@@ -41,6 +42,14 @@ export const Route = createFileRoute("/api/public/cron/revenue-employee")({
           lastCompleted = tenantId;
         }
         if (lastCompleted) await setCronWatermark(c, "revenue-employee", lastCompleted);
+        if (failed > 0) {
+          await sendAlert(
+            "cron:revenue-employee:tenants",
+            "warning",
+            "Revenue Employee cron had tenant failures",
+            failed + " of " + ordered.length + " tenants failed this run; the rest completed and the watermark advanced.",
+          );
+        }
         return Response.json({ ok: true, results, failed, remaining: ordered.length - results.length - failed });
       },
     },
