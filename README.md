@@ -310,11 +310,12 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? You need Node.js 22+ and [Bun](https://bun.sh). Handover documentation lives in [`docs/handover/`](docs/handover/README.md).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+cp .env.example .env.local   # set ALLOW_INSECURE_DEMO=true to skip login locally
+bun run dev
 ```
+
+Auth is required by default; the demo bypass is ignored on https or production deployments.
