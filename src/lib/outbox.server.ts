@@ -59,9 +59,21 @@ export async function enqueueOutbox(input: {
   return { queued: true, approvalRequired: false } as const;
 }
 
+/** A job still "processing" this long after being claimed was abandoned by a crashed or timed-out run. */
+const STUCK_AFTER_MS = 10 * 60 * 1000;
+
 export async function processOutbox(limit = 50) {
   const c = await db();
   const now = new Date();
+
+  // We cannot know whether an abandoned job reached WhatsApp before the crash, so
+  // retrying could message a guest twice. Mark it failed (visible to the watchdog
+  // and the dashboard) rather than re-sending or leaving it stuck forever.
+  await c
+    .from("outbox_jobs")
+    .update({ status: "failed", error: "Interrupted mid-send; not retried to avoid a duplicate message." })
+    .eq("status", "processing")
+    .lt("claimed_at", new Date(now.getTime() - STUCK_AFTER_MS).toISOString());
   const { data: due, error } = await c
     .from("outbox_jobs")
     .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id, campaign_id")
@@ -83,7 +95,7 @@ export async function processOutbox(limit = 50) {
     }
 
     const { data: claimed } = await c.from("outbox_jobs")
-      .update({ status: "processing" })
+      .update({ status: "processing", claimed_at: now.toISOString() })
       .eq("id", job.id)
       .in("status", ["pending", "quiet_hours_delayed"])
       .select("id")

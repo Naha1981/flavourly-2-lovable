@@ -9,7 +9,8 @@ export const Route = createFileRoute("/api/public/cron/outbox")({
         const denied = await authenticateCronRequest(request);
         if (denied) return denied;
         const { processOutbox } = await import("@/lib/outbox.server");
-        return Response.json({ ok: true, result: await processOutbox() });
+        const { runCronJob } = await import("@/lib/heartbeat.server");
+        return runCronJob("outbox", () => processOutbox());
       },
     },
   },
