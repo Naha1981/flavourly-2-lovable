@@ -332,7 +332,12 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
     }
   };
 
-  useEffect(() => () => stop(), []);
+  // Unmount cleanup always calls the latest stop (it only touches refs and
+  // stable setters, but a first-render capture would still be a stale-closure
+  // footgun if stop ever gains state reads).
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+  useEffect(() => () => stopRef.current(), []);
 
   return (
     <section className="glass-card rounded-2xl border border-border p-5">

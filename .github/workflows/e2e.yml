@@ -23,6 +23,9 @@ jobs:
       - name: Install e2e package dependencies
         working-directory: e2e
         run: bun install
+      - name: Type-check e2e suite
+        working-directory: e2e
+        run: bunx tsc --noEmit
       - name: Install Chromium
         working-directory: e2e
         run: bunx playwright install chromium --with-deps
