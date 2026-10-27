@@ -308,7 +308,6 @@ function RevenueEmployeePage() {
                         data: {
                           tenantId: profile.slug,
                           actionId: action.id,
-                          approvedBy: profile.ownerName || "Restaurant owner",
                         },
                       });
                       setMessage(result.ok ? result.result : result.error);
