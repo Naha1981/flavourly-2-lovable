@@ -16,3 +16,14 @@ This list is deliberately candid and must be shared with the client.
 12. **Gemini model / provider limits need live verification.** Credentials, model availability, quotas, third-party URLs and provider health are environment-specific and were not validated against deployed accounts.
 13. **External provider endpoints need SSRF review.** Revenue Employee allows environment-configured outbound URLs; review URL validation and network restrictions before allowing untrusted values.
 14. **Owner monitoring is not automatic yet.** Until the alert wiring and alert-trigger tests are proven, someone must check operator, scheduler, payment and error status manually.
+
+## AI cost caps (added 27 Oct 2026)
+
+Tenant-scoped LLM and Gemini tool calls (Revenue Employee run/ask, Gemini Live
+tool execution) pass through a per-tenant daily cap
+(`FLAVOURLY_AI_DAILY_CALLS_PER_TENANT`, default 200, counted in
+`ai_usage_counters`). Past the cap the call is refused and the owner is
+alerted. Metering failures fail OPEN (logged) so a broken counter never takes
+down guest flows - watch the health endpoint and logs for metering errors.
+Guest-message triage and reply drafts are authenticated dashboard-only calls
+without per-tenant metering yet (see LATER.md).

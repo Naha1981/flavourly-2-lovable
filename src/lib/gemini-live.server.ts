@@ -23,6 +23,8 @@ export async function executeFlavourlyLiveTool(
   name: FlavourlyLiveToolName,
   args: ToolArgs,
 ) {
+  const { assertAiBudget } = await import("./ai-budget.server");
+  await assertAiBudget(tenantId, "gemini-live-tool:" + name);
   const c = await db();
 
   if (name === "get_restaurant_overview") {

@@ -392,6 +392,8 @@ async function summarise(
 }
 
 export async function runRevenueEmployee(input: { tenantId: string; objective?: string }) {
+  const { assertAiBudget } = await import("../ai-budget.server");
+  await assertAiBudget(input.tenantId, "revenue-employee-run");
   const config = await getConfig(input.tenantId);
   if (config.mode === "disabled") {
     return { ok: false as const, error: "Revenue Employee is disabled for this restaurant." };
@@ -604,6 +606,8 @@ export async function approveRevenueAction(input: { tenantId: string; actionId: 
 }
 
 export async function askRevenueEmployee(input: { tenantId: string; question: string }) {
+  const { assertAiBudget } = await import("../ai-budget.server");
+  await assertAiBudget(input.tenantId, "revenue-employee-ask");
   const snapshot = await listRevenueEmployeeSnapshot(input.tenantId);
   const answer = await askNahaLLM([
     {

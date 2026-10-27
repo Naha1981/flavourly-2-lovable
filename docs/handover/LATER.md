@@ -15,3 +15,10 @@ Items below are deferred, not acceptance criteria waived:
 - Add per-tenant caps for LLM calls and Gemini sessions, in addition to existing daily Revenue Employee run limits.
 - Review vendor/hosting ownership, contractual support SLA, data retention and POPIA-related operational policy.
 - Verify Gemini Live model availability, provider quotas, and all optional provider endpoint settings.
+
+## Per-tenant metering for triage and reply drafts
+
+`triageMessage` and `generateReplyDraft` are reachable by any signed-in
+dashboard user without a tenant binding, so they cannot be capped per tenant
+yet. Thread `tenantId` through `analyseMessage`/`draftReply` (guard it) and
+then route both through `assertAiBudget`.
