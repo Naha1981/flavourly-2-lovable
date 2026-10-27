@@ -449,6 +449,10 @@ export const saveVenue = createServerFn({ method: "POST" })
 export const getClaim = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ token: z.string().regex(/^[a-f0-9]{32}$/) }).parse(d))
   .handler(async ({ data }) => {
+    // Public endpoint: 30 previews/min per source IP (token entropy is the
+    // real wall; this blunts scraping and probing - see rate-limit.server.ts).
+    const { allowRateLimited, rateLimitedResponse } = await import("./rate-limit.server");
+    if (!allowRateLimited("claim-preview", 30, 60_000)) throw rateLimitedResponse();
     const { getClaimPreview } = await import("./loyalty.server");
     return getClaimPreview(data.token);
   });
@@ -464,6 +468,9 @@ export const redeemClaim = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    // Public endpoint burning loyalty points: 10 redeems/min per source IP.
+    const { allowRateLimited, rateLimitedResponse } = await import("./rate-limit.server");
+    if (!allowRateLimited("claim-redeem", 10, 60_000)) throw rateLimitedResponse();
     const { redeemAtVenue } = await import("./loyalty.server");
     return redeemAtVenue(data.token, data.lat, data.lon);
   });
