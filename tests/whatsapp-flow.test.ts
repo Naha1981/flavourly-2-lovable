@@ -16,10 +16,10 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   get supabaseAdmin() { return state.db; },
 }));
 vi.mock("@/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => state.send(...a),
+  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
 }));
 vi.mock("../src/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => state.send(...a),
+  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
 }));
 
 const SECRET = "test-webhook-secret";

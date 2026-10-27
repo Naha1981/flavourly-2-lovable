@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["tests/**/*.ts", "src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "compilerOptions": {
+    // Test doubles are deliberately partial; keep real type errors, drop index-strictness noise.
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false
+  }
+}

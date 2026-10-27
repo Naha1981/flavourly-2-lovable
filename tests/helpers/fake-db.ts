@@ -41,8 +41,8 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
         }));
         for (const item of items) {
           for (const cols of uniques[table] ?? []) {
-            if (cols.some((c) => item[c] == null)) continue;
-            if (rows.some((r) => cols.every((c) => r[c] === item[c])))
+            if (cols.some((c) => (item as Record<string, unknown>)[c] == null)) continue;
+            if (rows.some((r) => cols.every((c) => (r as Record<string, unknown>)[c] === (item as Record<string, unknown>)[c])))
               return { data: null, error: { code: "23505", message: "duplicate key" } };
           }
           rows.push(item);

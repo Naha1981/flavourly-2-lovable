@@ -95,7 +95,7 @@ export const addOpportunity = createServerFn({ method: "POST" })
     description: z.string().trim().min(1).max(2000),
     opportunityType: z.enum(["price","menu","rating","promotion","demand","coverage","other"]),
     confidence: z.number().min(0).max(1).nullable().optional(),
-    evidence: z.record(z.string(), z.unknown()).optional(),
+    evidence: z.record(z.string(), z.unknown()).refine((o) => Object.keys(o).length <= 50, "Too many evidence fields.").optional(),
   }).parse(d))
   .handler(async ({ data }) => {
     await guard(data.tenantId);
