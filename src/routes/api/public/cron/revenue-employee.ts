@@ -42,6 +42,8 @@ export const Route = createFileRoute("/api/public/cron/revenue-employee")({
           lastCompleted = tenantId;
         }
         if (lastCompleted) await setCronWatermark(c, "revenue-employee", lastCompleted);
+        const { recordCronHeartbeat } = await import("@/lib/health.server");
+        await recordCronHeartbeat(c, "revenue-employee");
         if (failed > 0) {
           await sendAlert(
             "cron:revenue-employee:tenants",

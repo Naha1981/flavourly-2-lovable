@@ -119,20 +119,34 @@ export async function sendAlert(key: string, level: AlertLevel, title: string, d
   return { delivered: sent ? ("sent" as const) : ("unconfigured" as const), outcomes };
 }
 
-/** Run a cron body and raise a critical owner alert when it throws. */
+/** Run a cron body, record a health-check heartbeat on success, and raise a
+ * critical owner alert when it throws. */
 export async function withCronAlert<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  const result = await (async () => {
+    try {
+      return await fn();
+    } catch (error) {
+      await sendAlert(
+        "cron:" + name,
+        "critical",
+        "Cron " + name + " failed",
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
+  })();
+  // Heartbeat is best-effort and outside the failure path: a heartbeat error
+  // (or missing local Supabase env) must never fail or alert the cron run.
   try {
-    return await fn();
-  } catch (error) {
-    await sendAlert(
-      "cron:" + name,
-      "critical",
-      "Cron " + name + " failed",
-      error instanceof Error ? error.message : String(error),
-    );
-    throw error;
+    const { db } = await import("./db.server");
+    const { recordCronHeartbeat } = await import("./health.server");
+    await recordCronHeartbeat(await db(), name);
+  } catch {
+    // swallowed by design - staleness on the health check is the signal
   }
+  return result;
 }
+
 
 /** Test hook: clear in-memory throttle state between cases. */
 export function resetAlertThrottleForTests() {

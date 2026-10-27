@@ -21,6 +21,7 @@ import { Route as ProductRouteImport } from './routes/product'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StoriesRouteImport } from './routes/stories'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ClaimSlugRouteImport } from './routes/claim.$slug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardApprovalsRouteImport } from './routes/dashboard.approvals'
@@ -109,6 +110,11 @@ const SignupRoute = SignupRouteImport.update({
 const StoriesRoute = StoriesRouteImport.update({
   id: '/stories',
   path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClaimSlugRoute = ClaimSlugRouteImport.update({
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -535,6 +547,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   StoriesRoute: typeof StoriesRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ClaimSlugRoute: typeof ClaimSlugRoute
   GeoClaimTokenRoute: typeof GeoClaimTokenRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
@@ -633,6 +646,13 @@ declare module '@tanstack/react-router' {
       path: '/stories'
       fullPath: '/stories'
       preLoaderRoute: typeof StoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/claim/$slug': {
@@ -898,6 +918,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   StoriesRoute: StoriesRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ClaimSlugRoute: ClaimSlugRoute,
   GeoClaimTokenRoute: GeoClaimTokenRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,

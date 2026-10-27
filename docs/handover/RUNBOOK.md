@@ -63,9 +63,9 @@ These are recommendations, not evidence that the schedules exist. Each request r
 
 **Meaning:** The app cannot reach a dependency or no health-check endpoint is present / healthy.
 
-**Confirm:** Check hosting logs and Supabase service status; verify the server-only Supabase URL/service-role key, public URL, and latest migration state.
+**Confirm:** `GET /api/health` reports database reachability, operator reachability and per-cron last-run ages, and returns 503 when the database, the operator, or a messaging-critical cron (outbox, reminders) is down or stale. Cron heartbeats are recorded in `cron_state` rows keyed `heartbeat:<job>` after each successful run. Point an external uptime monitor at `/api/health`; non-200 means act. Then check hosting logs and Supabase service status; verify the server-only Supabase URL/service-role key, public URL, and latest migration state.
 
-**Fix:** Restore the dependency or correct its secret via the hosting dashboard. Avoid repeated deploys until the specific failure is known. There is not yet verified evidence of a single endpoint that checks DB, operator and cron last-run state.
+**Fix:** Restore the dependency or correct its secret via the hosting dashboard. Avoid repeated deploys until the specific failure is known.
 
 **Escalate:** When production schema and migration history disagree, the admin key was rotated/lost, or a recovery would modify existing data.
 
