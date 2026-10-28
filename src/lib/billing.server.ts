@@ -196,29 +196,63 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
   return { redirectUrl: base + "?" + query };
 }
 
+/**
+ * PayFast REST API signature (subscriptions API). Unlike the checkout/ITN
+ * signature, every parameter INCLUDING the request headers is sorted
+ * alphabetically.
+ */
+export function payFastApiSignature(params: Record<string, string>, passphrase: string) {
+  const all: Record<string, string> = passphrase ? { ...params, passphrase } : { ...params };
+  return md5(
+    Object.keys(all)
+      .sort()
+      .map((key) => phpUrlEncode(key) + "=" + phpUrlEncode(all[key] ?? ""))
+      .join("&"),
+  );
+}
+
+/** ISO-8601 without milliseconds, as the PayFast API requires. */
+export function payFastApiTimestamp(now = new Date()) {
+  return now.toISOString().replace(/\.\d{3}Z$/, "");
+}
+
+async function cancelAtPayFast(token: string) {
+  const merchantId = env("PAYFAST_MERCHANT_ID");
+  const timestamp = payFastApiTimestamp();
+  const signature = payFastApiSignature(
+    { "merchant-id": merchantId, version: "v1", timestamp },
+    env("PAYFAST_PASSPHRASE"),
+  );
+  // Subscriptions API: PUT /subscriptions/{token}/cancel with signed headers
+  // (the sandbox is the same host with ?testing=true). Confirm in PayFast sandbox.
+  const url =
+    "https://api.payfast.co.za/subscriptions/" +
+    encodeURIComponent(token) +
+    "/cancel" +
+    (env("PAYFAST_SANDBOX") === "true" ? "?testing=true" : "");
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { "merchant-id": merchantId, version: "v1", timestamp, signature },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    throw new Error("PayFast refused to cancel the subscription (HTTP " + response.status + ").");
+  }
+}
+
 export async function cancelSubscription(tenantId: string) {
   assertPayFastConfigured();
   const c = supabaseAdmin;
   const { data: tenant } = await c.from("tenant_profiles")
     .select("payfast_subscription_token").eq("tenant_id", tenantId).maybeSingle();
 
-  await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
-
-  if (!tenant?.payfast_subscription_token) return;
-  const sandbox = env("PAYFAST_SANDBOX") === "true";
-  const endpoint = (sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za")
-    + "/subscriptions/" + encodeURIComponent(tenant.payfast_subscription_token) + "/update";
-
-  const response = await fetch(endpoint, {
-    method: "PUT",
-    headers: { "content-type": "application/json", version: "v1" },
-    body: JSON.stringify({
-      merchantId: env("PAYFAST_MERCHANT_ID"),
-      passphrase: env("PAYFAST_PASSPHRASE"),
-      status: 2,
-    }),
-  });
-  if (!response.ok) console.error("PayFast cancel request failed", response.status);
+  // Cancel at PayFast FIRST and surface a refusal. Marking the restaurant
+  // cancelled while PayFast keeps debiting its card is the worst outcome.
+  if (tenant?.payfast_subscription_token) {
+    await cancelAtPayFast(tenant.payfast_subscription_token);
+  }
+  const { error } = await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
+  if (error) throw new Error(error.message);
 }
 
 export async function verifyPayFastWebhook(request: Request) {
@@ -337,7 +371,37 @@ export function assertPayFastSource(request: Request) {
     throw new Error("PAYFAST_ALLOWED_IPS must be configured for PayFast ITN verification.");
   }
   const source = request.headers.get("cf-connecting-ip")?.trim();
-  if (!source || !allow.includes(source)) throw new Error("PayFast source IP rejected.");
+  if (!source || !ipAllowed(source, allow)) throw new Error("PayFast source IP rejected.");
+}
+
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+  let result = 0;
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part) || Number(part) > 255) return null;
+    result = result * 256 + Number(part);
+  }
+  return result;
+}
+
+/** Matches an IPv4 address against exact IPs and CIDR ranges (PayFast publishes ranges such as a.b.c.d/28). */
+export function ipAllowed(ip: string, allowList: string[]): boolean {
+  const source = ipv4ToInt(ip);
+  for (const entry of allowList) {
+    const [base, bitsText] = entry.split("/");
+    if (!base) continue;
+    if (bitsText === undefined) {
+      if (base === ip) return true;
+      continue;
+    }
+    const bits = Number(bitsText);
+    const baseInt = ipv4ToInt(base);
+    if (source === null || baseInt === null || !Number.isInteger(bits) || bits < 0 || bits > 32) continue;
+    const size = 2 ** (32 - bits);
+    if (Math.floor(source / size) === Math.floor(baseInt / size)) return true;
+  }
+  return false;
 }
 
 export async function assertCanSendNow(tenantId: string) {

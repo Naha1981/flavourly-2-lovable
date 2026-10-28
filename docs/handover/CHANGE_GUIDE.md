@@ -14,6 +14,7 @@
 - Do not hand-edit `src/integrations/supabase/*` generated files or `src/routeTree.gen.ts`.
 - If schema changes are needed, add a new migration; do not rewrite an already-applied migration.
 - Test migration replay against an empty scratch database, then against a recent non-production restore before production rollout.
+  Run `DATABASE_URL=postgres://... scripts/replay-migrations.sh` against an empty throwaway Postgres; it applies every migration in order and fails if any table lacks row level security. CI runs the same script in the `migrations` job.
 - Keep secrets out of source, screenshots, CI logs, issue comments, documentation and commit messages.
 
 ## Required checks before proposing a merge

@@ -22,6 +22,14 @@
 
 **Escalate:** If the event has an invalid signature, mismatched tenant/amount, unknown payment ID, or conflicting event state.
 
+### PayFast cancellation refused
+
+**Meaning:** A manager pressed Cancel and PayFast did not accept the cancel request (wrong credentials or passphrase, PayFast outage, or the subscription is already cancelled there).
+
+**Behaviour:** The app cancels at PayFast first. If PayFast refuses, the app shows an error and does **not** mark the restaurant cancelled, so a restaurant is never shown as cancelled while PayFast keeps debiting its card.
+
+**Fix:** Check `PAYFAST_MERCHANT_ID` and `PAYFAST_PASSPHRASE`. If the subscription is already cancelled in the PayFast dashboard, cancel it there (or wait for PayFast's cancelled notification, which the app applies), then confirm the plan status. The cancel call has only been verified against fixtures: confirm it once in the PayFast sandbox (`ACCEPTANCE_SCRIPT.md`).
+
 ### Outbox send failures / messages not delivered
 
 **Meaning:** A queued WhatsApp job failed, is delayed by quiet hours, hit a quota/opt-out check, or could not reach the operator.
@@ -32,7 +40,11 @@
 
 **Escalate:** If a job is silently stuck, a retry would duplicate a message, more than a few jobs fail at once, or quota/opt-out policy appears bypassed. Alert thresholds are not currently evidenced.
 
+**Interrupted sends:** If a run crashes or times out after claiming a job, the job would otherwise stay at `processing` forever. On the next outbox run, any job claimed more than 10 minutes ago is marked `failed` with the error "Interrupted mid-send; not retried to avoid a duplicate message." We cannot know whether it reached the guest, so it is never retried automatically. Check these jobs (`status = 'failed'` and that error text) and re-send manually only if the guest clearly did not receive it.
+
 ### Cron job missed / campaign or reminder stuck
+
+A ready-made pg_cron + pg_net template for scheduling the five routes is in `docs/handover/cron.sql`.
 
 **Meaning:** One of the five protected cron routes may not be scheduled or its request failed.
 
