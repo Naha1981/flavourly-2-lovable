@@ -1,61 +1,101 @@
-# Runbook: when something breaks
+# Runbook
 
-Alerts arrive at `ALERT_WEBHOOK_URL` (a phone push if you use an ntfy.sh topic). The same checks are visible any time at `GET /api/public/health` (HTTP 503 = something critical is down). Point a free external monitor (UptimeRobot, BetterStack) at that URL as a second line of defence: if the app itself is down, nothing inside it can alert you.
+**Important:** This runbook documents triage steps; it does not mean alert delivery has been implemented or tested. Alert wiring and a deliberate alert-trigger test for every condition remain open.
 
-**First move for any alert:** open `/api/public/health`, find the failing check, then follow its section below.
+## First response to a reported problem
 
-## Scheduled jobs (they must exist; nothing in the repo starts them)
+1. Record the approximate time (South Africa time, SAST/UTC+2), affected restaurant slug, route/action, and request ID if available. Do not record guest message content, phone numbers, bearer tokens, or secrets in support notes.
+2. Check the current GitHub Actions result and hosting/provider status pages.
+3. Identify whether the fault is in the app, Supabase, PayFast, the WhatsApp operator, the model provider, or the scheduler.
+4. Do not rerun a payment, queue a campaign, or replay an inbound webhook repeatedly until idempotency and current state are checked.
+5. If there is a possibility of cross-tenant exposure, forged billing, secret exposure, or unintentional bulk messaging, disable the affected integration / scheduler using the provider dashboard and escalate immediately. Preserve logs with secrets and personal data redacted.
 
-| Job | Endpoint | Run every | Alert if silent for |
-|---|---|---|---|
-| outbox (sends queued messages) | `POST /api/public/cron/outbox` | 2 min | 10 min (**critical**) |
-| reminders (+ feedback requests) | `POST /api/public/cron/reminders` | 15 min | 60 min |
-| customer-lifecycle | `POST /api/public/cron/customer-lifecycle` | hourly | 3 h |
-| milestones | `POST /api/public/cron/milestones` | daily | 36 h |
-| revenue-employee | `POST /api/public/cron/revenue-employee` | daily | 36 h |
-| watchdog (raises the alerts) | `POST /api/public/cron/watchdog` | 5 min | n/a |
+## Alert runbook
 
-All require `Authorization: Bearer <LOVABLE_CRON_SECRET>`. If Lovable Cloud does not schedule them for you, use `cron.sql` in this folder. Test one by hand:
+### PayFast ITN rejected or not applied
 
-```sh
-curl -i -X POST https://YOUR-APP/api/public/cron/outbox -H "Authorization: Bearer $LOVABLE_CRON_SECRET"
-```
-Expect `200 {"ok":true,...}`. `401` = wrong secret. `500 Server configuration error` = `LOVABLE_CRON_SECRET` not set on the app.
+**Meaning:** The webhook was rejected by configuration, signature, source IP, amount/reference validation, PayFast's validation postback, or the database apply function.
 
-## Alert / check → what to do
+**Confirm:** Inspect hosting logs for the request time and generic rejection reason. Check that `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE`, `PAYFAST_SANDBOX`, `PAYFAST_ALLOWED_IPS`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are set in the correct environment. Confirm the source-IP list from PayFast's current official instructions, the Cloudflare host target, and whether the matching sandbox/live credentials were used.
 
-| Check | Meaning | Fix |
-|---|---|---|
-| `database` | App cannot query Supabase | Check Supabase status and project paused/over quota. Free-tier projects pause after inactivity: restore in the dashboard. |
-| `config` | A required environment variable is missing | Set it (see `ENVIRONMENTS.md`) and redeploy. |
-| `cron:<job>` never ran / stale | The scheduler is not calling the job, or the job fails | Run the curl above. 401: secret mismatch (re-set the scheduler's secret). 500 with an alert "job crashed": read the alert detail, then the app logs. Check `select * from cron.job_run_details order by start_time desc limit 20;` if using pg_cron. |
-| `outbox:overdue` | Messages are queued past their send time | Usually the outbox cron is not running (above), or WhatsApp is disconnected, or the restaurant's plan is paused. |
-| `outbox:stuck` | A run crashed mid-send; jobs are marked failed, not retried (to avoid double-messaging guests) | Review failed jobs for that restaurant and re-send manually if needed. |
-| `outbox:failures` | Many sends failed in an hour | Open the restaurant's WhatsApp health page: disconnected number or operator down is the usual cause. |
-| `whatsapp:webhook_failures` | Incoming guest messages are failing to save | Open WhatsApp health, use "retry" on failed events; check the alert for the error text. |
-| "PayFast notification rejected" | A payment notification failed verification | See *Payments* below. |
-| "Revenue agent failed for N restaurants" | The AI agent errored for some restaurants | Safe to ignore once; if repeated, open the alert detail. |
-| "Revenue agent hit its 100-restaurant limit" | More than 100 restaurants; the rest are skipped | Paginate `src/routes/api/public/cron/revenue-employee.ts`. |
+**Fix:** Correct the secret/configuration through the hosting dashboard, then retry only with a known sandbox transaction. Do not manually set a subscription to active to get around a failed ITN. A production payment state change requires checking the PayFast transaction in the merchant account and a record in the ITN ledger.
 
-## Payments
+**Escalate:** If the event has an invalid signature, mismatched tenant/amount, unknown payment ID, or conflicting event state.
 
-- **Rejected notification, live mode:** common causes are `PAYFAST_PASSPHRASE` not matching the one set in PayFast, `PAYFAST_ALLOWED_IPS` out of date (PayFast changed its IP ranges), or the amount not matching the plan price. The alert text says which.
-- **Restaurant paid but is not active:** find the payment in the PayFast dashboard, check `select * from billing_events where tenant_id = '...'`; if there is no row the notification never verified. After fixing the cause, use PayFast's "resend ITN".
-- **Cancel failed:** the app deliberately does NOT mark the restaurant cancelled if PayFast refused, so they are not billed while shown as cancelled. Cancel in the PayFast dashboard, then retry.
+### PayFast cancellation refused
 
-## Rotating secrets
+**Meaning:** A manager pressed Cancel and PayFast did not accept the cancel request (wrong credentials or passphrase, PayFast outage, or the subscription is already cancelled there).
 
-| Secret | How |
-|---|---|
-| `LOVABLE_CRON_SECRET` | Set the new value as `LOVABLE_CRON_SECRET` and the old as `LOVABLE_CRON_SECRET_PREVIOUS`, update the scheduler, redeploy, then clear `_PREVIOUS`. |
-| `WEBHOOK_SECRET` | Change in the app and on the WhatsApp operator at the same time; webhooks fail between the two changes, so do it in a quiet hour and retry failed events afterwards. |
-| `PAYFAST_PASSPHRASE` | Change in PayFast and the app together; expect rejected notifications in between. |
-| Supabase service-role key | Rotate in Supabase, update the app env, redeploy. |
+**Behaviour:** The app cancels at PayFast first. If PayFast refuses, the app shows an error and does **not** mark the restaurant cancelled, so a restaurant is never shown as cancelled while PayFast keeps debiting its card.
 
-## Rolling back a bad release
+**Fix:** Check `PAYFAST_MERCHANT_ID` and `PAYFAST_PASSPHRASE`. If the subscription is already cancelled in the PayFast dashboard, cancel it there (or wait for PayFast's cancelled notification, which the app applies), then confirm the plan status. The cancel call has only been verified against fixtures: confirm it once in the PayFast sandbox (`ACCEPTANCE_SCRIPT.md`).
 
-Revert the commit on `main` with `git revert <sha>` (never force-push or rewrite history: Lovable syncs from it). Database migrations are not reverted automatically: write a new forward migration.
+### Outbox send failures / messages not delivered
 
-## Restoring data
+**Meaning:** A queued WhatsApp job failed, is delayed by quiet hours, hit a quota/opt-out check, or could not reach the operator.
 
-Supabase backups (daily on paid plans; point-in-time recovery is an add-on) are the only copy that matters. Confirm the plan's backup setting in the dashboard (see `OWNER_CHECKLIST.md`) and rehearse one restore into a scratch project before relying on it. A new environment can be rebuilt from the repo with `scripts/replay-migrations.sh`; restoring data is separate.
+**Confirm:** Check Campaigns/Inbox/WhatsApp health if available; inspect the restaurant's `outbox_jobs` status and last error in Supabase using an authorized admin path. Verify the job's tenant, status, attempts, next scheduled time, and whether it is automated. Do not expose message bodies or destination numbers in incident logs.
+
+**Fix:** Check the operator dashboard and hosting status first. After it is available, use the supported retry mechanism for failed jobs or webhook events. The retry cap currently targets three real send failures; cold-start errors are rescheduled without incrementing attempts. Do not reset the account or resend a marketing campaign without checking opt-outs and duplicate status.
+
+**Escalate:** If a job is silently stuck, a retry would duplicate a message, more than a few jobs fail at once, or quota/opt-out policy appears bypassed. Alert thresholds are not currently evidenced.
+
+**Interrupted sends:** If a run crashes or times out after claiming a job, the job would otherwise stay at `processing` forever. On the next outbox run, any job claimed more than 10 minutes ago is marked `failed` with the error "Interrupted mid-send; not retried to avoid a duplicate message." We cannot know whether it reached the guest, so it is never retried automatically. Check these jobs (`status = 'failed'` and that error text) and re-send manually only if the guest clearly did not receive it.
+
+### Cron job missed / campaign or reminder stuck
+
+A ready-made pg_cron + pg_net template for scheduling the five routes is in `docs/handover/cron.sql`.
+
+**Meaning:** One of the five protected cron routes may not be scheduled or its request failed.
+
+**Confirm:** In the scheduler dashboard, inspect the job's last run, status, response code and duration. Routes and suggested starting cadence:
+- `POST /api/public/cron/outbox`: every 1–2 minutes.
+- `POST /api/public/cron/reminders`: every 5 minutes (also runs post-visit feedback requests).
+- `POST /api/public/cron/customer-lifecycle`: daily.
+- `POST /api/public/cron/milestones`: daily.
+- `POST /api/public/cron/revenue-employee`: daily at a quiet time, unless the business explicitly chooses another cadence.
+
+These are recommendations, not evidence that the schedules exist. Each request requires `Authorization: Bearer <LOVABLE_CRON_SECRET>`.
+
+**Fix:** Correct the scheduler URL, POST method, secret, timezone, and cadence. Trigger one authenticated run and confirm a successful HTTP response plus expected database effects.
+
+**Escalate:** If the scheduler has no history, jobs fail repeatedly, or running a job could trigger an excessive number of sends / AI calls.
+
+### WhatsApp operator disconnected / inaccessible
+
+**Meaning:** A tenant's linked WhatsApp connection or the central operator is not healthy.
+
+**Confirm:** Check the central operator dashboard first, then tenant-specific WhatsApp health and latest webhook delivery. Confirm `OPERATOR_URL`, `OPERATOR_API_KEY`, tenant token persistence, webhook URL and `WEBHOOK_SECRET`.
+
+**Fix:** Restore the operator service first. If a particular number needs relinking, the restaurant owner should perform the QR/pairing flow in the dashboard. Never ask the restaurant to post a QR code, pairing code, token, or session credential in a ticket.
+
+**Escalate:** If several tenants disconnect at once, the wrong tenant's account is shown, or a reset/disconnect might affect a customer number.
+
+### Health check failing / database unreachable
+
+**Meaning:** The app cannot reach a dependency or no health-check endpoint is present / healthy.
+
+**Confirm:** `GET /api/health` reports database reachability, operator reachability and per-cron last-run ages, and returns 503 when the database, the operator, or a messaging-critical cron (outbox, reminders) is down or stale. Cron heartbeats are recorded in `cron_state` rows keyed `heartbeat:<job>` after each successful run. Point an external uptime monitor at `/api/health`; non-200 means act. Then check hosting logs and Supabase service status; verify the server-only Supabase URL/service-role key, public URL, and latest migration state.
+
+**Fix:** Restore the dependency or correct its secret via the hosting dashboard. Avoid repeated deploys until the specific failure is known.
+
+**Escalate:** When production schema and migration history disagree, the admin key was rotated/lost, or a recovery would modify existing data.
+
+### Error-rate spike / server errors
+
+**Meaning:** A route started failing or the shared app infrastructure may be unhealthy.
+
+**Confirm:** Capture route, timestamp, tenant ID and request ID only; logs must not retain guest message bodies, phone numbers, authorization values, API keys or raw tokens. Compare against the latest deploy.
+
+**Fix:** If tied to a recent safe code change, roll back using the documented host deployment workflow to the last known-good commit. Database migrations cannot generally be rolled back by reverting application code; follow the schema recovery steps first.
+
+**Escalate:** Any data exposure, unexplained payment state change, repeated unhandled rejection, or possible credential compromise.
+
+## Incident closure checklist
+
+- Cause and affected time window recorded without guest PII/secrets.
+- No tenant cross-over or duplicate billing/message effect found.
+- Fix is in a new commit and CI is green.
+- If a secret may have leaked, rotate it and review provider audit logs.
+- Record whether a test was added and link the run.
+- Inform the restaurant in plain language if its workflow was affected.

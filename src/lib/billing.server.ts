@@ -1,28 +1,20 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendAlert } from "./alerts.server";
 import { db } from "./db.server";
 import {
   canUseService,
   isPlanTier,
   PLAN_TIERS,
   quotaDecision,
+  quotaTelemetryEvents,
   TIER_HOURLY_MESSAGES,
   TIER_MONTHLY_CENTS,
   TIER_MONTHLY_MESSAGES,
   type BillingStatus,
   type PlanTier,
 } from "./billing/provider";
-import {
-  apiSignature,
-  apiTimestamp,
-  checkoutQuery,
-  ipAllowed,
-  itnPostbackBody,
-  parseItnBody,
-  trustedClientIp,
-  verifyItnSignature,
-} from "./payfast.server";
 
 const LIVE_BASE_URL = "https://www.payfast.co.za/eng/process";
 const SANDBOX_BASE_URL = "https://sandbox.payfast.co.za/eng/process";
@@ -31,24 +23,51 @@ function env(name: string) {
   return process.env[name]?.trim() ?? "";
 }
 
+function phpUrlEncode(value: string) {
+  return encodeURIComponent(value)
+    .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase())
+    .replace(/%20/g, "+")
+    .replace(/~/g, "%7E");
+}
+
+function signatureInput(data: Record<string, string>, passphrase: string) {
+  // Checkout signatures follow PayFast's documented form-field order. ITN
+  // signatures use the insertion order preserved while parsing the posted body.
+  const pairs = Object.keys(data)
+    .filter((key) => (data[key] ?? "").trim() !== "")
+    .map((key) => key + "=" + phpUrlEncode(data[key] ?? ""));
+  return pairs.join("&") + (passphrase ? "&passphrase=" + phpUrlEncode(passphrase) : "");
+}
+
+function md5(value: string) {
+  return createHash("md5").update(value).digest("hex");
+}
+
+/** PayFast custom-checkout/ITN MD5 signature (not the alphabetically sorted API signature). */
+export function buildPayFastSignature(data: Record<string, string>, passphrase: string) {
+  return md5(signatureInput(data, passphrase.trim()));
+}
+
+function safeEqual(a: string, b: string) {
+  const left = Buffer.from(a, "utf8");
+  const right = Buffer.from(b, "utf8");
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
 function publicAppUrl() {
   const value = env("PUBLIC_APP_URL");
   if (!value) throw new Error("PUBLIC_APP_URL is required for PayFast billing.");
   return value.replace(/\/$/, "");
 }
 
-export function isPayFastSandbox() {
-  return env("PAYFAST_SANDBOX") === "true";
-}
-
 function assertPayFastConfigured() {
   if (!env("PAYFAST_MERCHANT_ID") || !env("PAYFAST_MERCHANT_KEY")) {
     throw new Error("PayFast merchant credentials are not configured.");
   }
-  // Without a passphrase the signature is an MD5 of public values and anyone
-  // can forge a payment notification. Live mode must therefore have one.
-  if (!isPayFastSandbox() && !env("PAYFAST_PASSPHRASE")) {
-    throw new Error("PAYFAST_PASSPHRASE is required when PAYFAST_SANDBOX is not 'true'.");
+  // Flavourly creates recurring subscriptions; PayFast requires a passphrase
+  // for subscription/tokenisation signatures in both sandbox and live modes.
+  if (!env("PAYFAST_PASSPHRASE")) {
+    throw new Error("PAYFAST_PASSPHRASE is required for subscription billing.");
   }
 }
 
@@ -99,6 +118,26 @@ export async function getBillingStatus(tenantId: string) {
   };
 }
 
+function emitQuotaTelemetry(tenantId: string, billing: Awaited<ReturnType<typeof getBillingStatus>>) {
+  // Non-destructive usage telemetry: a structured log line for the pipeline,
+  // plus a throttled owner alert only when a quota is fully reached.
+  for (const event of quotaTelemetryEvents(billing.plan, {
+    monthlyReserved: billing.monthlyReserved,
+    hourlyReserved: billing.hourlyReserved,
+  })) {
+    console.warn("[flavourly-quota]", JSON.stringify({ tenantId, ...event }));
+    if (event.level === "critical") {
+      void sendAlert(
+        "quota:" + tenantId + ":" + event.scope,
+        "warning",
+        "Message quota reached",
+        "Tenant " + tenantId + " hit its " + event.scope + " message limit (" +
+          event.used + "/" + event.limit + ").",
+      );
+    }
+  }
+}
+
 export async function assertCanQueueMessage(tenantId: string) {
   const billing = await getBillingStatus(tenantId);
   if (!billing.serviceAllowed) {
@@ -108,6 +147,7 @@ export async function assertCanQueueMessage(tenantId: string) {
     monthlyReserved: billing.monthlyReserved,
     hourlyReserved: billing.hourlyReserved,
   });
+  emitQuotaTelemetry(tenantId, billing);
   if (!decision.allowed) {
     if (decision.reason === "monthly_quota_exceeded") {
       throw new Error("Monthly message quota reached for the current plan.");
@@ -129,6 +169,8 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
   const base = sandbox ? SANDBOX_BASE_URL : LIVE_BASE_URL;
   const mPaymentId = tenantId + ":" + tier + ":" + randomUUID();
 
+  // Keep this object in PayFast's documented custom form field order.
+  // Do not sort these keys: the API signing format is different.
   const data: Record<string, string> = {
     merchant_id: merchantId,
     merchant_key: merchantKey,
@@ -138,31 +180,56 @@ export async function createCheckout(tenantId: string, tier: PlanTier) {
     m_payment_id: mPaymentId,
     amount: (TIER_MONTHLY_CENTS[tier] / 100).toFixed(2),
     item_name: "Flavourly " + tier + " monthly subscription",
+    custom_str1: tenantId,
+    custom_str2: tier,
     subscription_type: "1",
     recurring_amount: (TIER_MONTHLY_CENTS[tier] / 100).toFixed(2),
     frequency: "3",
     cycles: "0",
-    custom_str1: tenantId,
-    custom_str2: tier,
   };
 
-  const query = checkoutQuery(data, passphrase);
+  const signature = buildPayFastSignature(data, passphrase);
+  const query = Object.entries({ ...data, signature })
+    .map(([key, value]) => phpUrlEncode(key) + "=" + phpUrlEncode(value))
+    .join("&");
 
   return { redirectUrl: base + "?" + query };
 }
 
+/**
+ * PayFast REST API signature (subscriptions API). Unlike the checkout/ITN
+ * signature, every parameter INCLUDING the request headers is sorted
+ * alphabetically.
+ */
+export function payFastApiSignature(params: Record<string, string>, passphrase: string) {
+  const all: Record<string, string> = passphrase ? { ...params, passphrase } : { ...params };
+  return md5(
+    Object.keys(all)
+      .sort()
+      .map((key) => phpUrlEncode(key) + "=" + phpUrlEncode(all[key] ?? ""))
+      .join("&"),
+  );
+}
+
+/** ISO-8601 without milliseconds, as the PayFast API requires. */
+export function payFastApiTimestamp(now = new Date()) {
+  return now.toISOString().replace(/\.\d{3}Z$/, "");
+}
+
 async function cancelAtPayFast(token: string) {
-  const timestamp = apiTimestamp();
   const merchantId = env("PAYFAST_MERCHANT_ID");
-  const signature = apiSignature(
+  const timestamp = payFastApiTimestamp();
+  const signature = payFastApiSignature(
     { "merchant-id": merchantId, version: "v1", timestamp },
     env("PAYFAST_PASSPHRASE"),
   );
+  // Subscriptions API: PUT /subscriptions/{token}/cancel with signed headers
+  // (the sandbox is the same host with ?testing=true). Confirm in PayFast sandbox.
   const url =
     "https://api.payfast.co.za/subscriptions/" +
     encodeURIComponent(token) +
     "/cancel" +
-    (isPayFastSandbox() ? "?testing=true" : "");
+    (env("PAYFAST_SANDBOX") === "true" ? "?testing=true" : "");
   const response = await fetch(url, {
     method: "PUT",
     headers: { "merchant-id": merchantId, version: "v1", timestamp, signature },
@@ -179,8 +246,8 @@ export async function cancelSubscription(tenantId: string) {
   const { data: tenant } = await c.from("tenant_profiles")
     .select("payfast_subscription_token").eq("tenant_id", tenantId).maybeSingle();
 
-  // Cancel at PayFast FIRST. If that fails we must not tell the restaurant it
-  // is cancelled while PayFast keeps charging their card.
+  // Cancel at PayFast FIRST and surface a refusal. Marking the restaurant
+  // cancelled while PayFast keeps debiting its card is the worst outcome.
   if (tenant?.payfast_subscription_token) {
     await cancelAtPayFast(tenant.payfast_subscription_token);
   }
@@ -188,132 +255,153 @@ export async function cancelSubscription(tenantId: string) {
   if (error) throw new Error(error.message);
 }
 
-/** Asks PayFast to confirm it really sent this notification. */
-async function postbackValidate(pairs: Array<[string, string]>, fetchImpl: typeof fetch) {
-  const host = isPayFastSandbox() ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za";
-  const response = await fetchImpl(host + "/eng/query/validate", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: itnPostbackBody(pairs),
-    signal: AbortSignal.timeout(8_000),
-  });
-  const text = (await response.text()).trim();
-  if (!response.ok || text !== "VALID") throw new Error("PayFast postback validation failed.");
-}
-
-export type PayFastResult =
-  | { ok: true; tenantId: string; status: "active" | "canceled" | "past_due" | "ignored" | "duplicate" | "stale" };
-
-export async function verifyPayFastWebhook(
-  request: Request,
-  deps: { fetchImpl?: typeof fetch } = {},
-): Promise<PayFastResult> {
+export async function verifyPayFastWebhook(request: Request) {
   assertPayFastConfigured();
   const raw = await request.text();
-  const pairs = parseItnBody(raw);
+  const params = new URLSearchParams(raw);
+  const data: Record<string, string> = Object.create(null) as Record<string, string>;
+  let providedSignature = "";
+  let signatureCount = 0;
 
-  if (!verifyItnSignature(pairs, env("PAYFAST_PASSPHRASE"))) {
-    throw new Error("PayFast signature missing or mismatched.");
+  for (const [key, value] of params.entries()) {
+    if (key === "signature") {
+      signatureCount += 1;
+      providedSignature = value;
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      throw new Error("Duplicate PayFast field.");
+    }
+    data[key] = value;
   }
-  const data: Record<string, string> = {};
-  for (const [key, value] of pairs) if (key !== "signature") data[key] = value;
+
+  if (signatureCount !== 1 || !providedSignature) throw new Error("Missing or duplicate PayFast signature.");
+  const expected = buildPayFastSignature(data, env("PAYFAST_PASSPHRASE"));
+  if (!safeEqual(expected, providedSignature)) throw new Error("PayFast signature mismatch.");
 
   if (data["merchant_id"] !== env("PAYFAST_MERCHANT_ID")) {
     throw new Error("PayFast merchant mismatch.");
   }
 
-  const amount = Number(data["amount_gross"] ?? "0");
-  const tier = tierFromPaymentId(data["m_payment_id"] ?? "");
-  const tenantId = data["custom_str1"] || data["m_payment_id"]?.split(":")[0] || "";
-  if (!tenantId || !tier) throw new Error("PayFast payload missing tenant/tier.");
-  const idTenant = data["m_payment_id"]?.split(":")[0];
-  if (idTenant && idTenant !== tenantId) throw new Error("PayFast tenant fields disagree.");
+  const paymentId = data["m_payment_id"] ?? "";
+  const tier = tierFromPaymentId(paymentId);
+  const paymentTenant = paymentId.split(":")[0] ?? "";
+  const tenantId = data["custom_str1"] || paymentTenant;
+  if (
+    !tenantId ||
+    !tier ||
+    paymentTenant !== tenantId ||
+    !/^[a-z0-9-]{1,80}$/.test(tenantId) ||
+    (data["custom_str2"] && data["custom_str2"] !== tier)
+  ) {
+    throw new Error("PayFast payload has an invalid tenant/tier reference.");
+  }
 
-  const expectedAmount = TIER_MONTHLY_CENTS[tier] / 100;
-  if (Math.abs(amount - expectedAmount) > 0.01) throw new Error("PayFast amount mismatch.");
-
-  await postbackValidate(pairs, deps.fetchImpl ?? fetch);
-
-  const status = (data["payment_status"] ?? "").toLowerCase();
   const pfPaymentId = data["pf_payment_id"] ?? "";
-  const c = supabaseAdmin;
-  const events = await db();
+  if (!/^\d+$/.test(pfPaymentId)) throw new Error("PayFast payload missing transaction id.");
+  const subscriptionToken = data["token"] ?? "";
+  if (!subscriptionToken) throw new Error("PayFast payload missing subscription token.");
 
-  const { data: tenant } = await c.from("tenant_profiles")
-    .select("tenant_id, plan_status, payfast_subscription_token")
-    .eq("tenant_id", tenantId).maybeSingle();
-  if (!tenant) throw new Error("Unknown Flavourly tenant.");
-
-  // Replay protection: the same PayFast payment + status is applied once.
-  if (pfPaymentId) {
-    const { data: seen, error: seenError } = await events.from("billing_events")
-      .select("id").eq("pf_payment_id", pfPaymentId).eq("payment_status", status).maybeSingle();
-    if (seenError) throw new Error("billing_events lookup failed: " + seenError.message);
-    if (seen) return { ok: true, tenantId, status: "duplicate" };
+  const status = (data["payment_status"] ?? "").toUpperCase();
+  const recognisedStatus = ["COMPLETE", "CANCELLED", "FAILED"].includes(status);
+  if (!recognisedStatus) {
+    // Still verify the notification with PayFast before ignoring an unknown status.
   }
 
-  const record = async (applied: string) => {
-    if (!pfPaymentId) return;
-    await events.from("billing_events").upsert(
-      {
-        tenant_id: tenantId,
-        pf_payment_id: pfPaymentId,
-        payment_status: status,
-        applied_status: applied,
-        subscription_token: data["token"] || null,
-        amount_gross: Number.isFinite(amount) ? amount : null,
-      },
-      { onConflict: "pf_payment_id,payment_status", ignoreDuplicates: true },
-    );
+  const amountText = data["amount_gross"] ?? "";
+  if (amountText) {
+    const amount = Number(amountText);
+    const expectedAmount = TIER_MONTHLY_CENTS[tier] / 100;
+    if (!Number.isFinite(amount) || Math.abs(amount - expectedAmount) > 0.01) {
+      throw new Error("PayFast amount mismatch.");
+    }
+  } else if (status !== "CANCELLED") {
+    throw new Error("PayFast payload missing gross amount.");
+  }
+
+  const sandbox = env("PAYFAST_SANDBOX") === "true";
+  const validationUrl = (sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za")
+    + "/eng/query/validate";
+  const postback = new URLSearchParams(Object.entries(data)).toString();
+  const validation = await fetch(validationUrl, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: postback,
+    signal: AbortSignal.timeout(10_000),
+  });
+  const validationBody = (await validation.text()).trim();
+  if (!validation.ok || validationBody !== "VALID") {
+    throw new Error("PayFast postback validation failed.");
+  }
+
+  if (!recognisedStatus) return { ok: true as const, tenantId, status: "ignored" as const };
+
+  const occurredAtText = data["payment_date"];
+  const occurredAtMs = occurredAtText ? Date.parse(occurredAtText) : Number.NaN;
+  const eventAt = Number.isFinite(occurredAtMs) ? new Date(occurredAtMs).toISOString() : new Date().toISOString();
+  const c = await db();
+  const { data: applied, error } = await c.rpc("apply_payfast_itn", {
+    p_pf_payment_id: pfPaymentId,
+    p_tenant_id: tenantId,
+    p_subscription_token: subscriptionToken,
+    p_payment_status: status,
+    p_event_at: eventAt,
+    p_tier: tier,
+    p_customer_token: subscriptionToken,
+  });
+  if (error) throw new Error("PayFast ITN could not be applied: " + error.message);
+
+  const result = Array.isArray(applied) ? applied[0] : applied;
+  const outcome = result && typeof result === "object" && "outcome" in result
+    ? String(result.outcome)
+    : "ignored";
+  return {
+    ok: true as const,
+    tenantId,
+    status: outcome,
+    replay: outcome === "duplicate",
   };
-
-  if (status === "complete") {
-    // A late COMPLETE for a subscription we already cancelled must not revive it.
-    const token = data["token"] || null;
-    if (tenant.plan_status === "canceled" && token && token === tenant.payfast_subscription_token) {
-      await record("stale");
-      return { ok: true, tenantId, status: "stale" };
-    }
-    const { error } = await c.from("tenant_profiles").update({
-      plan_tier: tier,
-      plan_status: "active",
-      payfast_customer_token: token,
-      payfast_subscription_token: token,
-    }).eq("tenant_id", tenantId);
-    if (error) throw new Error(error.message);
-    await record("active");
-    return { ok: true, tenantId, status: "active" };
-  }
-
-  if (status === "cancelled") {
-    const { error } = await c.from("tenant_profiles").update({ plan_status: "canceled" }).eq("tenant_id", tenantId);
-    if (error) throw new Error(error.message);
-    await record("canceled");
-    return { ok: true, tenantId, status: "canceled" };
-  }
-
-  if (status === "failed") {
-    // A failed renewal must not downgrade a tenant that was already cancelled.
-    if (tenant.plan_status === "canceled") {
-      await record("stale");
-      return { ok: true, tenantId, status: "stale" };
-    }
-    const { error } = await c.from("tenant_profiles").update({ plan_status: "past_due" }).eq("tenant_id", tenantId);
-    if (error) throw new Error(error.message);
-    await record("past_due");
-    return { ok: true, tenantId, status: "past_due" };
-  }
-
-  await record("ignored");
-  return { ok: true, tenantId, status: "ignored" };
 }
 
 export function assertPayFastSource(request: Request) {
-  if (isPayFastSandbox()) return;
+  // The deployed target is Cloudflare. Only trust the platform-provided source
+  // IP header; X-Forwarded-For can contain client-controlled values.
   const allow = env("PAYFAST_ALLOWED_IPS").split(",").map((x) => x.trim()).filter(Boolean);
-  if (allow.length === 0) throw new Error("PAYFAST_ALLOWED_IPS must be configured for live ITN verification.");
-  const source = trustedClientIp(request.headers);
+  if (allow.length === 0) {
+    throw new Error("PAYFAST_ALLOWED_IPS must be configured for PayFast ITN verification.");
+  }
+  const source = request.headers.get("cf-connecting-ip")?.trim();
   if (!source || !ipAllowed(source, allow)) throw new Error("PayFast source IP rejected.");
+}
+
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+  let result = 0;
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part) || Number(part) > 255) return null;
+    result = result * 256 + Number(part);
+  }
+  return result;
+}
+
+/** Matches an IPv4 address against exact IPs and CIDR ranges (PayFast publishes ranges such as a.b.c.d/28). */
+export function ipAllowed(ip: string, allowList: string[]): boolean {
+  const source = ipv4ToInt(ip);
+  for (const entry of allowList) {
+    const [base, bitsText] = entry.split("/");
+    if (!base) continue;
+    if (bitsText === undefined) {
+      if (base === ip) return true;
+      continue;
+    }
+    const bits = Number(bitsText);
+    const baseInt = ipv4ToInt(base);
+    if (source === null || baseInt === null || !Number.isInteger(bits) || bits < 0 || bits > 32) continue;
+    const size = 2 ** (32 - bits);
+    if (Math.floor(source / size) === Math.floor(baseInt / size)) return true;
+  }
+  return false;
 }
 
 export async function assertCanSendNow(tenantId: string) {
@@ -325,6 +413,7 @@ export async function assertCanSendNow(tenantId: string) {
     monthlyReserved: billing.monthlyReserved,
     hourlyReserved: billing.hourlyReserved,
   });
+  emitQuotaTelemetry(tenantId, billing);
   if (!decision.allowed) {
     throw new Error(
       decision.reason === "monthly_quota_exceeded"

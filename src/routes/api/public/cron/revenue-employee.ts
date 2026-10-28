@@ -10,36 +10,49 @@ export const Route = createFileRoute("/api/public/cron/revenue-employee")({
         if (denied) return denied;
 
         const { db } = await import("@/lib/db.server");
+        const { sendAlert } = await import("@/lib/alerts.server");
         const { runRevenueEmployee } = await import("@/lib/intelligence/revenue-employee.server");
-        const { runCronJob } = await import("@/lib/heartbeat.server");
-        const { sendAlert } = await import("@/lib/alert.server");
-        return runCronJob("revenue-employee", async () => {
-          const c = await db();
-          const { data: tenants } = await c.from("tenant_profiles").select("tenant_id").limit(100);
-          const results: Array<{ tenantId: string; result?: unknown; error?: string }> = [];
-          for (const tenant of tenants ?? []) {
-            const tenantId = String(tenant.tenant_id);
-            // One restaurant's failure must not stop everyone else's run.
-            try {
-              results.push({ tenantId, result: await runRevenueEmployee({ tenantId }) });
-            } catch (error) {
-              results.push({ tenantId, error: error instanceof Error ? error.message.slice(0, 200) : "failed" });
-            }
-          }
-          const failed = results.filter((r) => r.error);
-          if (failed.length > 0) {
-            await sendAlert({
-              key: "revenue-employee:tenant-failures",
-              severity: "warning",
-              title: `Revenue agent failed for ${failed.length} of ${results.length} restaurants`,
-              detail: failed.slice(0, 5).map((r) => `${r.tenantId}: ${r.error}`).join("\n"),
+        const { listAllTenants } = await import("@/lib/tenants.server");
+        const c = await db();
+        const { getCronWatermark, rotateAfter, setCronWatermark } = await import("@/lib/tenants.server");
+        const tenants = await listAllTenants(c, "tenant_id");
+        // Default 120s sits below the 150s free-plan edge wall-clock limit
+        // (supabase.com/docs/guides/functions/limits); the Lovable Cloud
+        // server-route timeout is unpublished, so keep this env-configurable.
+        const budgetMs = Number(process.env["FLAVOURLY_CRON_TIME_BUDGET_MS"] || 120_000);
+        const maxTenants = Number(process.env["FLAVOURLY_CRON_MAX_TENANTS_PER_RUN"] || 0) || Infinity;
+        const deadline = Date.now() + budgetMs;
+        const watermark = await getCronWatermark(c, "revenue-employee");
+        const ordered = rotateAfter(tenants ?? [], (t) => String(t["tenant_id"]), watermark);
+        const results = [];
+        let failed = 0;
+        let lastCompleted: string | null = null;
+        for (const tenant of ordered) {
+          if (results.length + failed >= maxTenants || Date.now() > deadline) break;
+          const tenantId = String(tenant["tenant_id"]);
+          try {
+            results.push({
+              tenantId,
+              result: await runRevenueEmployee({ tenantId }),
             });
+          } catch (error) {
+            failed += 1;
+            console.error("revenue-employee tenant failed", tenantId, error);
           }
-          if ((tenants?.length ?? 0) >= 100) {
-            await sendAlert({ key: "revenue-employee:limit", severity: "warning", title: "Revenue agent hit its 100-restaurant limit", detail: "Some restaurants are not being processed. Paginate the cron job." });
-          }
-          return results;
-        });
+          lastCompleted = tenantId;
+        }
+        if (lastCompleted) await setCronWatermark(c, "revenue-employee", lastCompleted);
+        const { recordCronHeartbeat } = await import("@/lib/health.server");
+        await recordCronHeartbeat(c, "revenue-employee");
+        if (failed > 0) {
+          await sendAlert(
+            "cron:revenue-employee:tenants",
+            "warning",
+            "Revenue Employee cron had tenant failures",
+            failed + " of " + ordered.length + " tenants failed this run; the rest completed and the watermark advanced.",
+          );
+        }
+        return Response.json({ ok: true, results, failed, remaining: ordered.length - results.length - failed });
       },
     },
   },

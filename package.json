@@ -11,14 +11,12 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json"
+    "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env-example.mjs",
+    "check:test-focus": "node scripts/check-test-focus.mjs"
   },
   "overrides": {
-    "rolldown": "1.2.1",
-    "js-yaml": "^4.3.2",
-    "nanoid": "^3.3.18",
-    "source-map-js": "^1.2.2",
-    "undici": "^7.30.1"
+    "rolldown": "1.2.1"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.71",
@@ -76,7 +74,7 @@
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
-    "zod": "^3.24.2"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

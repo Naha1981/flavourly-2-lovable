@@ -1,53 +1,65 @@
-# Flavourly: handover overview
+# Flavourly Client Handover
 
-Flavourly is a WhatsApp-first guest-retention app for restaurants: inbox and AI replies, bookings and reminders, loyalty and vouchers, campaigns, reputation recovery, a revenue "employee" agent, and PayFast billing. It is multi-tenant: one deployment, many restaurants, each identified by a slug (`tenantId`).
+**Status: handover in progress — not approved for unattended client operation.** This pack separates repository evidence from owner-only and client acceptance checks. An unchecked item is not considered complete.
 
-## How it fits together
+## What the app does
 
+Flavourly is a restaurant operations app with tenant-scoped dashboard data, menu management, bookings/reminders, WhatsApp inbox and messaging, opt-out handling, loyalty/reward claims, campaigns, a Revenue Employee, and PayFast subscription billing. Actual feature availability depends on the deployed configuration and connected services.
+
+## Architecture
+
+```mermaid
+flowchart TD
+  Guest[Guest on WhatsApp] --> Operator[NahaLabs WhatsApp Operator]
+  Operator -->|HMAC webhook| App[Flavourly TanStack Start app]
+  Manager[Restaurant owner / manager / staff] --> App
+  App --> Auth[Supabase Auth]
+  App --> DB[(Supabase Postgres + RLS)]
+  App --> PayFast[PayFast checkout + ITN]
+  App --> Gemini[Gemini Live]
+  App --> AI[Lovable AI gateway / optional research providers]
+  Cron[External scheduler] -->|Bearer LOVABLE_CRON_SECRET| App
+  App --> Operator
 ```
-Guest ── WhatsApp ──▶ WhatsApp operator (Baileys) ──signed webhook──▶ /api/public/webhooks/whatsapp
-                              ▲                                              │
-                              │ send                                          ▼
-Restaurant staff ──▶ Dashboard (TanStack Start, server functions) ──▶ Supabase (Postgres, RLS deny-all)
-                              │                                              ▲
-PayFast ──ITN──▶ /api/public/billing/webhook                                 │
-Scheduler ──POST + secret──▶ /api/public/cron/*  (outbox, reminders, ...) ───┘
-Uptime monitor ──GET──▶ /api/public/health          Watchdog ──▶ ALERT_WEBHOOK_URL (your phone)
-```
 
-Key facts for anyone changing it:
-
-- **All data access goes through server functions using the Supabase service role.** Row level security is enabled on every table with no policies (deny-all to browsers), so the only tenant wall is `authorizeTenant()` in `src/lib/tenant-auth.server.ts`. Every server function must call it. `src/lib/tenant-guard.test.ts` and `tests/role-matrix.test.ts` enforce this.
-- **Auth is fail-closed.** Login is required unless `ALLOW_INSECURE_DEMO=true` on a non-https, non-production deployment.
-- **Every outbound WhatsApp message** goes through `sendWhatsApp()` (billing and quota gate). Automated messages go through the outbox (opt-out, quiet hours, retries).
-- **Scheduled jobs** are plain HTTP endpoints; nothing in the repo schedules them. See `RUNBOOK.md`.
+The app's admin Supabase client uses the service-role key and bypasses RLS. This makes server-side authentication, role checks, and tenant scoping essential security boundaries. Browser code must only receive the Supabase URL and publishable key; service-role keys and other secrets belong only in hosting secret settings.
 
 ## Run locally
 
-```sh
-bun install --frozen-lockfile
-cp .env.example .env.local      # fill in what you need; leave ALLOW_INSECURE_DEMO=true for local-only login bypass
-bun run dev
-```
+Prerequisites: Node.js 22, Bun, Git, and access to the project’s required secrets/services.
 
-## The checks (all must pass before merging; CI runs them)
+1. Clone the repository and enter the directory.
+2. Copy `.env.example` to a local `.env` file and fill the values needed for the features under test. Never copy production secrets into a ticket or chat.
+3. Install the locked dependencies and run checks:
 
-```sh
-bun run typecheck && bunx eslint . --rule 'prettier/prettier: off' && bunx vitest run && bun run build
-DATABASE_URL=postgres://... scripts/replay-migrations.sh   # on an EMPTY scratch Postgres
-```
+   ```sh
+   bun install --frozen-lockfile
+   bun run check:env
+   bun run typecheck
+   npx eslint . --rule 'prettier/prettier: off'
+   bun run test
+   bun run build
+   ```
 
-## Other documents in this folder
+4. Start locally with `bun run dev`. Do not use real guest phone numbers, live PayFast credentials, or a production database during testing.
 
-| File | For |
-|---|---|
-| `RUNBOOK.md` | What each alert means and how to fix it; cron schedule; rotating secrets |
-| `ENVIRONMENTS.md` | Every service and environment variable, who owns it |
-| `ROLES.md` | Who can do what (owner / manager / staff) |
-| `CLIENT_GUIDE.md` | Plain-language guide for restaurant managers |
-| `CHANGE_GUIDE.md` | How to change the app safely, and what not to touch |
-| `KNOWN_LIMITS.md` | What the app does not do or does imperfectly, in plain terms |
-| `ACCEPTANCE_SCRIPT.md` | Click-through test to run before go-live and after big changes |
-| `OWNER_CHECKLIST.md` | Things only a human with dashboard access can verify |
-| `LATER.md` | Deferred ideas and technical debt |
-| `cron.sql` | pg_cron + pg_net template for scheduling the jobs |
+The Playwright-style E2E package lives under `e2e/` and has its own dependencies. Its reproducible install/lock and CI execution are still open items; don't assume the E2E suite is covered by the root build.
+
+## Repository rules
+
+- Never rewrite published Git history; add new commits only.
+- Never manually edit `src/integrations/supabase/*` or `src/routeTree.gen.ts`; regenerate the Supabase types through the supported generator.
+- Use one concern per commit.
+- Run the CI checks above before proposing a merge.
+- Do not merge the hardening PR until its CI is green and the pending security/acceptance gates below are closed.
+- Do not apply schema changes to production without verifying the migration on a scratch database and following the migration/change procedure.
+
+## Current verified evidence
+
+- GitHub Actions: [latest recorded successful run](https://github.com/Naha1981/flavourly-2-lovable/actions/runs/40165684375) for the security/PayFast commit. This run covers frozen Bun install, root typecheck, ESLint, Vitest, and Vite build.
+- The clean Supabase migration replay, PayFast sandbox lifecycle, live deployment settings, real WhatsApp operator, alerts, and client click-through acceptance have not been evidenced by that CI run.
+- The audit branch and changes are in a draft PR: [PR #25](https://github.com/Naha1981/flavourly-2-lovable/pull/25). Check the PR for the newest run and commits before acting on the earlier evidence link.
+
+## Gate status
+
+See the parent handover report / PR for the live gate table. Until every gate has an evidence link and all owner items have been signed off, the recommendation remains **Not ready**.

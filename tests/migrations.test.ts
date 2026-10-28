@@ -18,7 +18,7 @@ describe("supabase migrations", () => {
     const seen = new Map<string, string>();
     for (const file of files) {
       const body = normalise(readFileSync(join(dir, file), "utf8"));
-      if (body.includes("Intentionally a no-op")) continue;
+      if (/intentionally a no-op/i.test(body)) continue; // the neutralised historical duplicates
       const earlier = seen.get(body);
       expect(earlier, `${file} duplicates ${earlier}`).toBeUndefined();
       seen.set(body, file);

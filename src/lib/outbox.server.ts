@@ -67,21 +67,76 @@ export async function processOutbox(limit = 50) {
   const now = new Date();
 
   // We cannot know whether an abandoned job reached WhatsApp before the crash, so
-  // retrying could message a guest twice. Mark it failed (visible to the watchdog
-  // and the dashboard) rather than re-sending or leaving it stuck forever.
-  await c
-    .from("outbox_jobs")
+  // re-queueing it could message a guest twice. Mark it failed instead: visible in
+  // the dashboard and to monitoring, never silently stuck, never double-sent.
+  await c.from("outbox_jobs")
     .update({ status: "failed", error: "Interrupted mid-send; not retried to avoid a duplicate message." })
     .eq("status", "processing")
     .lt("claimed_at", new Date(now.getTime() - STUCK_AFTER_MS).toISOString());
-  const { data: due, error } = await c
-    .from("outbox_jobs")
-    .select("id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id, campaign_id")
-    .in("status", ["pending", "quiet_hours_delayed"])
-    .lte("scheduled_for", now.toISOString())
-    .order("scheduled_for", { ascending: true })
-    .limit(limit);
-  if (error) throw error;
+
+  // Fairness v2: order the candidate window by tenant first (then age) and
+  // start after the last-served tenant watermark, wrapping once. A backlog
+  // bigger than the window from one tenant can no longer fill the window and
+  // starve everyone else out of the round-robin.
+  const cols = "id, tenant_id, recipient_phone, message_text, automated, attempts, status, conversation_id, campaign_id";
+  const { getCronWatermark, setCronWatermark } = await import("./tenants.server");
+  const watermark = await getCronWatermark(c, "outbox");
+  const dueStatuses = ["pending", "quiet_hours_delayed"];
+  const base = () =>
+    c.from("outbox_jobs")
+      .select(cols)
+      .in("status", dueStatuses)
+      .lte("scheduled_for", now.toISOString())
+      .order("tenant_id", { ascending: true })
+      .order("scheduled_for", { ascending: true })
+      .limit(limit * 10);
+  const first = watermark
+    ? await base().gt("tenant_id", watermark)
+    : await base();
+  if (first.error) throw first.error;
+  let candidates = first.data ?? [];
+  if (watermark && candidates.length < limit) {
+    // Wrap: serve tenants at or before the watermark with the remaining window.
+    const { data: wrapped, error: wrapError } = await base().lte("tenant_id", watermark);
+    if (wrapError) throw wrapError;
+    candidates = [...candidates, ...(wrapped ?? [])];
+  }
+
+  type DueJob = {
+    id: string;
+    tenant_id: string;
+    recipient_phone: string;
+    message_text: string;
+    automated: boolean;
+    attempts: number;
+    status: string;
+    conversation_id: string | null;
+    campaign_id: string | null;
+  };
+  const byTenant = new Map<string, DueJob[]>();
+  for (const raw of candidates ?? []) {
+    const job = raw as DueJob;
+    const list = byTenant.get(job.tenant_id) ?? [];
+    list.push(job);
+    byTenant.set(job.tenant_id, list);
+  }
+  const due: DueJob[] = [];
+  for (let depth = 0; due.length < limit; depth += 1) {
+    let added = false;
+    for (const list of byTenant.values()) {
+      const job = list[depth];
+      if (job && due.length < limit) {
+        due.push(job);
+        added = true;
+      }
+    }
+    if (!added) break;
+  }
+
+  const servedTenants = [...new Set(due.map((j) => j.tenant_id))].sort();
+  if (servedTenants.length > 0) {
+    await setCronWatermark(c, "outbox", servedTenants[servedTenants.length - 1]!);
+  }
 
   const stats = { sent: 0, delayed: 0, retried: 0, failed: 0, skipped: 0 };
   for (const job of due ?? []) {

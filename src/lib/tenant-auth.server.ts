@@ -7,18 +7,20 @@ export const ANY_ROLE: TenantRole[] = ["owner", "manager", "staff"];
 export const MANAGERS: TenantRole[] = ["owner", "manager"];
 
 /**
- * Fail-closed: authentication is REQUIRED unless someone has explicitly opted
- * in to the insecure demo mode (ALLOW_INSECURE_DEMO=true) on a non-https,
- * non-production deployment. Forgetting an env var can therefore never open the
- * app; it can only lock it down. Every server function reaches the database
- * through the service role (RLS bypassed), so this switch is the tenant wall.
+ * Authentication is required by default in every environment.
+ * Only explicitly opted-in, non-HTTPS demo deployments can bypass it.
  */
 export const authRequired = () => {
-  const demo = process.env["ALLOW_INSECURE_DEMO"] === "true";
-  const publicUrl = (process.env["PUBLIC_APP_URL"] ?? "").trim().toLowerCase();
-  const production = process.env["NODE_ENV"] === "production";
-  if (demo && !production && !publicUrl.startsWith("https://")) return false;
-  return true;
+  if (process.env["REQUIRE_AUTH"] === "true") return true;
+  if (process.env["ALLOW_INSECURE_DEMO"] !== "true") return true;
+  const publicAppUrl = process.env["PUBLIC_APP_URL"]?.trim();
+  if (!publicAppUrl) return true;
+
+  try {
+    return new URL(publicAppUrl).protocol === "https:";
+  } catch {
+    return true;
+  }
 };
 
 const deny = (status: 401 | 403, message: string) =>

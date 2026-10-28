@@ -38,7 +38,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
         autoReplies: v.autoRepliesEnabled,
       });
     });
-  }, [load, profile.slug]);
+  }, [load, profile.slug, profile.managerPhone]);
 
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 

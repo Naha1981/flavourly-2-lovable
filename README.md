@@ -310,12 +310,25 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js 22+ and [Bun](https://bun.sh). Handover documentation lives in [`docs/handover/`](docs/handover/README.md).
+Use Node.js 22 and Bun so local installs match CI. Install Bun from https://bun.sh/docs/installation.
 
 ```sh
+git clone <this-repository-url>
+cd <repository-name>
 bun install --frozen-lockfile
-cp .env.example .env.local   # set ALLOW_INSECURE_DEMO=true to skip login locally
 bun run dev
 ```
 
-Auth is required by default; the demo bypass is ignored on https or production deployments.
+CI runs typecheck, ESLint, Vitest, and the production Vite build in that order. The separate `e2e/` package has not yet been added to the frozen root install; see the handover checklist for the remaining e2e reproducibility gate.
+
+
+## Authentication safety
+
+Server functions require a valid Supabase user session and tenant membership by default in development, preview, and production. Set `REQUIRE_AUTH=true` in deployed environments. The legacy `NODE_ENV` value is not an authentication control.
+
+`ALLOW_INSECURE_DEMO=true` is an explicit local/demo-only escape hatch and is ignored when `PUBLIC_APP_URL` is missing, invalid, or HTTPS. Never enable it for a client or internet-facing deployment. Do not put service-role keys or other secrets in `.env.example`; use your hosting provider's secret settings.
+
+
+## Client handover documentation
+
+See [docs/handover/README.md](docs/handover/README.md) for the architecture and verification status, [RUNBOOK.md](docs/handover/RUNBOOK.md) for incident triage, and [CLIENT_GUIDE.md](docs/handover/CLIENT_GUIDE.md) for restaurant-manager workflows. This documentation is not evidence that live environment settings, schedules, alerts, payments, or client acceptance have been verified.

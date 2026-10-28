@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { createFakeDb, type FakeDb } from "./helpers/fake-db";
 
@@ -7,19 +7,20 @@ import { createFakeDb, type FakeDb } from "./helpers/fake-db";
  * End-to-end flow for WhatsApp, with the database and the WhatsApp service faked:
  * incoming message -> saved -> auto-reply (or held for approval) -> outbox -> retries.
  */
-const state: { db: FakeDb; send: ReturnType<typeof vi.fn> } = {
+type SendMock = Mock<(...args: unknown[]) => Promise<unknown>>;
+const state: { db: FakeDb; send: SendMock } = {
   db: createFakeDb(),
-  send: vi.fn(),
+  send: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 };
 
 vi.mock("@/integrations/supabase/client.server", () => ({
   get supabaseAdmin() { return state.db; },
 }));
 vi.mock("@/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
+  sendWhatsApp: (...a: unknown[]) => state.send(...a),
 }));
 vi.mock("../src/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
+  sendWhatsApp: (...a: unknown[]) => state.send(...a),
 }));
 
 const SECRET = "test-webhook-secret";

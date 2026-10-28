@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Replays every migration, in order, on an EMPTY Postgres and fails if any
-# migration errors or if any public table is left without row level security.
+# Replays every migration, in order, on an EMPTY Postgres and fails if any migration
+# errors or if any public table is left without row level security.
 #
 #   DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres scripts/replay-migrations.sh
 #
-# Supabase-provided pieces (roles, auth schema, auth.uid()) are stubbed so this
-# works on a plain Postgres 15+ container. Use a THROWAWAY database.
+# Supabase-provided pieces (roles, the auth schema, auth.uid()) are stubbed so this runs
+# on a plain Postgres 15+ container. Use a THROWAWAY database.
 set -euo pipefail
 
 : "${DATABASE_URL:?Set DATABASE_URL to an empty scratch Postgres database}"

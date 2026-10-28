@@ -1,57 +1,47 @@
-# Flavourly: guide for restaurant managers
+# Flavourly — Restaurant Manager Guide
 
-Flavourly answers your guests on WhatsApp, helps you fill tables, brings guests back, and tells you when something needs a person. This guide covers the daily jobs. You never need to touch anything technical.
+This guide is written for daily use. The exact menu labels may differ by deployed version; use only controls visible in your account. A status not visible in the dashboard is not a successful health check.
 
-## Every day (5 minutes)
+## 1. Sign in and select the right restaurant
 
-1. **Inbox.** Open *Inbox*. New guest messages appear with an urgency tag. Click one to read it. Reply yourself, or use *Replies* to get a suggested answer, edit it, and send.
-   - You can only reply to guests who have already messaged your WhatsApp number.
-2. **Approvals.** Open *Approvals*. If the AI held a message for you (for example an apology or an offer), read it, edit if you like, then **Approve** or **Reject**. Nothing sensitive is sent without you.
-3. **Menu availability.** Out of something? Open *Menu* and switch the item to unavailable so the AI stops offering it. Switch it back when it returns.
-4. **Vouchers.** When a guest shows a voucher or reward, open *Redeem*, enter the code, and confirm. A code works once.
+Open the client URL and sign in with your own account. Confirm the restaurant name before editing anything. Never share passwords or one-time codes. If a different restaurant appears, stop and contact support immediately.
 
-## Every week
+## 2. Check WhatsApp before a busy service
 
-- **Campaigns.** *Campaigns* → create a message → check the audience size → send. Guests who replied STOP are never messaged. Messages go out in sensible hours, not at night.
-- **Reputation.** *Reputation* shows unhappy feedback and suggests a recovery message and voucher. You decide what is sent.
-- **Revenue assistant.** *Revenue* shows opportunities the AI found. Approve the ones you like; it prepares a draft for you to review.
+Open the WhatsApp/Health area. Look for Connected status, a recent delivery timestamp and any failed webhook/send count. If disconnected, use the QR or pairing-code flow shown in the app from the restaurant's own phone. Never send a QR or pairing code to support. If the operator itself appears unreachable, stop repeated reconnect attempts and report the time shown.
 
-## Settings you control
+## 3. Work from the inbox
 
-- **Venue settings** (opening hours, address, details the AI uses). Keep them up to date: the AI answers guests from them.
-- **WhatsApp connection.** *WhatsApp health* shows whether your number is connected. If it shows disconnected, a manager can reconnect by scanning the QR code with the restaurant's WhatsApp (*Linked devices*) or entering the pairing code.
-- **Billing.** *Billing* shows your plan, trial end and message allowance. You can subscribe, change plan or cancel here.
+Open Inbox and choose the guest conversation. Read the guest message and context before replying. Do not promise availability, prices, refunds, or menu items that have not been confirmed. Use the reply drafter as a draft and review it before sending. Until the message-send hardening is completed, avoid direct arbitrary-number sends; use only the currently approved, conversation-based workflow.
 
-## Plans
+## 4. Manage bookings and reminders
 
-| Plan | Per month | Messages per month |
-|---|---|---|
-| Starter | R499 | 500 |
-| Casual | R1,499 | 2,000 |
-| Premium | R3,999 | 10,000 |
-| Signature | R7,999 | 50,000 |
-| Group | R19,999 | Unlimited |
+Review booking requests and confirm the date, time, and party size before considering a booking final. Check the reservation appears in the bookings list. Reminders depend on the external scheduler running; do not promise a reminder was sent unless the app shows a send/delivery record.
 
-New restaurants start with a 14-day trial. If the trial or subscription is not active, Flavourly pauses sending messages (you can still read your inbox). If you are near your monthly allowance you will be told.
+## 5. Keep the menu accurate
 
-## Who can do what
+When an item is unavailable, toggle it unavailable in Menu and save. Re-open the item/list to verify the state persisted. Tell staff that unavailable items should no longer be offered. If an AI reply offers the item after the toggle, correct the guest manually and report the example with guest details removed.
 
-Owners and managers can do everything above. Staff can read and reply to the inbox, change menu availability and redeem vouchers. See `ROLES.md`.
+## 6. Handle complaints and recovery vouchers
 
-## When something looks wrong
+Log the incident, follow the restaurant's recovery policy, and request a manager's approval where shown. Never promise a refund or discount outside the restaurant's agreed policy. For a voucher, check validity and redemption status before honouring it. GPS claims use client-supplied location as a soft control; they are not proof of a guest's physical location.
 
-| You see | Do this |
-|---|---|
-| WhatsApp health says disconnected | Reconnect (above). If it will not reconnect, contact support. |
-| Guests say they got no reply | Check WhatsApp health, then Billing (is the plan active?). Then contact support. |
-| A message looks wrong or off-brand | Do not send it. Reject it in Approvals, and tell support what the guest wrote so it can be improved. |
-| You cannot log in | Use *Forgot password* on the login page. |
-| Something else | Contact support (details below). |
+## 7. Loyalty
 
-**Support:** *fill in: name, WhatsApp/email, hours, expected response time.*
+Record a visit only once and use a unique receipt/bill reference where requested. Check the points balance and transaction history after the visit. For a reward claim, use the generated guest link and verify the claim has redeemed before issuing the benefit. The database has an idempotency control, but staff should not repeatedly click or retry if the result is uncertain.
 
-## Good to know
+## 8. Campaigns
 
-- The AI can make mistakes. Check anything that involves money, bookings you are unsure about, or complaints.
-- Guests can reply STOP at any time to stop marketing messages. This is respected automatically (POPIA).
-- Flavourly uses WhatsApp through a connection that WhatsApp does not officially endorse. Sending very large volumes, or spam complaints from guests, can get a number blocked. See `KNOWN_LIMITS.md`.
+Before creating a campaign, confirm segment, timing, message and intended audience with the manager. Review opt-outs and quiet-hour behaviour. Preview the content and use the app's approval step if displayed. Do not duplicate a campaign because the UI appears slow; check its status first.
+
+## 9. Billing
+
+Review plan and billing state in the billing area. A return to PayFast's success page does not itself prove payment. Use the status shown in Flavourly after PayFast sends and the app validates the notification. If status is pending/past due or the payment seems wrong, stop and contact the account owner; never attempt to edit billing state directly.
+
+## 10. When to contact support
+
+Include restaurant name/slug, approximate time (SAST), what action you took, the error text with secrets/guest details removed, and a screenshot with phone numbers/message contents hidden. Do not send passwords, payment-card information, merchant credentials, QR codes, pairing codes, API keys or guest message bodies.
+
+## Client sign-off
+
+Run the [click-by-click Acceptance Script](ACCEPTANCE_SCRIPT.md) in the staging environment and record pass/fail per step before this guide is approved for the restaurant. Use only test guest accounts/numbers and sandbox billing until the owner authorises production testing.

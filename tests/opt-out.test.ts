@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { createHmac } from "crypto";
 
 import { createFakeDb, type FakeDb } from "./helpers/fake-db";
@@ -9,19 +9,20 @@ import { createFakeDb, type FakeDb } from "./helpers/fake-db";
  * START re-joins them. Also covers outbox attempt accounting: operator cold
  * starts ("waking") must not burn send attempts.
  */
-const state: { db: FakeDb; send: ReturnType<typeof vi.fn> } = {
+type SendMock = Mock<(...args: unknown[]) => Promise<unknown>>;
+const state: { db: FakeDb; send: SendMock } = {
   db: createFakeDb(),
-  send: vi.fn(),
+  send: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 };
 
 vi.mock("@/integrations/supabase/client.server", () => ({
   get supabaseAdmin() { return state.db; },
 }));
 vi.mock("@/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
+  sendWhatsApp: (...a: unknown[]) => state.send(...a),
 }));
 vi.mock("../src/lib/wa-account.server", () => ({
-  sendWhatsApp: (...a: unknown[]) => (state.send as (...x: unknown[]) => unknown)(...a),
+  sendWhatsApp: (...a: unknown[]) => state.send(...a),
 }));
 
 const SECRET = "test-webhook-secret";

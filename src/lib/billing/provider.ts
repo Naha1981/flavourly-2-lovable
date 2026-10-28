@@ -66,3 +66,44 @@ export function quotaDecision(
   }
   return { allowed: true as const };
 }
+
+export type QuotaTelemetryEvent = {
+  event: "quota_usage";
+  tier: PlanTier;
+  scope: "monthly" | "hourly";
+  used: number;
+  limit: number;
+  percent: number;
+  level: "warning" | "critical";
+};
+
+const QUOTA_WARNING_PERCENT = 80;
+
+/**
+ * Pure threshold detector for non-destructive quota telemetry. Emits at
+ * 80% (warning) and 100% (critical) of a tier's monthly/hourly message
+ * budget; tiers with an unlimited budget never emit.
+ */
+export function quotaTelemetryEvents(
+  tier: PlanTier,
+  usage: { monthlyReserved: number; hourlyReserved: number },
+): QuotaTelemetryEvent[] {
+  const events: QuotaTelemetryEvent[] = [];
+  const push = (scope: "monthly" | "hourly", used: number, limit: number) => {
+    if (!Number.isFinite(limit) || limit <= 0) return;
+    const percent = Math.floor((used / limit) * 100);
+    if (percent < QUOTA_WARNING_PERCENT) return;
+    events.push({
+      event: "quota_usage",
+      tier,
+      scope,
+      used,
+      limit,
+      percent,
+      level: percent >= 100 ? "critical" : "warning",
+    });
+  };
+  push("monthly", usage.monthlyReserved, TIER_MONTHLY_MESSAGES[tier]);
+  push("hourly", usage.hourlyReserved, TIER_HOURLY_MESSAGES[tier]);
+  return events;
+}

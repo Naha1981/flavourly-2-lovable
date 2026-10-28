@@ -36,6 +36,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env["REQUIRE_AUTH"];
+  delete process.env["ALLOW_INSECURE_DEMO"];
+  delete process.env["PUBLIC_APP_URL"];
 });
 
 describe("sign-up", () => {
@@ -66,7 +68,7 @@ describe("sign-in", () => {
 describe("restaurant creation during onboarding", () => {
   it("creates the restaurant and makes the new user its owner", async () => {
     const { ensureWorkspace } = await import("@/lib/workspace.server");
-    const ws = await ensureWorkspace(state.db as never, "user-1", "Marble JHB");
+    const ws = await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-1", "Marble JHB");
     expect(ws).toEqual({ tenantId: "marble-jhb", name: "Marble JHB", role: "owner" });
     expect(state.db.rows("tenant_members")).toEqual([
       expect.objectContaining({ tenant_id: "marble-jhb", user_id: "user-1", role: "owner" }),
@@ -75,16 +77,16 @@ describe("restaurant creation during onboarding", () => {
 
   it("is safe to call twice and never creates a second restaurant", async () => {
     const { ensureWorkspace } = await import("@/lib/workspace.server");
-    await ensureWorkspace(state.db as never, "user-1", "Marble JHB");
-    const again = await ensureWorkspace(state.db as never, "user-1", "Something Else");
+    await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-1", "Marble JHB");
+    const again = await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-1", "Something Else");
     expect(again.tenantId).toBe("marble-jhb");
     expect(state.db.rows("tenant_profiles")).toHaveLength(1);
   });
 
   it("gives a second restaurant with the same name its own address", async () => {
     const { ensureWorkspace } = await import("@/lib/workspace.server");
-    await ensureWorkspace(state.db as never, "user-1", "Marble JHB");
-    const other = await ensureWorkspace(state.db as never, "user-2", "Marble JHB");
+    await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-1", "Marble JHB");
+    const other = await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-2", "Marble JHB");
     expect(other.tenantId).not.toBe("marble-jhb");
     expect(other.tenantId.startsWith("marble-jhb-")).toBe(true);
   });
@@ -99,6 +101,28 @@ describe("protected dashboard access", () => {
       return (e as Response).status;
     }
   };
+
+  it("fails closed when no authentication environment flags are set", async () => {
+    delete process.env["REQUIRE_AUTH"];
+    delete process.env["ALLOW_INSECURE_DEMO"];
+    delete process.env["PUBLIC_APP_URL"];
+
+    const { authRequired, authorizeTenant } = await import("@/lib/tenant-auth.server");
+    expect(authRequired()).toBe(true);
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(401);
+  });
+
+  it("allows bypass only when the demo override and a non-HTTPS URL are explicit", async () => {
+    const { authRequired } = await import("@/lib/tenant-auth.server");
+    process.env["REQUIRE_AUTH"] = "false";
+    process.env["ALLOW_INSECURE_DEMO"] = "true";
+    process.env["PUBLIC_APP_URL"] = "http://localhost:3000";
+    expect(authRequired()).toBe(false);
+
+    process.env["PUBLIC_APP_URL"] = "https://example.com";
+    expect(authRequired()).toBe(true);
+  });
+
 
   it("blocks signed-out visitors with 401", async () => {
     const { authorizeTenant, requireUser } = await import("@/lib/tenant-auth.server");

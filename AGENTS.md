@@ -9,14 +9,12 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-## Project rules (read before changing anything)
 
-Full guidance: `docs/handover/CHANGE_GUIDE.md`. The essentials:
+## Environment and secrets
 
-- Run before every push: `bun run typecheck && bunx eslint . --rule 'prettier/prettier: off' && bunx vitest run && bun run build`. For migrations also `scripts/replay-migrations.sh` on an empty scratch Postgres.
-- Every server function must call `authorizeTenant()` with the correct role; sensitive ones are pinned in `tests/role-matrix.test.ts`. Never trust identity, tenant or WhatsApp account from the browser.
-- Send WhatsApp only via `sendWhatsApp()` or the outbox, never the operator directly.
-- Do not hand-edit `src/integrations/supabase/*` or `src/routeTree.gen.ts`. Never edit an applied migration; add a new idempotent one with RLS enabled on any new table. Keep the seven no-op duplicate migrations.
-- Any new environment variable goes in `.env.example`. Never commit secrets; `.env` holds public browser config only.
-- One lockfile (`bun.lock`, public registry only).
-- Do not add features while hardening; put ideas in `docs/handover/LATER.md`.
+- Never commit `.env`, `.env.local`, deployment secrets, service-role keys, PayFast credentials/passphrases, operator API keys, webhook secrets, Gemini/AI provider keys, or cron secrets.
+- Keep `.env.example` as the single documented list of environment-variable names; include one-line descriptions and required/optional status. Run `bun run check:env` after adding or renaming a variable.
+- The Supabase URL and publishable key are public client configuration; never substitute the service-role key in browser variables.
+- The repository historically tracked `.env`; `.gitignore` now prevents new environment files from being added, but an ignore rule does not untrack an existing committed file. Verify its current contents and scan the full Git history before deciding whether to untrack it.
+- If any secret ever appeared in a commit, document, chat or CI log, rotate it at the issuing provider even if the offending file is later removed. Never rewrite published history.
+- Run `bun run check:test-focus` and the typecheck/lint/test/build sequence before pushing.

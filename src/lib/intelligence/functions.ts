@@ -3,10 +3,9 @@ import { z } from "zod";
 
 const tenant = z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/);
 
-/** Reading is open to any member; running the agent, changing its autonomy mode or approving its actions is owner/manager only. */
-async function guard(tenantId: string, level: "any" | "manager" = "any") {
-  const { authorizeTenant, ANY_ROLE, MANAGERS } = await import("../tenant-auth.server");
-  await authorizeTenant(tenantId, level === "manager" ? MANAGERS : ANY_ROLE);
+async function guard(tenantId: string) {
+  const { authorizeTenant } = await import("../tenant-auth.server");
+  await authorizeTenant(tenantId);
 }
 
 export const getRevenueEmployeeSnapshot = createServerFn({ method: "POST" })
@@ -20,7 +19,7 @@ export const getRevenueEmployeeSnapshot = createServerFn({ method: "POST" })
 export const runRevenueEmployeeFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant, objective: z.string().trim().max(800).optional() }).parse(d))
   .handler(async ({ data }) => {
-    await guard(data.tenantId, "manager");
+    await guard(data.tenantId);
     const { runRevenueEmployee } = await import("./revenue-employee.server");
     return data.objective
       ? runRevenueEmployee({ tenantId: data.tenantId, objective: data.objective })
@@ -40,20 +39,30 @@ export const setRevenueEmployeeModeFn = createServerFn({ method: "POST" })
     z.object({ tenantId: tenant, mode: z.enum(["disabled", "shadow", "approval_only", "active"]) }).parse(d),
   )
   .handler(async ({ data }) => {
-    await guard(data.tenantId, "manager");
+    await guard(data.tenantId);
     const { setRevenueEmployeeMode } = await import("./revenue-employee.server");
     return setRevenueEmployeeMode(data.tenantId, data.mode);
   });
+
+export async function requireApprovalActorId(): Promise<string> {
+  const { actorId } = await import("../tenant-auth.server");
+  const id = await actorId();
+  if (!id) {
+    throw new Response(JSON.stringify({ error: "Please sign in." }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return id;
+}
 
 export const approveRevenueActionFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({ tenantId: tenant, actionId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
-    await guard(data.tenantId, "manager");
-    const { actorId } = await import("../tenant-auth.server");
+    await guard(data.tenantId);
+    const approvedBy = await requireApprovalActorId();
     const { approveRevenueAction } = await import("./revenue-employee.server");
-    // The approver is the signed-in user, never a name supplied by the browser.
-    const approvedBy = (await actorId()) ?? "demo-mode";
-    return approveRevenueAction({ tenantId: data.tenantId, actionId: data.actionId, approvedBy });
+    return approveRevenueAction({ ...data, approvedBy });
   });

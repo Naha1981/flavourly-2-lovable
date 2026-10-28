@@ -21,6 +21,7 @@ import { Route as ProductRouteImport } from './routes/product'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StoriesRouteImport } from './routes/stories'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ClaimSlugRouteImport } from './routes/claim.$slug'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardApprovalsRouteImport } from './routes/dashboard.approvals'
@@ -42,7 +43,6 @@ import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
-import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
 import { Route as ApiPublicBillingWebhookRouteImport } from './routes/api/public/billing/webhook'
 import { Route as ApiPublicCronCustomerLifecycleRouteImport } from './routes/api/public/cron/customer-lifecycle'
@@ -50,7 +50,6 @@ import { Route as ApiPublicCronMilestonesRouteImport } from './routes/api/public
 import { Route as ApiPublicCronOutboxRouteImport } from './routes/api/public/cron/outbox'
 import { Route as ApiPublicCronRemindersRouteImport } from './routes/api/public/cron/reminders'
 import { Route as ApiPublicCronRevenueEmployeeRouteImport } from './routes/api/public/cron/revenue-employee'
-import { Route as ApiPublicCronWatchdogRouteImport } from './routes/api/public/cron/watchdog'
 import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 
 const IndexRoute = IndexRouteImport.update({
@@ -111,6 +110,11 @@ const SignupRoute = SignupRouteImport.update({
 const StoriesRoute = StoriesRouteImport.update({
   id: '/stories',
   path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClaimSlugRoute = ClaimSlugRouteImport.update({
@@ -219,11 +223,6 @@ const MSlugRoute = MSlugRouteImport.update({
   path: '/m/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
-  id: '/api/public/health',
-  path: '/api/public/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardIntelligenceMenuMatrixRoute =
   DashboardIntelligenceMenuMatrixRouteImport.update({
     id: '/intelligence/menu-matrix',
@@ -262,11 +261,6 @@ const ApiPublicCronRevenueEmployeeRoute =
     path: '/api/public/cron/revenue-employee',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicCronWatchdogRoute = ApiPublicCronWatchdogRouteImport.update({
-  id: '/api/public/cron/watchdog',
-  path: '/api/public/cron/watchdog',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicWebhooksWhatsappRoute =
   ApiPublicWebhooksWhatsappRouteImport.update({
     id: '/api/public/webhooks/whatsapp',
@@ -287,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -308,7 +303,6 @@ export interface FileRoutesByFullPath {
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/api/public/health': typeof ApiPublicHealthRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
   '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
@@ -316,7 +310,6 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
-  '/api/public/cron/watchdog': typeof ApiPublicCronWatchdogRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesByTo {
@@ -331,6 +324,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -352,7 +346,6 @@ export interface FileRoutesByTo {
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/api/public/health': typeof ApiPublicHealthRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
   '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
@@ -360,7 +353,6 @@ export interface FileRoutesByTo {
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
-  '/api/public/cron/watchdog': typeof ApiPublicCronWatchdogRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRoutesById {
@@ -377,6 +369,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/stories': typeof StoriesRoute
+  '/api/health': typeof ApiHealthRoute
   '/claim/$slug': typeof ClaimSlugRoute
   '/dashboard/approvals': typeof DashboardApprovalsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -398,7 +391,6 @@ export interface FileRoutesById {
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/api/public/health': typeof ApiPublicHealthRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
   '/api/public/cron/customer-lifecycle': typeof ApiPublicCronCustomerLifecycleRoute
@@ -406,7 +398,6 @@ export interface FileRoutesById {
   '/api/public/cron/outbox': typeof ApiPublicCronOutboxRoute
   '/api/public/cron/reminders': typeof ApiPublicCronRemindersRoute
   '/api/public/cron/revenue-employee': typeof ApiPublicCronRevenueEmployeeRoute
-  '/api/public/cron/watchdog': typeof ApiPublicCronWatchdogRoute
   '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
 }
 export interface FileRouteTypes {
@@ -424,6 +415,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -445,7 +437,6 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard/'
-    | '/api/public/health'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
     | '/api/public/cron/customer-lifecycle'
@@ -453,7 +444,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
     | '/api/public/cron/revenue-employee'
-    | '/api/public/cron/watchdog'
     | '/api/public/webhooks/whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -468,6 +458,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -489,7 +480,6 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard'
-    | '/api/public/health'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
     | '/api/public/cron/customer-lifecycle'
@@ -497,7 +487,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
     | '/api/public/cron/revenue-employee'
-    | '/api/public/cron/watchdog'
     | '/api/public/webhooks/whatsapp'
   id:
     | '__root__'
@@ -513,6 +502,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/stories'
+    | '/api/health'
     | '/claim/$slug'
     | '/dashboard/approvals'
     | '/dashboard/billing'
@@ -534,7 +524,6 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/m/$slug'
     | '/dashboard/'
-    | '/api/public/health'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
     | '/api/public/cron/customer-lifecycle'
@@ -542,7 +531,6 @@ export interface FileRouteTypes {
     | '/api/public/cron/outbox'
     | '/api/public/cron/reminders'
     | '/api/public/cron/revenue-employee'
-    | '/api/public/cron/watchdog'
     | '/api/public/webhooks/whatsapp'
   fileRoutesById: FileRoutesById
 }
@@ -559,19 +547,18 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   StoriesRoute: typeof StoriesRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ClaimSlugRoute: typeof ClaimSlugRoute
   GeoClaimTokenRoute: typeof GeoClaimTokenRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
   MSlugRoute: typeof MSlugRoute
-  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicBillingWebhookRoute: typeof ApiPublicBillingWebhookRoute
   ApiPublicCronCustomerLifecycleRoute: typeof ApiPublicCronCustomerLifecycleRoute
   ApiPublicCronMilestonesRoute: typeof ApiPublicCronMilestonesRoute
   ApiPublicCronOutboxRoute: typeof ApiPublicCronOutboxRoute
   ApiPublicCronRemindersRoute: typeof ApiPublicCronRemindersRoute
   ApiPublicCronRevenueEmployeeRoute: typeof ApiPublicCronRevenueEmployeeRoute
-  ApiPublicCronWatchdogRoute: typeof ApiPublicCronWatchdogRoute
   ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
@@ -659,6 +646,13 @@ declare module '@tanstack/react-router' {
       path: '/stories'
       fullPath: '/stories'
       preLoaderRoute: typeof StoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/claim/$slug': {
@@ -808,13 +802,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/health': {
-      id: '/api/public/health'
-      path: '/api/public/health'
-      fullPath: '/api/public/health'
-      preLoaderRoute: typeof ApiPublicHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/intelligence/menu-matrix': {
       id: '/dashboard/intelligence/menu-matrix'
       path: '/intelligence/menu-matrix'
@@ -862,13 +849,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/cron/revenue-employee'
       fullPath: '/api/public/cron/revenue-employee'
       preLoaderRoute: typeof ApiPublicCronRevenueEmployeeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/cron/watchdog': {
-      id: '/api/public/cron/watchdog'
-      path: '/api/public/cron/watchdog'
-      fullPath: '/api/public/cron/watchdog'
-      preLoaderRoute: typeof ApiPublicCronWatchdogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/webhooks/whatsapp': {
@@ -938,19 +918,18 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   StoriesRoute: StoriesRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ClaimSlugRoute: ClaimSlugRoute,
   GeoClaimTokenRoute: GeoClaimTokenRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
   MSlugRoute: MSlugRoute,
-  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicBillingWebhookRoute: ApiPublicBillingWebhookRoute,
   ApiPublicCronCustomerLifecycleRoute: ApiPublicCronCustomerLifecycleRoute,
   ApiPublicCronMilestonesRoute: ApiPublicCronMilestonesRoute,
   ApiPublicCronOutboxRoute: ApiPublicCronOutboxRoute,
   ApiPublicCronRemindersRoute: ApiPublicCronRemindersRoute,
   ApiPublicCronRevenueEmployeeRoute: ApiPublicCronRevenueEmployeeRoute,
-  ApiPublicCronWatchdogRoute: ApiPublicCronWatchdogRoute,
   ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport

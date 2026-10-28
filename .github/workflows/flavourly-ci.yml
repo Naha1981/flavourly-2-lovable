@@ -5,43 +5,51 @@ on:
     branches: [main]
   pull_request:
 
-permissions:
-  contents: read
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # the secret-scan test and history checks need git
-      - uses: actions/setup-node@v4
+          fetch-depth: 0
+      - name: Scan full Git history for leaked secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.24.3
+          GITLEAKS_CONFIG: .gitleaks.toml
+      - name: Scan complete repository history, not just the PR diff
+        run: /tmp/gitleaks-8.24.3/gitleaks git --redact --verbose --config .gitleaks.toml
+      - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
       - uses: oven-sh/setup-bun@v2
-      - uses: actions/cache@v4
+      - run: bun install --frozen-lockfile
+      - name: Audit dependencies (all dependency types)
+        run: bun audit | tee bun-audit-all.txt
+      - name: Audit runtime dependencies
+        run: |
+          bun audit --prod | tee bun-audit-runtime.txt
+          if grep -Eiq '^[[:space:]]*(high|critical):' bun-audit-runtime.txt; then
+            echo "High/critical runtime dependency advisories must be fixed or explicitly justified."
+            exit 1
+          fi
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
-      - name: Install (frozen lockfile)
-        run: bun install --frozen-lockfile
-      - name: Typecheck (src, tests, e2e)
-        run: bun run typecheck
-      - name: Lint
-        run: bunx eslint . --rule 'prettier/prettier: off'
-      - name: Unit tests
-        run: bunx vitest run
-      - name: Build
-        run: bun run build
-      - name: Dependency audit (production, high and above must be zero)
-        run: bun audit --prod --audit-level=high
-        continue-on-error: true # reviewed manually: see docs/handover/KNOWN_LIMITS.md (zod advisory)
+          name: dependency-audit
+          path: |
+            bun-audit-all.txt
+            bun-audit-runtime.txt
+          if-no-files-found: warn
+          retention-days: 90
+      - run: bun run check:env
+      - run: bun run check:test-focus
+      - run: bun run typecheck
+      - run: "npx eslint . --rule 'prettier/prettier: off'"
+      - run: bun run test
+      - run: bun run build
 
   migrations:
     runs-on: ubuntu-latest
@@ -55,7 +63,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Replay every migration on an empty database
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres

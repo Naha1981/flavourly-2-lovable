@@ -1,39 +1,35 @@
-# Roles and permissions
+# Roles and access rules
 
-Three roles per restaurant. The first person to create a restaurant is its **owner**. Roles live in `tenant_members`.
+## Intended role matrix
 
-| Area | Owner | Manager | Staff |
-|---|:--:|:--:|:--:|
-| See inbox, read and reply to guest messages | ✅ | ✅ | ✅ |
-| Use AI reply drafting and message triage | ✅ | ✅ | ✅ |
-| Mark a menu item available / unavailable | ✅ | ✅ | ✅ |
-| Redeem a guest's voucher at the till | ✅ | ✅ | ✅ |
-| View menu, venue settings, revenue-agent dashboard, voice assistant | ✅ | ✅ | ✅ |
-| Edit menu, categories, pairings, venue settings | ✅ | ✅ | ❌ |
-| Create and send campaigns | ✅ | ✅ | ❌ |
-| Approve or reject held AI messages | ✅ | ✅ | ❌ |
-| Social drafts, reputation recovery, market intelligence | ✅ | ✅ | ❌ |
-| Connect, re-pair, disconnect or reset the restaurant's WhatsApp number | ✅ | ✅ | ❌ |
-| Run the revenue agent, change its mode, approve its actions | ✅ | ✅ | ❌ |
-| Billing: subscribe, change plan, cancel | ✅ | ✅ | ❌ |
+This is the **required target matrix**, not a claim that every rule is already enforced in code.
 
-This table is enforced in code and pinned by `tests/role-matrix.test.ts`. Changing a permission means changing both.
+| Action | Owner | Manager | Staff |
+|---|---|---|---|
+| View restaurant dashboard, inbox, menu, bookings and basic status | Yes | Yes | Yes |
+| Draft a reply / respond to an assigned guest conversation | Yes | Yes | Yes |
+| Send messages via controlled outbox after billing/quota/opt-out checks | Yes | Yes | Only the permitted staff workflow |
+| Connect, disconnect, reset or pair the WhatsApp account | Yes | Yes | No |
+| Change Revenue Employee mode or run a Revenue Employee action | Yes | Yes | No |
+| Approve a Revenue Employee action or other approval request | Yes | Yes | No |
+| Change billing plan, start checkout, cancel subscription | Yes | Yes | No |
+| Manage staff membership and roles | Yes | Normally owner only | No |
+| Access another restaurant's data | No | No | No |
 
-Manual replies from the dashboard only go to guests who have already written to the restaurant on WhatsApp.
+## Implementation notes / known gap
 
-## Adding or removing team members (no screen for this yet)
+The role is stored in `tenant_members.role` and accepts `owner`, `manager`, or `staff`. The server auth layer applies `authorizeTenant(tenantId, roles)`; `MANAGERS` means owner or manager, and `ANY_ROLE` means all three.
 
-There is currently no page in the app for managing staff. Until one is built, the owner of the *platform* (not the restaurant) does it in the Supabase SQL editor. The person must first sign up in the app with their email.
+The audit identified manager-sensitive functions still guarded with any-role access: WhatsApp connect/pairing/disconnect/reset and Revenue Employee run/mode/approval/Gemini tool execution. Those changes may affect staff behaviour, so they remain blocked pending the owner's explicit decision and an updated acceptance test. **Do not treat this matrix as enforced until M1 is fixed and its role tests pass.**
 
-```sql
--- add (role: 'owner' | 'manager' | 'staff')
-insert into public.tenant_members (tenant_id, user_id, role)
-select 'RESTAURANT-SLUG', id, 'staff' from auth.users where email = 'person@example.com'
-on conflict (tenant_id, user_id) do update set role = excluded.role;
+## Adding/removing staff (proposed operator procedure)
 
--- remove
-delete from public.tenant_members
-where tenant_id = 'RESTAURANT-SLUG'
-  and user_id = (select id from auth.users where email = 'person@example.com');
-```
-Agree with the client who may ask for this and how fast you respond (see the support terms in `OWNER_CHECKLIST.md`). A team-management page is listed in `LATER.md`.
+Use only the supported staff-management screen if it is available in the deployed app and has been tested. Do not manually insert a `tenant_members` row in production without an approved operational procedure.
+
+1. Confirm the person's identity and the correct restaurant.
+2. Assign the least privilege needed: staff for daily operations, manager for operational controls, owner only for the business owner.
+3. Ask them to sign in and confirm only their restaurant is visible.
+4. Remove access immediately when a person leaves; revoke their session through Supabase Auth where possible.
+5. Record the action and who approved it.
+
+If the UI cannot add/remove members safely, stop and escalate rather than using an undocumented SQL edit.
