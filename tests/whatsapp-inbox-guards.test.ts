@@ -3,7 +3,7 @@ import { createFakeDb } from "./helpers/fake-db";
 const state = vi.hoisted(() => ({ db: null as unknown as ReturnType<typeof createFakeDb> }));
 vi.mock("@/lib/db.server", () => ({ db: async () => state.db }));
 vi.mock("../src/lib/db.server", () => ({ db: async () => state.db }));
-import { sendText } from "@/lib/whatsapp.server";
+import { sendText, bootstrap, status } from "@/lib/whatsapp.server";
 import { parseInboxEvent } from "@/lib/webhook-ingest.server";
 const event = () => ({
   id: "event-1",
@@ -75,6 +75,7 @@ describe("reply-only send guard", () => {
       );
       expect(result.ok).toBe(false);
       expect(fetch).not.toHaveBeenCalled();
+      if (scenario === "budget-exhausted") expect(state.db.rows("wa_conversations")[0]).toMatchObject({ status: "needs_approval" });
     });
 });
 describe("provider parser", () => {
@@ -96,5 +97,20 @@ describe("provider parser", () => {
     expect(parseInboxEvent({ ...e, account: { ...e.account, platform: "instagram" } })).toBeNull();
     expect(parseInboxEvent({ ...e, id: "" })).toBeNull();
     expect(parseInboxEvent({ ...e, timestamp: "bad" })).toBeNull();
+  });
+});
+
+describe("one-number plan guard", () => {
+  it("does not create another connection when a number is linked", async () => {
+    process.env["WHATSAPP_CONNECT_ENABLED"] = "true";
+    try {
+      expect((await bootstrap("venue-a", "Venue A")).ok).toBe(false);
+      expect(fetch).not.toHaveBeenCalled();
+    } finally { delete process.env["WHATSAPP_CONNECT_ENABLED"]; }
+  });
+  it("does not silently replace an existing linked account", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ accounts: [{ _id: "account-other", profileId: "profile-a", platform: "whatsapp", isActive: true }] })));
+    expect((await status("venue-a", "account-other")).ok).toBe(false);
+    expect(state.db.rows("wa_channels")[0]?.["account_id"]).toBe("account-a");
   });
 });

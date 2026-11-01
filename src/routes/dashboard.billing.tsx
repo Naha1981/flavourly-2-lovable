@@ -1,3 +1,4 @@
+import { WhatsAppUsage } from "@/components/whatsapp-usage";
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -39,21 +40,13 @@ function BillingPage() {
   return (
     <>
       <PageTitle title="Billing" sub={trialText} />
+      <WhatsAppUsage tenantId={profile.slug} />
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Current plan</p>
           <p className="mt-1 font-display text-xl text-foreground">{data.plan}</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Messages this month</p>
-          <p className="mt-1 font-display text-xl text-foreground">
-            {data.monthlyReserved.toLocaleString()} / {data.monthlyLimit === Infinity ? "∞" : data.monthlyLimit.toLocaleString()}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">This hour</p>
-          <p className="mt-1 font-display text-xl text-foreground">{data.hourlyReserved.toLocaleString()} / {data.hourlyLimit.toLocaleString()}</p>
-        </div>
+
       </div>
 
       <p className="mb-5 text-sm text-muted-foreground">Self-serve checkout is paused during pilot acceptance. No automatic charge. Existing subscription records and cancellation remain available.</p>

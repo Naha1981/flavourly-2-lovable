@@ -53,6 +53,7 @@ export async function bootstrap(
     };
   const c = await db();
   let row = await channel(tenantId);
+  if (row?.account_id) return { ok: false, error: "This plan already has a linked number. Ask the team before replacing it." };
   if (!row) {
     const result = await api<{ profile: { _id?: string; id?: string } }>("/profiles", {
       method: "POST",
@@ -126,6 +127,8 @@ export async function status(tenantId: string, _hint: string): Promise<Result<Wa
     };
   const account = accounts[0];
   const accountId = account?._id ?? account?.id;
+  if (row.account_id && accountId !== row.account_id)
+    return { ok: false, error: "The linked number has changed. The team must review it before any replacement." };
   if (accountId) {
     const c = await db();
     const saved = await c
@@ -236,8 +239,10 @@ export async function sendText(
     .maybeSingle();
   if (opt.error || opt.data) return { ok: false, error: "Replies are paused for this customer." };
   const budget = await c.rpc("wa_reserve_budget", { p_tenant: tenantId, p_kind: "send" });
-  if (budget.error || budget.data !== true)
-    return { ok: false, error: "The reply limit has been reached. The team can take over." };
+  if (budget.error || budget.data !== true) {
+    await c.from("wa_conversations").update({ status: "needs_approval", next_action: "Reply allowance reached or unavailable. Team must take over; no automatic retry." }).eq("tenant_id", tenantId).eq("id", conversation.id);
+    return { ok: false, error: "The reply allowance is reached or unavailable. The team must take over; no automatic retry." };
+  }
   const result = await api<{ message?: { id?: string }; messageId?: string }>(
     `/inbox/conversations/${encodeURIComponent(conversation.provider_conversation_id)}/messages`,
     { method: "POST", body: JSON.stringify({ accountId, message: text }) },

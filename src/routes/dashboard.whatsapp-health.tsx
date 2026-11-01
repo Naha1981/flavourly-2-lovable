@@ -1,3 +1,4 @@
+import { WhatsAppUsage } from "@/components/whatsapp-usage";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
@@ -147,6 +148,7 @@ function HealthPage() {
         </Button>
       </div>
 
+      <WhatsAppUsage tenantId={profile.slug} />
       {error && (
         <p className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
