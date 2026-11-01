@@ -8,7 +8,7 @@ export function validateSignup(input: { restaurant: string; email: string; passw
 
 /** After sign-in, only ever return to a dashboard page — never an outside link. */
 export function postLoginPath(redirect: string | undefined): string {
-  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || /[\\\x00-\x1f\x7f]/.test(redirect)) return "/dashboard";
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || (redirect.includes("\\") || [...redirect].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127))) return "/dashboard";
   try {
     const url = new URL(redirect, "https://flavourly.invalid");
     if (url.origin !== "https://flavourly.invalid" || !/^\/dashboard(\/|$)/.test(url.pathname)) return "/dashboard";
