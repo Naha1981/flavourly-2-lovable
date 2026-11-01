@@ -5,7 +5,7 @@ export const isAuthRequired = async () => {
   try {
     return (await getAuthConfig()).required;
   } catch {
-    return false;
+    return true;
   }
 };
 

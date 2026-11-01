@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { enterWorkspace } from "@/lib/auth-client";
+import { captureTelemetry } from "@/lib/telemetry";
 import { validateSignup } from "@/lib/auth-rules";
 
 const searchSchema = z.object({
@@ -52,6 +53,7 @@ function SignupPage() {
         toast.error(invalid);
         return;
       }
+      captureTelemetry("workflow_started", { workflow: "signup", source: "web" });
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -61,9 +63,20 @@ function SignupPage() {
         },
       });
       if (error) {
-        toast.error(error.message);
+        captureTelemetry("workflow_failed", {
+          workflow: "signup",
+          error_code: "signup_rejected",
+          retryable: true,
+        });
+        toast.error(
+          "Account creation could not complete. Please check your details or contact the team.",
+        );
         return;
       }
+      captureTelemetry("workflow_completed", {
+        workflow: "signup",
+        status: data.session ? "active" : "confirmation_required",
+      });
       if (!data.session) {
         // Email confirmation is on: the workspace is created on first sign-in.
         toast.success("Check your email to confirm your address, then sign in.");
@@ -97,7 +110,12 @@ function SignupPage() {
         </p>
       }
     >
-      <p className="mb-5 text-sm text-muted-foreground">One venue and one number. Trial: proposed allowance up to 100 replies, counted within Starter's 500 monthly replies; pilot cap 25 per day. Sending remains paused while these limits are verified. Replies only within 24 hours of an inbound customer message. Higher plans require a capacity check.</p>
+      <p className="mb-5 text-sm text-muted-foreground">
+        One venue and one number. Trial: proposed allowance up to 100 replies, counted within
+        Starter's 500 monthly replies; pilot cap 25 per day. Sending remains paused while these
+        limits are verified. Replies only within 24 hours of an inbound customer message. Higher
+        plans require a capacity check.
+      </p>
       <form
         onSubmit={(event) => {
           event.preventDefault();

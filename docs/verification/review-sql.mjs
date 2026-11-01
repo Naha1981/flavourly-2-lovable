@@ -26,4 +26,10 @@ row=(await db.query('SELECT * FROM review_followups')).rows[0];assert(row.state=
 await visit('a',cid,1000,'bill2');await db.exec(`INSERT INTO wa_opt_outs(tenant_id,phone) VALUES('a','27821234567')`);
 assert((await db.query(`SELECT count(*) n FROM review_followups WHERE state NOT IN ('cancelled','done')`)).rows[0].n===0,'STOP cancels outstanding followups');
 const p=(await db.query(`SELECT has_table_privilege('anon','review_followups','SELECT') a,has_table_privilege('authenticated','review_followups','SELECT') u,has_table_privilege('service_role','review_followups','SELECT') s,has_function_privilege('anon','click_review_link(text)','EXECUTE') f`)).rows[0];assert(!p.a&&!p.u&&p.s&&!p.f,'queue and click RPC server only');
+await db.exec(`INSERT INTO auth.users VALUES('00000000-0000-0000-0000-000000000010'); INSERT INTO tenant_members(tenant_id,user_id,role) VALUES('a','00000000-0000-0000-0000-000000000010','owner');`);
+const reserveMail=async(event)=> (await db.query(`SELECT reserve_notification('a','00000000-0000-0000-0000-000000000010','paid_visit',$1) ok`,[event])).rows[0].ok;
+assert(await reserveMail('bill1'),'mail reservation');assert(!await reserveMail('bill1'),'mail dedupe');
+for(let n=2;n<=20;n++)assert(await reserveMail('bill'+n),'mail budget '+n);
+assert(!await reserveMail('bill21'),'shared daily mail21 blocked');
+assert(!(await db.query(`SELECT reserve_notification('b','00000000-0000-0000-0000-000000000010','welcome','one') ok`)).rows[0].ok,'cross-tenant mail blocked');
 await db.close();

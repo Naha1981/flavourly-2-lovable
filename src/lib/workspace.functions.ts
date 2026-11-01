@@ -45,5 +45,12 @@ export const createWorkspace = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Workspace> => {
     const { db } = await import("./db.server");
     const { ensureWorkspace } = await import("./workspace.server");
-    return ensureWorkspace(await db(), context.userId, data.restaurantName);
+    const workspace = await ensureWorkspace(await db(), context.userId, data.restaurantName);
+    const { notifyMember } = await import("./notification.server");
+    try {
+      await notifyMember(workspace.tenantId, context.userId, "welcome", "workspace-created");
+    } catch {
+      /* A mail failure never breaks workspace creation. */
+    }
+    return workspace;
   });

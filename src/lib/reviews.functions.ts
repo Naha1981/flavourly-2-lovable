@@ -68,5 +68,17 @@ export const recordPaidVisit = createServerFn({ method: "POST" })
         .in("state", ["scheduled", "held"]);
       if (cancelled.error) throw cancelled.error;
     }
-    return recordVisit(data.tenantId, data.phone, data.spendCents, data.billRef);
+    const visit = await recordVisit(data.tenantId, data.phone, data.spendCents, data.billRef);
+    if (visit && !visit.already_recorded) {
+      const { actorId } = await import("./tenant-auth.server");
+      const user = await actorId();
+      const { notifyMember } = await import("./notification.server");
+      if (user)
+        try {
+          await notifyMember(data.tenantId, user, "paid_visit", data.billRef);
+        } catch {
+          /* Never break a recorded visit for mail. */
+        }
+    }
+    return visit;
   });

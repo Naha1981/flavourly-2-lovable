@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { captureTelemetry } from "@/lib/telemetry";
 import { reviewStatus, recordPaidVisit } from "@/lib/reviews.functions";
 import { Star } from "lucide-react";
 
@@ -236,6 +237,7 @@ function ReviewRequests({ tenantId }: { tenantId: string }) {
           setBusy(true);
           setMessage("");
           try {
+            captureTelemetry("workflow_started", { workflow: "paid_visit", source: "dashboard" });
             const r = await record({
               data: {
                 tenantId,
@@ -244,6 +246,10 @@ function ReviewRequests({ tenantId }: { tenantId: string }) {
                 billRef: String(f.get("bill")),
                 reviewConsent: f.get("consent") === "on",
               },
+            });
+            captureTelemetry("workflow_completed", {
+              workflow: "paid_visit",
+              status: r?.already_recorded ? "duplicate" : "recorded",
             });
             setMessage(
               r?.already_recorded
