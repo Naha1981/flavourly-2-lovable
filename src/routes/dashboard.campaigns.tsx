@@ -35,17 +35,33 @@ function CampaignsPage() {
   const { profile, ready } = useRestaurantProfile();
   const tenantId = profile.slug;
   const list = useServerFn(listCampaigns);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [items, setItems] = useState<CampaignSummary[] | null>(null);
 
-  const reload = useCallback(
-    async () => setItems(await list({ data: { tenantId } })),
-    [list, tenantId],
-  );
+  const reload = useCallback(async () => {
+    if (!tenantId) {
+      setLoadError("Complete your restaurant profile first.");
+      return;
+    }
+    try {
+      setItems(await list({ data: { tenantId } }));
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Campaigns could not load.");
+    }
+  }, [list, tenantId]);
   useEffect(() => {
     if (ready) void reload();
   }, [ready, reload]);
 
-  if (!ready || !items) return null;
+  if (!ready || !items)
+    return (
+      <>
+        <PageTitle title="Campaigns" sub="Review your saved campaigns." />
+        <p role="status">{loadError ?? "Loading campaigns..."}</p>
+        {loadError && <Button onClick={() => void reload()}>Retry</Button>}
+      </>
+    );
   const totalRevenue = items.reduce((s, c) => s + c.revenueCents, 0);
   const totalBookings = items.reduce((s, c) => s + c.bookings, 0);
 
@@ -59,6 +75,7 @@ function CampaignsPage() {
             : "Send your first campaign to see real results here."
         }
       />
+      {loadError && <p role="alert">{loadError}</p>}
       <NewCampaign tenantId={tenantId} onSaved={reload} />
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((c) => (
@@ -87,7 +104,12 @@ function NewCampaign({ tenantId, onSaved }: { tenantId: string; onSaved: () => P
 
   useEffect(() => {
     if (!open) return;
-    void audience({ data: { tenantId, segment: f.segment } }).then(setSize);
+    void audience({ data: { tenantId, segment: f.segment } })
+      .then(setSize)
+      .catch(() => {
+        setSize(null);
+        setMsg("Audience could not be checked. Try again before launching.");
+      });
   }, [open, f.segment, audience, tenantId]);
 
   const submit = async () => {
@@ -108,6 +130,8 @@ function NewCampaign({ tenantId, onSaved }: { tenantId: string; onSaved: () => P
       setF({ name: "", segment: "dormant_30", a: "", b: "", useB: false });
       setOpen(false);
       await onSaved();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Campaign action could not complete.");
     } finally {
       setBusy(false);
     }
@@ -223,6 +247,8 @@ function CampaignCard({
           : r.error,
       );
       await onChanged();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Campaign action could not complete.");
     } finally {
       setBusy(false);
     }
@@ -274,7 +300,9 @@ function CampaignCard({
           )}
         </>
       ) : c.status === "queued" ? (
-        <p className="text-sm text-muted-foreground">Campaign is queued. Messages held for approval will appear in Approvals.</p>
+        <p className="text-sm text-muted-foreground">
+          Campaign is queued. Messages held for approval will appear in Approvals.
+        </p>
       ) : (
         <Button onClick={launch} disabled={busy}>
           <Send className="size-4" /> {busy ? "Launching…" : "Send campaign"}

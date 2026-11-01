@@ -153,7 +153,7 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
             </div>
             <div className="grid gap-2">
               <Label htmlFor="guest-phone">Guest WhatsApp (to send)</Label>
-              <Input id="guest-phone" inputMode="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="27821234567" />
+              <Input id="guest-phone" inputMode="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Phone with country code" />
             </div>
           </div>
         )}

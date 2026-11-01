@@ -94,7 +94,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
           <Input
             id="wa-phone"
             inputMode="tel"
-            placeholder="27821234567"
+            placeholder="Phone with country code"
             value={form.whatsappPhone}
             onChange={(e) => set("whatsappPhone", e.target.value)}
           />
@@ -104,7 +104,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
           <Input
             id="mgr-phone"
             inputMode="tel"
-            placeholder="27821234567"
+            placeholder="Phone with country code"
             value={form.managerPhone}
             onChange={(e) => set("managerPhone", e.target.value)}
           />

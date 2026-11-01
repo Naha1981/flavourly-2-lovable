@@ -41,7 +41,10 @@ export async function recordCronHeartbeat(
   now: Date = new Date(),
 ): Promise<void> {
   try {
-    await c.from("cron_state").delete().eq("job", HEARTBEAT_PREFIX + job);
+    await c
+      .from("cron_state")
+      .delete()
+      .eq("job", HEARTBEAT_PREFIX + job);
     await c
       .from("cron_state")
       .insert({ job: HEARTBEAT_PREFIX + job, last_tenant: null, updated_at: now.toISOString() });
@@ -82,9 +85,8 @@ async function checkDb(c: Pick<SupabaseClient, "from">): Promise<ComponentStatus
 }
 
 /**
- * The operator is "reachable" when it answers HTTP at all (any status - a 401
- * still proves the service is up) and "down" only when the request itself
- * fails. A missing OPERATOR_URL is a deployed-config failure, not a skip.
+ * Require a successful health response. Authentication failures and server
+ * failures are not healthy merely because the service answered.
  */
 async function checkOperator(fetchFn: typeof fetch = fetch): Promise<ComponentStatus> {
   const baseUrl = process.env["OPERATOR_URL"];
@@ -93,7 +95,11 @@ async function checkOperator(fetchFn: typeof fetch = fetch): Promise<ComponentSt
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
     try {
-      await fetchFn(baseUrl.replace(/\/$/, "") + "/health", { signal: controller.signal });
+      const response = await fetchFn(baseUrl.replace(/\/$/, "") + "/health", {
+        signal: controller.signal,
+      });
+      if (!response.ok)
+        return { ok: false, detail: `health endpoint returned HTTP ${response.status}` };
     } finally {
       clearTimeout(timer);
     }

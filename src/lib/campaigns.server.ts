@@ -20,7 +20,8 @@ async function audience(tenantId: string, segment: Segment) {
     q = q.not("last_visit_at", "is", null)
       .lt("last_visit_at", new Date(Date.now() - days * 86_400_000).toISOString());
   }
-  const { data } = await q.limit(2000);
+  const { data, error } = await q.limit(2000);
+  if (error) throw new Error("Campaign audience could not be checked.");
   return (data ?? []) as Array<{ id: string; phone: string; name: string | null }>;
 }
 
@@ -135,9 +136,10 @@ const zero = () => ({ sentCount: 0, bookings: 0, revenueCents: 0 });
 
 export async function listCampaignsWithAttribution(tenantId: string): Promise<CampaignSummary[]> {
   const c = await db();
-  const { data: rows } = await c.from("campaigns").select("*")
+  const { data: rows, error } = await c.from("campaigns").select("*")
     .eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(50);
 
+  if (error) throw new Error("Campaigns could not load. Check database setup and try again.");
   const out: CampaignSummary[] = [];
   for (const r of rows ?? []) {
     const sent = r.status === "sent" && r.sent_at

@@ -24,6 +24,9 @@ const STATUS: Record<string, string> = {
   pending_approval: "Waiting for approval",
   approved: "Approved, not yet published",
   published: "Published",
+  submitting: "Publication in progress",
+  submitted: "Submitted, publication not confirmed",
+  publication_unknown: "Result unknown, check provider before retrying",
   rejected: "Rejected",
   drafted: "Draft",
 };
@@ -40,10 +43,17 @@ function SocialPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const reload = useCallback(
-    async () => setDrafts(await list({ data: { tenantId } })),
-    [list, tenantId],
-  );
+  const reload = useCallback(async () => {
+    if (!tenantId) {
+      setMsg("Complete your restaurant profile first.");
+      return;
+    }
+    try {
+      setDrafts(await list({ data: { tenantId } }));
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : "Social drafts could not load.");
+    }
+  }, [list, tenantId]);
   useEffect(() => {
     if (ready) void reload();
   }, [ready, reload]);
@@ -58,18 +68,27 @@ function SocialPage() {
       const r = await fn();
       setMsg(r.ok ? (r.note ?? null) : (r.error ?? "Something went wrong."));
       await reload();
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : "That action could not complete.");
     } finally {
       setBusy(null);
     }
   };
 
-  if (!ready || !drafts) return null;
+  if (!ready || !drafts)
+    return (
+      <>
+        <PageTitle title="Social" sub="Review your restaurant posts." />
+        <p role="status">{msg ?? "Loading social drafts..."}</p>
+        {msg && <Button onClick={() => void reload()}>Retry</Button>}
+      </>
+    );
 
   return (
     <>
       <PageTitle
         title="Social"
-        sub="Posts are built from your in-stock best sellers. Nothing goes out until you approve it."
+        sub="Posts use your available menu items. Approval does not prove publication; a connected publisher and confirmed platform result are required."
       />
       <Button
         onClick={() => run("new", () => generate({ data: { tenantId } }))}

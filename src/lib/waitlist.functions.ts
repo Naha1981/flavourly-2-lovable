@@ -26,7 +26,7 @@ export const listWaitlist = createServerFn({ method: "POST" })
     await authorizeTenant(data.tenantId);
     const { db } = await import("./db.server");
     const c = await db();
-    const { data: rows } = await c
+    const { data: rows, error } = await c
       .from("waitlist_entries")
       .select("*")
       .eq("tenant_id", data.tenantId)
@@ -34,6 +34,7 @@ export const listWaitlist = createServerFn({ method: "POST" })
       .order("requested_date", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(200);
+    if (error) throw new Error("Waitlist could not load. Check database setup and try again.");
     return (rows ?? []).map((r) => ({
       id: r.id,
       customerName: r.customer_name,

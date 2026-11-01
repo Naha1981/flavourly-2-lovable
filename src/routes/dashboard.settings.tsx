@@ -1,3 +1,4 @@
+import { PrivacyControls } from "@/components/app/privacy-controls";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { VenueSettings } from "@/components/app/venue-settings";
@@ -18,8 +19,16 @@ function SettingsPage() {
       <PageTitle title="Settings" />
       <section className="glass-card grid gap-2 rounded-2xl border border-border p-5">
         <h2 className="font-medium text-foreground">{profile.name}</h2>
-        <p className="text-sm text-muted-foreground">{profile.city} · {profile.hours}</p>
-        <Link to="/onboarding" search={{ step: "profile" }} className="text-sm font-medium text-primary">Edit profile</Link>
+        <p className="text-sm text-muted-foreground">
+          {profile.city} · {profile.hours}
+        </p>
+        <Link
+          to="/onboarding"
+          search={{ step: "profile" }}
+          className="text-sm font-medium text-primary"
+        >
+          Edit profile
+        </Link>
       </section>
       <section className="glass-card mt-6 grid gap-4 rounded-2xl border border-border p-5">
         <h2 className="font-medium text-foreground">Venue, rewards and auto-replies</h2>
@@ -29,6 +38,7 @@ function SettingsPage() {
         <h2 className="font-medium text-foreground">WhatsApp</h2>
         <WhatsAppConnect profile={profile} update={update} />
       </section>
+      <PrivacyControls tenantId={profile.slug} />
     </>
   );
 }

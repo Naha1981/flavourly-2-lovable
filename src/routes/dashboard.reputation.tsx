@@ -266,7 +266,7 @@ function ReviewRequests({ tenantId }: { tenantId: string }) {
       >
         <label className="text-sm">
           Customer phone
-          <Input name="phone" required pattern="\+?[0-9]{9,15}" placeholder="27821234567" />
+          <Input name="phone" required pattern="\+?[0-9]{9,15}" placeholder="27..." />
         </label>
         <label className="text-sm">
           Paid amount (R)

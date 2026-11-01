@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock3 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { listWaitlist, type WaitlistEntry } from "@/lib/waitlist.functions";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { dashMeta, PageTitle } from "./dashboard";
@@ -21,12 +22,21 @@ const STATUS_LABEL: Record<string, string> = { waiting: "Waiting", offered: "Off
 function WaitlistPage() {
   const { profile, ready } = useRestaurantProfile();
   const list = useServerFn(listWaitlist);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [rows, setRows] = useState<WaitlistEntry[] | null>(null);
 
-  const reload = useCallback(
-    async () => setRows(await list({ data: { tenantId: profile.slug } })),
-    [list, profile.slug],
-  );
+  const reload = useCallback(async () => {
+    if (!profile.slug) {
+      setLoadError("Complete your restaurant profile first.");
+      return;
+    }
+    try {
+      setRows(await list({ data: { tenantId: profile.slug } }));
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Waitlist could not load.");
+    }
+  }, [list, profile.slug]);
   useEffect(() => {
     if (!ready) return;
     void reload();
@@ -34,7 +44,14 @@ function WaitlistPage() {
     return () => clearInterval(id);
   }, [ready, reload]);
 
-  if (!ready || !rows) return null;
+  if (!ready || !rows)
+    return (
+      <>
+        <PageTitle title="Waitlist" sub="Guests waiting for a table." />
+        <p role="status">{loadError ?? "Loading waitlist..."}</p>
+        {loadError && <Button onClick={() => void reload()}>Retry</Button>}
+      </>
+    );
   const byDate = rows.reduce<Record<string, WaitlistEntry[]>>((acc, r) => {
     (acc[r.requestedDate] ??= []).push(r);
     return acc;
@@ -48,6 +65,7 @@ function WaitlistPage() {
           "Guests text WAITLIST 4 Friday to join. A cancellation offers the table automatically to the longest-waiting party that fits."
         }
       />
+      {loadError && <p role="alert">{loadError}</p>}
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nobody is waiting right now.</p>
       ) : (

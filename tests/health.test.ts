@@ -25,7 +25,8 @@ function mockClient(rows: Row[] = [], fail = false) {
       }
       if (op === "delete") {
         for (const [col, val] of eqFilters) {
-          for (let i = store.length - 1; i >= 0; i--) if (store[i]![col] === val) store.splice(i, 1);
+          for (let i = store.length - 1; i >= 0; i--)
+            if (store[i]![col] === val) store.splice(i, 1);
         }
         return { data: null, error: null };
       }
@@ -85,6 +86,18 @@ describe("buildHealthReport", () => {
     expect(report.operator.ok).toBe(true);
     expect(Object.values(report.cron).every((j) => !j.stale)).toBe(true);
     expect(healthHttpStatus(report)).toBe(200);
+    delete process.env["OPERATOR_URL"];
+  });
+
+  it("does not call operator HTTP errors healthy", async () => {
+    process.env["OPERATOR_URL"] = "https://operator.example";
+    for (const status of [401, 403, 404, 429, 500, 503]) {
+      const fetchFn = (() =>
+        Promise.resolve(new Response("unavailable", { status }))) as typeof fetch;
+      const report = await buildHealthReport(mockClient([...heartbeatRows]) as never, NOW, fetchFn);
+      expect(report.operator.ok).toBe(false);
+      expect(report.status).toBe("down");
+    }
     delete process.env["OPERATOR_URL"];
   });
 
@@ -151,7 +164,9 @@ describe("recordCronHeartbeat", () => {
     const hb = c.store.filter((r) => r["job"] === "heartbeat:outbox");
     expect(hb).toHaveLength(1);
     expect(hb[0]!["updated_at"]).toBe(NOW.toISOString());
-    expect(c.store.some((r) => r["job"] === "revenue-employee" && r["last_tenant"] === "r-9")).toBe(true);
+    expect(c.store.some((r) => r["job"] === "revenue-employee" && r["last_tenant"] === "r-9")).toBe(
+      true,
+    );
   });
 
   it("never throws when the table is unreachable", async () => {

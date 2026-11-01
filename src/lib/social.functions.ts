@@ -31,12 +31,13 @@ export const listSocialDrafts = createServerFn({ method: "POST" })
     await guard(data.tenantId);
     const { db } = await import("./db.server");
     const c = await db();
-    const { data: rows } = await c
+    const { data: rows, error } = await c
       .from("social_content_drafts")
       .select("*")
       .eq("tenant_id", data.tenantId)
       .order("created_at", { ascending: false })
       .limit(50);
+    if (error) throw new Error("Social drafts could not load. Check database setup and try again.");
     return (rows ?? []).map((r) => ({
       id: r.id,
       caption: r.caption,
