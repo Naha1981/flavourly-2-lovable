@@ -38,9 +38,70 @@ export async function autoReply(input: {
   const { isOptedOut } = await import("./opt-out.server");
   if (await isOptedOut(input.tenantId, input.phone)) return { replied: false };
 
-  const reply = await decide(input, (venue.name as string) ?? "us");
+  const { data: conversation } = await c
+    .from("wa_conversations")
+    .select("status, assignee")
+    .eq("tenant_id", input.tenantId)
+    .eq("id", input.conversationId)
+    .maybeSingle();
+  if (conversation?.assignee || conversation?.status === "needs_approval")
+    return { replied: false, heldForApproval: true };
+  const handoff = /\b(manager|human|person|complaints?|refunds?|allerg\w*|sick|lawyer)\b/i.test(
+    input.text,
+  );
+  if (handoff) {
+    await c
+      .from("wa_conversations")
+      .update({
+        status: "needs_approval",
+        urgency: "high",
+        next_action: "Customer needs a manager. Automatic replies paused.",
+      })
+      .eq("tenant_id", input.tenantId)
+      .eq("id", input.conversationId);
+    return { replied: false, heldForApproval: true };
+  }
+  let reply = await decide(input, (venue.name as string) ?? "us");
+  if (!reply) {
+    const budget = await c.rpc("wa_reserve_budget", { p_tenant: input.tenantId, p_kind: "draft" });
+    if (budget.error || budget.data !== true) {
+      await c
+        .from("wa_conversations")
+        .update({
+          status: "needs_approval",
+          next_action: "Draft limit reached. Team reply needed.",
+        })
+        .eq("tenant_id", input.tenantId)
+        .eq("id", input.conversationId);
+      return { replied: false, heldForApproval: true };
+    }
+    const { generateReplyDraft, buildMenuFacts } = await import("./reply-drafts.server");
+    const { data: menu } = await c
+      .from("menu_items")
+      .select("name, description, price_cents, is_available, dietary_flags")
+      .eq("tenant_id", input.tenantId)
+      .limit(80);
+    const draft = await generateReplyDraft({
+      message: input.text,
+      intent: "auto",
+      restaurant: { name: venue.name },
+      menuFacts: buildMenuFacts(menu ?? []),
+    });
+    if (!draft.ok) throw new Error("Draft unavailable");
+    reply = draft.reply;
+  }
   if (!reply) return { replied: false };
 
+  if (/manager needs to check/i.test(reply)) {
+    await c
+      .from("wa_conversations")
+      .update({
+        status: "needs_approval",
+        next_action: "Booking needs a manager capacity check. No table confirmed.",
+      })
+      .eq("tenant_id", input.tenantId)
+      .eq("id", input.conversationId);
+  }
   const decision = decideApproval(reply);
   if (decision.outcome === "require_approval") {
     const outboxInput: Parameters<typeof enqueueOutbox>[0] = {
@@ -52,15 +113,32 @@ export async function autoReply(input: {
     };
     if (input.waMessageId) outboxInput.dedupeKey = "autoreply:" + input.waMessageId;
     const held = await enqueueOutbox(outboxInput);
-    await c.from("wa_conversations").update({ status: "needs_approval" })
-      .eq("tenant_id", input.tenantId).eq("id", input.conversationId);
+    await c
+      .from("wa_conversations")
+      .update({ status: "needs_approval" })
+      .eq("tenant_id", input.tenantId)
+      .eq("id", input.conversationId);
     return { replied: false, heldForApproval: held.approvalRequired };
   }
 
   const sent = await sendWhatsApp(input.tenantId, input.phone, reply, input.waAccountId);
   if (!sent.ok) {
+    await enqueueOutbox({
+      tenantId: input.tenantId,
+      phone: input.phone,
+      text: reply,
+      automated: true,
+      conversationId: input.conversationId,
+      ...(input.waMessageId ? { dedupeKey: "held:" + input.waMessageId } : {}),
+      forceApproval: true,
+    });
+    await c
+      .from("wa_conversations")
+      .update({ status: "needs_approval", next_action: "Reply held. Review before sending." })
+      .eq("tenant_id", input.tenantId)
+      .eq("id", input.conversationId);
     console.error("auto-reply send failed", input.tenantId, sent.error);
-    return { replied: false };
+    return { replied: false, heldForApproval: true };
   }
   const now = new Date().toISOString();
   await c.from("wa_messages").insert({
@@ -97,6 +175,19 @@ async function decide(
     return `You have *${bal} points* (worth ${formatZAR(Math.floor(bal / 100) * 1000)} off). Reply *REDEEM 100* at the restaurant to use them.`;
   }
 
+  if (/^(stamps?|visits?|vip)\s*$/i.test(t)) {
+    const { data: customer } = await (
+      await db()
+    )
+      .from("customers")
+      .select("visit_count, is_vip")
+      .eq("tenant_id", i.tenantId)
+      .eq("phone", i.phone)
+      .maybeSingle();
+    return customer
+      ? `You have *${customer.visit_count ?? 0} recorded visits*. VIP status: *${customer.is_vip ? "active" : "not yet active"}*. Visits are recorded by staff from your bill, never by a WhatsApp message.`
+      : "No visits are recorded for this number yet. Ask a team member to record your bill.";
+  }
   const redeem = t.match(/^redeem\s*(\d{2,5})?\s*$/i);
   if (redeem) {
     if (!APP_URL()) return "Please ask a team member to help you redeem at the table.";
@@ -123,15 +214,13 @@ async function decide(
     if (!date)
       return "Which date would you like to join the waitlist for? e.g. *WAITLIST 4 Friday*";
     const c = await db();
-    await c
-      .from("waitlist_entries")
-      .insert({
-        tenant_id: i.tenantId,
-        customer_phone: i.phone,
-        customer_name: i.name,
-        party_size: party,
-        requested_date: date,
-      });
+    await c.from("waitlist_entries").insert({
+      tenant_id: i.tenantId,
+      customer_phone: i.phone,
+      customer_name: i.name,
+      party_size: party,
+      requested_date: date,
+    });
     return `You're on the waitlist for ${party} on ${date}. We'll message you the moment a table opens up.`;
   }
 

@@ -5,7 +5,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { authorizeTenant } from "./tenant-auth.server";
 import { db } from "./db.server";
 
-const tenantIdSchema = z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/);
+const tenantIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[a-z0-9-]+$/);
 
 const profilePatch = z.object({
   tenantId: tenantIdSchema,
@@ -69,7 +74,9 @@ export const getRestaurantProfile = createServerFn({ method: "POST" })
     const c = await db();
     const { data } = await c
       .from("tenant_profiles")
-      .select("tenant_id, name, owner_name, city, cuisine, hours, average_check_cents, notes, manager_phone, wa_account_id")
+      .select(
+        "tenant_id, name, owner_name, city, cuisine, hours, average_check_cents, notes, manager_phone, wa_account_id",
+      )
       .eq("tenant_id", tenantId)
       .maybeSingle();
 
@@ -88,16 +95,19 @@ export const updateRestaurantProfile = createServerFn({ method: "POST" })
     if (data.city !== undefined) patch["city"] = data.city;
     if (data.cuisine !== undefined) patch["cuisine"] = data.cuisine;
     if (data.hours !== undefined) patch["hours"] = data.hours;
-    if (data.averageCheck !== undefined) patch["average_check_cents"] = Math.round(data.averageCheck * 100);
+    if (data.averageCheck !== undefined)
+      patch["average_check_cents"] = Math.round(data.averageCheck * 100);
     if (data.notes !== undefined) patch["notes"] = data.notes;
     if (data.managerPhone !== undefined) patch["manager_phone"] = data.managerPhone;
-    if (data.waAccountId !== undefined) patch["wa_account_id"] = data.waAccountId;
+    // Account ownership is set only by the verified server-side connection flow.
 
     const { data: row, error } = await c
       .from("tenant_profiles")
       .update(patch)
       .eq("tenant_id", data.tenantId)
-      .select("tenant_id, name, owner_name, city, cuisine, hours, average_check_cents, notes, manager_phone, wa_account_id")
+      .select(
+        "tenant_id, name, owner_name, city, cuisine, hours, average_check_cents, notes, manager_phone, wa_account_id",
+      )
       .single();
 
     if (error || !row) throw new Error(error?.message ?? "Restaurant profile could not be saved.");

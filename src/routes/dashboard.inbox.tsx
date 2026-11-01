@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { listConversations, listMessages, updateConversation, type InboxConversation, type InboxMessage } from "@/lib/inbox.functions";
+import {
+  listConversations,
+  listMessages,
+  updateConversation,
+  type InboxConversation,
+  type InboxMessage,
+} from "@/lib/inbox.functions";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { conversations as demoConversations, type Conversation } from "@/lib/mock-data";
 import { dashMeta, PageTitle } from "./dashboard";
 
 export const Route = createFileRoute("/dashboard/inbox")({
-  head: () => dashMeta("Inbox", "Every guest message across WhatsApp, Instagram, email and Facebook."),
+  head: () =>
+    dashMeta("Inbox", "Every guest message across WhatsApp, Instagram, email and Facebook."),
   component: InboxPage,
 });
 
@@ -31,10 +38,11 @@ const statusTone: Record<string, string> = {
   resolved: "bg-forest-soft text-forest",
 };
 
-const urgencyLabel = (v: string): Urgency => (v === "high" ? "High" : v === "medium" ? "Medium" : "Normal");
+const urgencyLabel = (v: string): Urgency =>
+  v === "high" ? "High" : v === "medium" ? "Medium" : "Normal";
 const intentLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
 
-const team = ["Unassigned", "Thabo (Manager)", "Lerato (Shift lead)", "Host desk", "Kitchen"] as const;
+const team = ["Unassigned", "Manager", "Shift lead", "Host desk", "Kitchen"] as const;
 
 const urgencyFilters = ["All", "High", "Medium", "Normal"] as const;
 const statusFilters = ["All", "Open", "Needs approval", "Resolved"] as const;
@@ -54,7 +62,12 @@ const clock = (iso: string) => {
 
 /** Demo threads shown until real WhatsApp messages arrive. */
 function demoToInbox(c: Conversation): InboxConversation {
-  const urgency = c.intent === "Complaint" || c.status === "Failed" ? "high" : c.intent === "Booking" || c.intent === "Catering" ? "medium" : "normal";
+  const urgency =
+    c.intent === "Complaint" || c.status === "Failed"
+      ? "high"
+      : c.intent === "Booking" || c.intent === "Catering"
+        ? "medium"
+        : "normal";
   return {
     id: `demo-${c.id}`,
     chatId: c.id,
@@ -72,13 +85,23 @@ function demoToInbox(c: Conversation): InboxConversation {
   };
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1 text-xs transition ${
-        active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card text-muted-foreground hover:text-foreground"
       }`}
     >
       {children}
@@ -114,7 +137,7 @@ function InboxPage() {
   }, [refresh]);
 
   const isDemo = live !== null && live.length === 0;
-  const rows = useMemo(() => (live && live.length ? live : demoConversations.map(demoToInbox)), [live]);
+  const rows = useMemo(() => live ?? [], [live]);
 
   const active = rows.find((c) => c.id === activeId) ?? null;
   const activeIsLive = Boolean(active && !active.id.startsWith("demo-"));
@@ -146,7 +169,10 @@ function InboxPage() {
     };
   }, [active, activeIsLive, tenantId]);
 
-  const patch = async (c: InboxConversation, change: { assignee?: string | null; status?: "open" | "needs_approval" | "resolved" }) => {
+  const patch = async (
+    c: InboxConversation,
+    change: { assignee?: string | null; status?: "open" | "needs_approval" | "resolved" },
+  ) => {
     setLive((prev) => (prev ? prev.map((r) => (r.id === c.id ? { ...r, ...change } : r)) : prev));
     if (c.id.startsWith("demo-")) return;
     await updateConversation({ data: { tenantId, conversationId: c.id, ...change } });
@@ -179,7 +205,8 @@ function InboxPage() {
 
       {isDemo && (
         <p className="mb-4 rounded-xl border border-dashed border-border bg-card/60 px-4 py-2.5 text-xs text-muted-foreground">
-          Showing sample chats. Real WhatsApp messages appear here automatically once your number is linked.
+          Showing sample chats. Real WhatsApp messages appear here automatically once your number is
+          linked.
         </p>
       )}
 
@@ -223,20 +250,34 @@ function InboxPage() {
             const isResolved = c.status === "resolved";
             return (
               <li key={c.id}>
-                <div className={`rounded-xl border p-3 ${c.id === activeId ? "border-primary bg-card" : "border-border bg-card/70"} ${isResolved ? "opacity-70" : ""}`}>
-                  <button type="button" onClick={() => void openThread(c)} className="w-full text-left">
+                <div
+                  className={`rounded-xl border p-3 ${c.id === activeId ? "border-primary bg-card" : "border-border bg-card/70"} ${isResolved ? "opacity-70" : ""}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => void openThread(c)}
+                    className="w-full text-left"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <p className="truncate font-medium text-foreground">
-                        {c.unread > 0 && !isResolved && <span className="mr-1.5 inline-block size-2 rounded-full bg-primary" />}
+                        {c.unread > 0 && !isResolved && (
+                          <span className="mr-1.5 inline-block size-2 rounded-full bg-primary" />
+                        )}
                         {c.guestName}
                       </p>
-                      <span className="shrink-0 text-xs text-muted-foreground">{clock(c.lastMessageAt)}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {clock(c.lastMessageAt)}
+                      </span>
                     </div>
                     <p className="truncate text-sm text-muted-foreground">{c.lastMessage}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-                      <span className="rounded-full bg-secondary px-2 py-0.5">{intentLabel(c.intent)}</span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5">
+                        {intentLabel(c.intent)}
+                      </span>
                       <span className={`rounded-full px-2 py-0.5 ${urgencyTone[u]}`}>{u}</span>
-                      <span className={`rounded-full px-2 py-0.5 ${statusTone[c.status] ?? "bg-secondary"}`}>
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${statusTone[c.status] ?? "bg-secondary"}`}
+                      >
                         {statusLabel[c.status] ?? c.status}
                       </span>
                       {c.assignee && c.assignee !== "Unassigned" && (
@@ -248,7 +289,11 @@ function InboxPage() {
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border/70 pt-2">
                     <select
                       value={c.assignee ?? "Unassigned"}
-                      onChange={(e) => void patch(c, { assignee: e.target.value === "Unassigned" ? null : e.target.value })}
+                      onChange={(e) =>
+                        void patch(c, {
+                          assignee: e.target.value === "Unassigned" ? null : e.target.value,
+                        })
+                      }
                       className="rounded-lg border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
                     >
                       {team.map((t) => (
@@ -271,26 +316,40 @@ function InboxPage() {
           })}
         </ul>
 
-        <section className={`glass-card min-h-80 rounded-2xl border border-border p-5 ${active ? "" : "hidden lg:block"}`}>
+        <section
+          className={`glass-card min-h-80 rounded-2xl border border-border p-5 ${active ? "" : "hidden lg:block"}`}
+        >
           {!active ? (
             <p className="text-sm text-muted-foreground">Pick a conversation to read it.</p>
           ) : (
             <div className="grid gap-3">
-              <button type="button" className="w-fit text-sm text-primary lg:hidden" onClick={() => setActiveId(null)}>
+              <button
+                type="button"
+                className="w-fit text-sm text-primary lg:hidden"
+                onClick={() => setActiveId(null)}
+              >
                 ← All messages
               </button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-medium text-foreground">
                   {active.guestName}
-                  {active.guestPhone && <span className="text-sm text-muted-foreground"> · {active.guestPhone}</span>}
+                  {active.guestPhone && (
+                    <span className="text-sm text-muted-foreground"> · {active.guestPhone}</span>
+                  )}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] ${urgencyTone[urgencyLabel(active.urgency)]}`}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] ${urgencyTone[urgencyLabel(active.urgency)]}`}
+                  >
                     {urgencyLabel(active.urgency)}
                   </span>
                   <select
                     value={active.assignee ?? "Unassigned"}
-                    onChange={(e) => void patch(active, { assignee: e.target.value === "Unassigned" ? null : e.target.value })}
+                    onChange={(e) =>
+                      void patch(active, {
+                        assignee: e.target.value === "Unassigned" ? null : e.target.value,
+                      })
+                    }
                     className="rounded-lg border border-border bg-background px-2 py-1 text-xs outline-none focus:border-primary"
                   >
                     {team.map((t) => (
@@ -301,14 +360,20 @@ function InboxPage() {
                   </select>
                   <button
                     type="button"
-                    onClick={() => void patch(active, { status: active.status === "resolved" ? "open" : "resolved" })}
+                    onClick={() =>
+                      void patch(active, {
+                        status: active.status === "resolved" ? "open" : "resolved",
+                      })
+                    }
                     className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium hover:border-primary hover:text-primary"
                   >
                     {active.status === "resolved" ? "Reopen" : "Mark resolved"}
                   </button>
                 </div>
               </div>
-              {thread.length === 0 && <p className="text-sm text-muted-foreground">No messages in this chat yet.</p>}
+              {thread.length === 0 && (
+                <p className="text-sm text-muted-foreground">No messages in this chat yet.</p>
+              )}
               {thread.map((m) => (
                 <div
                   key={m.id}

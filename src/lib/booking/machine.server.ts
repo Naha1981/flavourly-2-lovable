@@ -167,25 +167,24 @@ async function finalize(
       reply: "I'm missing a detail. Could you resend the date, time and party size?",
     };
   }
-  const { error } = await c.from("reservations").insert({
-    tenant_id: tenantId,
-    customer_phone: phone,
-    customer_name: draft.customer_name,
-    party_size: draft.party_size,
-    reservation_date: draft.booking_date,
-    reservation_time: draft.booking_time,
-    customer_confirmed_at: now.toISOString(),
-    source_draft_id: draft.id, // unique: a double "YES" can't create two reservations
+  const { data: outcome, error } = await c.rpc("wa_confirm_booking", {
+    p_tenant: tenantId,
+    p_phone: phone,
+    p_draft: draft.id,
   });
-  if (error && error.code !== "23505") throw error;
-  await c
-    .from("booking_drafts")
-    .update({ status: "confirmed", updated_at: now.toISOString() })
-    .eq("id", draft.id);
+  if (error) throw error;
+  if (outcome !== "confirmed")
+    return {
+      handled: true,
+      reply:
+        outcome === "full"
+          ? "That time is full. Please choose another time or ask for the manager. Your table is not confirmed."
+          : "The manager needs to check this request. Your table is not confirmed yet.",
+    };
 
   const menu = APP_URL() ? `\n\nMenu: ${APP_URL()}/m/${tenantId}` : "";
   return {
     handled: true,
-    reply: `*Booking received* ✅\n\n*${draft.customer_name}*, table for *${draft.party_size}*\n*${prettyWhen(draft.booking_date, draft.booking_time.slice(0, 5))}*\n\nWe'll message you if anything needs to change.${menu}`,
+    reply: `*Booking confirmed* ✅\n\n*${draft.customer_name}*, table for *${draft.party_size}*\n*${prettyWhen(draft.booking_date, draft.booking_time.slice(0, 5))}*\n\nWe'll message you if anything needs to change.${menu}`,
   };
 }

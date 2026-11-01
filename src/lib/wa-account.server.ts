@@ -6,21 +6,9 @@ export async function resolveWaAccountId(
   tenantId: string,
   hint?: string | null,
 ): Promise<string | null> {
-  if (hint) return hint;
-  const c = await db();
-  const { data } = await c
-    .from("tenant_profiles")
-    .select("name, wa_account_id")
-    .eq("tenant_id", tenantId)
-    .maybeSingle();
-  if (data?.wa_account_id) return data.wa_account_id as string;
-  const boot = await wa.bootstrap(tenantId, (data?.name as string | undefined) ?? tenantId);
-  if (!boot.ok) return null;
-  await c
-    .from("tenant_profiles")
-    .update({ wa_account_id: boot.data.waAccountId })
-    .eq("tenant_id", tenantId);
-  return boot.data.waAccountId;
+  const row = await wa.channel(tenantId);
+  if (!row?.account_id || (hint && hint !== row.account_id)) return null;
+  return row.account_id as string;
 }
 
 export async function sendWhatsApp(
@@ -61,7 +49,8 @@ export async function sendDrafterReply(
     .eq("tenant_id", tenantId)
     .eq("phone", phone)
     .maybeSingle();
-  if (optOut) return { ok: false as const, error: "This guest has opted out of WhatsApp messages." };
+  if (optOut)
+    return { ok: false as const, error: "This guest has opted out of WhatsApp messages." };
 
   const { data: profile, error: profileError } = await c
     .from("tenant_profiles")
@@ -70,11 +59,17 @@ export async function sendDrafterReply(
     .maybeSingle();
   if (profileError) {
     // Fail closed: without the binding row we cannot validate any client-supplied account id.
-    return { ok: false as const, error: "Could not verify the restaurant's WhatsApp account. Try again." };
+    return {
+      ok: false as const,
+      error: "Could not verify the restaurant's WhatsApp account. Try again.",
+    };
   }
   const bound = (profile?.wa_account_id as string | null | undefined) ?? null;
   if (accountIdHint && bound && accountIdHint !== bound) {
-    return { ok: false as const, error: "That WhatsApp account does not belong to this restaurant." };
+    return {
+      ok: false as const,
+      error: "That WhatsApp account does not belong to this restaurant.",
+    };
   }
   // Fail closed when unbound: a client-supplied hint is only ever used when it
   // matches the tenant's bound account. Otherwise resolve through the stored /

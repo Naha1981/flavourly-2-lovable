@@ -9,11 +9,26 @@ export type FakeDb = ReturnType<typeof createFakeDb>;
 
 /** Column defaults mirroring the real migrations, applied on insert. */
 const DEFAULTS: Record<string, () => Row> = {
-  outbox_jobs: () => ({ status: "pending", attempts: 0, automated: true, sent_at: null, error: null }),
-  approval_requests: () => ({ status: "pending", requested_at: new Date().toISOString(), resolved_at: null, resolved_by: null }),
+  outbox_jobs: () => ({
+    status: "pending",
+    attempts: 0,
+    automated: true,
+    sent_at: null,
+    error: null,
+  }),
+  approval_requests: () => ({
+    status: "pending",
+    requested_at: new Date().toISOString(),
+    resolved_at: null,
+    resolved_by: null,
+  }),
   wa_conversations: () => ({ status: "open", urgency: "medium", intent: "other", unread: 0 }),
   wa_webhook_events: () => ({ status: "processed", retry_count: 0, event_count: 0, saved: 0 }),
-  tenant_profiles: () => ({ auto_replies_enabled: false, plan_tier: "starter", plan_status: "trialing" }),
+  tenant_profiles: () => ({
+    auto_replies_enabled: false,
+    plan_tier: "starter",
+    plan_status: "trialing",
+  }),
   wa_opt_outs: () => ({ opted_out_at: new Date().toISOString(), source: "whatsapp_keyword" }),
 };
 
@@ -75,23 +90,76 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
     };
 
     const b = {
-      select() { if (op !== "select") returning = true; return b; },
-      insert(p: Row | Row[]) { op = "insert"; payload = p; return b; },
-      update(p: Row) { op = "update"; payload = p; return b; },
-      delete() { op = "delete"; return b; },
-      eq(c: string, v: unknown) { filters.push((r) => r[c] === v); return b; },
-      neq(c: string, v: unknown) { filters.push((r) => r[c] !== v); return b; },
-      in(c: string, v: unknown[]) { filters.push((r) => v.includes(r[c])); return b; },
-      gte(c: string, v: string) { filters.push((r) => String(r[c]) >= v); return b; },
-      lte(c: string, v: string) { filters.push((r) => String(r[c]) <= v); return b; },
-      lt(c: string, v: string) { filters.push((r) => String(r[c]) < v); return b; },
-      gt(c: string, v: string) { filters.push((r) => String(r[c]) > v); return b; },
-      not(c: string, op2: string, v: unknown) { filters.push((r) => op2 === "is" ? r[c] !== v : true); return b; },
-      order() { return b; },
-      limit(n: number) { limitN = n; return b; },
-      range(f: number, t2: number) { rangeFrom = f; rangeTo = t2; return b; },
-      single() { single = "one"; return Promise.resolve(exec()); },
-      maybeSingle() { single = "maybe"; return Promise.resolve(exec()); },
+      select() {
+        if (op !== "select") returning = true;
+        return b;
+      },
+      insert(p: Row | Row[]) {
+        op = "insert";
+        payload = p;
+        return b;
+      },
+      update(p: Row) {
+        op = "update";
+        payload = p;
+        return b;
+      },
+      delete() {
+        op = "delete";
+        return b;
+      },
+      eq(c: string, v: unknown) {
+        filters.push((r) => r[c] === v);
+        return b;
+      },
+      neq(c: string, v: unknown) {
+        filters.push((r) => r[c] !== v);
+        return b;
+      },
+      in(c: string, v: unknown[]) {
+        filters.push((r) => v.includes(r[c]));
+        return b;
+      },
+      gte(c: string, v: string) {
+        filters.push((r) => String(r[c]) >= v);
+        return b;
+      },
+      lte(c: string, v: string) {
+        filters.push((r) => String(r[c]) <= v);
+        return b;
+      },
+      lt(c: string, v: string) {
+        filters.push((r) => String(r[c]) < v);
+        return b;
+      },
+      gt(c: string, v: string) {
+        filters.push((r) => String(r[c]) > v);
+        return b;
+      },
+      not(c: string, op2: string, v: unknown) {
+        filters.push((r) => (op2 === "is" ? r[c] !== v : true));
+        return b;
+      },
+      order() {
+        return b;
+      },
+      limit(n: number) {
+        limitN = n;
+        return b;
+      },
+      range(f: number, t2: number) {
+        rangeFrom = f;
+        rangeTo = t2;
+        return b;
+      },
+      single() {
+        single = "one";
+        return Promise.resolve(exec());
+      },
+      maybeSingle() {
+        single = "maybe";
+        return Promise.resolve(exec());
+      },
       then<T>(res: (v: ReturnType<typeof exec>) => T, rej?: (e: unknown) => T) {
         return Promise.resolve(exec()).then(res, rej);
       },
@@ -102,5 +170,49 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
   const injectError = (table: string, op: "select" | "insert" | "update" | "delete", error: Row) =>
     injected.push({ table, op, error });
 
-  return { from, tables, rows: t, injectError };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rpc = async (name: string, p: Record<string, any>) => {
+    if (name === "wa_reserve_budget") return { data: true, error: null };
+    if (name !== "wa_ingest_inbox") return { data: null, error: { message: "Unknown test RPC" } };
+    if (
+      t("wa_inbox_events").some((r) => r["event_id"] === p["p_event"]) ||
+      t("wa_messages").some(
+        (r) => r["tenant_id"] === p["p_tenant"] && r["wa_message_id"] === p["p_message"],
+      )
+    )
+      return { data: null, error: null };
+    t("wa_inbox_events").push({ event_id: p["p_event"], tenant_id: p["p_tenant"] });
+    let conversation = t("wa_conversations").find(
+      (r) => r["tenant_id"] === p["p_tenant"] && r["chat_id"] === p["p_conversation"],
+    );
+    if (!conversation) {
+      conversation = {
+        id: `id-${++seq}`,
+        tenant_id: p["p_tenant"],
+        chat_id: p["p_conversation"],
+        guest_name: p["p_name"],
+        guest_phone: p["p_phone"],
+        status: "open",
+        unread: 0,
+        intent: /book|table|reserv/i.test(p["p_body"]) ? "booking" : "other",
+      };
+      t("wa_conversations").push(conversation);
+    }
+    Object.assign(conversation, {
+      provider_conversation_id: p["p_conversation"],
+      last_inbound_at: p["p_sent"],
+      last_message_at: p["p_sent"],
+      last_message: p["p_body"],
+      unread: Number(conversation["unread"]) + 1,
+    });
+    t("wa_messages").push({
+      tenant_id: p["p_tenant"],
+      conversation_id: conversation["id"],
+      wa_message_id: p["p_message"],
+      direction: "in",
+      body: p["p_body"],
+    });
+    return { data: conversation["id"], error: null };
+  };
+  return { from, tables, rows: t, injectError, rpc };
 }

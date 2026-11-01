@@ -16,7 +16,9 @@ const state: { db: FakeDb; send: SendMock } = {
 };
 
 vi.mock("@/integrations/supabase/client.server", () => ({
-  get supabaseAdmin() { return state.db; },
+  get supabaseAdmin() {
+    return state.db;
+  },
 }));
 vi.mock("@/lib/wa-account.server", () => ({
   sendWhatsApp: (...a: unknown[]) => state.send(...a),
@@ -42,27 +44,35 @@ async function postWebhook(body: unknown) {
   const { Route } = await import("@/routes/api/public/webhooks/whatsapp");
   const raw = JSON.stringify(body);
   const sig = createHmac("sha256", SECRET).update(raw).digest("hex");
-  const handlers = (Route.options as unknown as {
-    server: { handlers: { POST: (a: { request: Request }) => Promise<Response> } };
-  }).server.handlers;
+  const handlers = (
+    Route.options as unknown as {
+      server: { handlers: { POST: (a: { request: Request }) => Promise<Response> } };
+    }
+  ).server.handlers;
   return handlers.POST({
     request: new Request("http://x/api/public/webhooks/whatsapp", {
       method: "POST",
       body: raw,
-      headers: { "x-webhook-signature": `sha256=${sig}` },
+      headers: { "x-zernio-signature": `sha256=${sig}` },
     }),
   });
 }
 
 const msg = (id: string, text: string) => ({
-  tenantId: TENANT,
-  waAccountId: "acc-1",
-  data: { id, from: `${PHONE}@s.whatsapp.net`, pushName: "Lindiwe", text },
+  id: `evt-${id}`,
+  event: "message.received",
+  timestamp: new Date().toISOString(),
+  account: { accountId: "acc-1", profileId: "profile-1", platform: "whatsapp" },
+  conversation: { id: "conversation-1" },
+  message: { id, sender: { phoneNumber: "27821234567", name: "Lindiwe" }, text },
 });
 
 beforeEach(() => {
-  process.env["WEBHOOK_SECRET"] = SECRET;
+  process.env["ZERNIO_WEBHOOK_SECRET"] = SECRET;
   state.db = freshDb();
+  state.db
+    .rows("wa_channels")
+    .push({ tenant_id: TENANT, account_id: "acc-1", profile_id: "profile-1" });
   state.send.mockReset();
   state.send.mockResolvedValue({ ok: true, data: { messageId: "wamid-1" } });
   vi.useFakeTimers();
@@ -72,7 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  delete process.env["WEBHOOK_SECRET"];
+  delete process.env["ZERNIO_WEBHOOK_SECRET"];
 });
 
 describe("optOutKeyword", () => {
@@ -90,7 +100,9 @@ describe("optOutKeyword", () => {
 
 describe("inbound STOP handling", () => {
   it("records the opt-out, saves the message, resolves the conversation, sends no auto-reply", async () => {
-    await state.db.from("tenant_profiles").insert({ tenant_id: TENANT, auto_replies_enabled: true });
+    await state.db
+      .from("tenant_profiles")
+      .insert({ tenant_id: TENANT, auto_replies_enabled: true });
     const res = await postWebhook(msg("m-stop-1", "STOP"));
     expect(res.status).toBe(200);
 

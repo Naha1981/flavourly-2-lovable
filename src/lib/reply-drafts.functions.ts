@@ -30,7 +30,9 @@ export const draftReply = createServerFn({ method: "POST" })
     if (data.tenantId) {
       await authorizeTenant(data.tenantId);
       const { db } = await import("./db.server");
-      const { data: items } = await (await db())
+      const { data: items } = await (
+        await db()
+      )
         .from("menu_items")
         .select("name, description, price_cents, is_available, dietary_flags")
         .eq("tenant_id", data.tenantId)
@@ -38,6 +40,17 @@ export const draftReply = createServerFn({ method: "POST" })
       menuItems = items?.length ?? 0;
       menuFacts = buildMenuFacts((items ?? []) as MenuFactRow[]) || undefined;
     }
+    if (!data.tenantId)
+      return { ok: false as const, error: "Choose a restaurant before drafting." };
+    const { db: budgetDb } = await import("./db.server");
+    const budget = await (
+      await budgetDb()
+    ).rpc("wa_reserve_budget", { p_tenant: data.tenantId, p_kind: "draft" });
+    if (budget.error || budget.data !== true)
+      return {
+        ok: false as const,
+        error: "Today's draft limit has been reached. A team member can reply.",
+      };
     const res = await generateReplyDraft({ ...data, menuFacts, policies: data.policies });
     return res.ok ? { ...res, menuItems } : res;
   });

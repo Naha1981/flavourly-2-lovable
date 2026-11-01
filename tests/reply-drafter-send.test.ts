@@ -20,6 +20,8 @@ vi.mock("../src/lib/db.server", () => ({ db: async () => state.db }));
 vi.mock("@/lib/whatsapp.server", () => ({
   sendText: (...a: unknown[]) => state.sendText(...a),
   bootstrap: (...a: unknown[]) => state.bootstrap(...a),
+  channel: async (tenantId: string) =>
+    state.db.rows("wa_channels").find((r) => r["tenant_id"] === tenantId) ?? null,
 }));
 vi.mock("@/lib/billing.server", () => ({
   assertCanSendNow: async (tenantId: string) => {
@@ -31,7 +33,10 @@ const TENANT = "marble-jhb";
 
 function fresh() {
   state.sendText = vi.fn(async () => ({ ok: true as const, data: { messageId: "wamid-1" } }));
-  state.bootstrap = vi.fn(async () => ({ ok: true as const, data: { waAccountId: "wa-bootstrapped" } }));
+  state.bootstrap = vi.fn(async () => ({
+    ok: true as const,
+    data: { waAccountId: "wa-bootstrapped" },
+  }));
   state.billed = [];
   const db = createFakeDb();
   state.db = db;
@@ -39,6 +44,7 @@ function fresh() {
 }
 
 async function seed(db: FakeDb) {
+  db.rows("wa_channels").push({ tenant_id: TENANT, account_id: "wa-1", profile_id: "p1" });
   await db
     .from("tenant_profiles")
     .insert({ tenant_id: TENANT, name: "Marble", wa_account_id: "wa-1" });
@@ -84,17 +90,13 @@ describe("sendDrafterReply safeguards", () => {
     expect(state.sendText).not.toHaveBeenCalled();
   });
 
-  it("ignores a foreign account hint when the tenant has no bound account", async () => {
-    const db = fresh();
-    await db.from("tenant_profiles").insert({ tenant_id: TENANT, name: "Marble", wa_account_id: null });
+  it("refuses an unbound tenant instead of bootstrapping during a send", async () => {
+    fresh();
     const { sendDrafterReply } = await import("@/lib/wa-account.server");
-    const res = await sendDrafterReply(TENANT, "wa-FOREIGN", "+27112223333", "hi");
-    expect(res.ok).toBe(true);
-    expect(state.sendText).toHaveBeenCalledTimes(1);
-    expect(state.sendText.mock.calls[0]?.[1]).toBe("wa-bootstrapped");
-    expect(state.sendText.mock.calls[0]?.[1]).not.toBe("wa-FOREIGN");
-    const rows = await db.from("tenant_profiles").select();
-    expect((rows.data as Record<string, unknown>[])[0]?.["wa_account_id"]).toBe("wa-bootstrapped");
+    const result = await sendDrafterReply(TENANT, "wa-FOREIGN", "27112223333", "hi");
+    expect(result.ok).toBe(false);
+    expect(state.sendText).not.toHaveBeenCalled();
+    expect(state.bootstrap).not.toHaveBeenCalled();
   });
 
   it("fails closed when the account binding lookup errors", async () => {

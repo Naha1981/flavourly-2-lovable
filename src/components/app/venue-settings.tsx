@@ -20,6 +20,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
     latitude: "",
     longitude: "",
     radius: "500",
+    seatCapacity: "",
     autoReplies: false,
   });
   const [msg, setMsg] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
         latitude: v.latitude?.toString() ?? "",
         longitude: v.longitude?.toString() ?? "",
         radius: String(v.geofenceRadiusM),
+        seatCapacity: v.whatsappSeatCapacity?.toString() ?? "",
         autoReplies: v.autoRepliesEnabled,
       });
     });
@@ -73,6 +75,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
           longitude: lon !== null && Number.isFinite(lon) ? lon : null,
           geofenceRadiusM: Number(form.radius) || 500,
           autoRepliesEnabled: form.autoReplies,
+          whatsappSeatCapacity: form.seatCapacity.trim() ? Number(form.seatCapacity) : null,
         },
       });
       setMsg(res.ok ? "Saved." : res.error);
@@ -97,7 +100,7 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor="mgr-phone">Manager WhatsApp (gets alerts)</Label>
+          <Label htmlFor="mgr-phone">Manager contact number</Label>
           <Input
             id="mgr-phone"
             inputMode="tel"
@@ -150,12 +153,27 @@ export function VenueSettings({ profile }: { profile: RestaurantProfile }) {
         </div>
       </div>
 
+      <div className="grid gap-1.5">
+        <Label htmlFor="wa-capacity">Seats available for WhatsApp bookings</Label>
+        <Input
+          id="wa-capacity"
+          inputMode="numeric"
+          value={form.seatCapacity}
+          onChange={(e) => set("seatCapacity", e.target.value)}
+          placeholder="Leave blank for manager approval"
+        />
+        <p className="text-xs text-muted-foreground">
+          Capacity is checked across a two-hour booking window. Without a saved limit, requests need
+          a manager and are not confirmed.
+        </p>
+      </div>
       <div className="flex items-start justify-between gap-4 rounded-xl bg-card p-4">
         <div>
           <p className="text-sm font-medium text-foreground">Automatic WhatsApp replies</p>
           <p className="text-xs text-muted-foreground">
-            Handles table bookings, JOIN, BALANCE and REDEEM. Anything else stays in the inbox for
-            your team.
+            Handles saved menu questions, table requests, points, recorded visits and VIP status.
+            Complaints and manager requests pause automatic replies in the inbox. Live sends need
+            separate activation.
           </p>
         </div>
         <Switch

@@ -44,6 +44,7 @@ export type VenueRow = {
   longitude: number | null;
   geofenceRadiusM: number;
   autoRepliesEnabled: boolean;
+  whatsappSeatCapacity: number | null;
 };
 
 const guard = async (tenantId: string, roles: "any" | "managers" = "any") => {
@@ -396,6 +397,7 @@ export const getVenue = createServerFn({ method: "POST" })
       longitude: r.longitude === null ? null : Number(r.longitude),
       geofenceRadiusM: r.geofence_radius_m,
       autoRepliesEnabled: r.auto_replies_enabled,
+      whatsappSeatCapacity: r.whatsapp_seat_capacity ?? null,
     };
   });
 
@@ -420,6 +422,7 @@ export const saveVenue = createServerFn({ method: "POST" })
         longitude: z.number().min(-180).max(180).nullable().optional(),
         geofenceRadiusM: z.number().int().min(50).max(5000).default(500),
         autoRepliesEnabled: z.boolean().default(false),
+        whatsappSeatCapacity: z.number().int().min(1).max(2000).nullable().optional(),
       })
       .parse(d),
   )
@@ -438,6 +441,7 @@ export const saveVenue = createServerFn({ method: "POST" })
         longitude: data.longitude ?? null,
         geofence_radius_m: data.geofenceRadiusM,
         auto_replies_enabled: data.autoRepliesEnabled,
+        whatsapp_seat_capacity: data.whatsappSeatCapacity ?? null,
       },
       { onConflict: "tenant_id" },
     );

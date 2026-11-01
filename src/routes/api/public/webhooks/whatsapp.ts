@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
 
 /**
- * Incoming WhatsApp webhook from the NahaLabs Baileys operator.
- * Requests are HMAC-SHA256 signed over the raw body with WEBHOOK_SECRET.
+ * Incoming signed WhatsApp inbox webhook.
+ * Requests are HMAC-SHA256 signed over the raw body with the server webhook secret.
  * Every verified delivery is logged in wa_webhook_events so failures can be
  * retried safely from the WhatsApp health page.
  */
@@ -11,14 +11,13 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["WEBHOOK_SECRET"];
+        const secret = process.env["ZERNIO_WEBHOOK_SECRET"];
         if (!secret) return new Response("Not configured", { status: 500 });
 
         const rawBody = await request.text();
         const provided = (
-          request.headers.get("x-webhook-signature") ??
-          request.headers.get("x-signature") ??
-          request.headers.get("x-hub-signature-256") ??
+          request.headers.get("x-zernio-signature") ??
+          request.headers.get("x-late-signature") ??
           ""
         )
           .replace(/^sha256=/i, "")
@@ -46,12 +45,16 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
         try {
           result = await ingestPayload(parsed);
         } catch (e) {
-          result = { events: 0, saved: 0, failures: [e instanceof Error ? e.message : "unexpected error"] };
+          result = {
+            events: 0,
+            saved: 0,
+            failures: [e instanceof Error ? e.message : "unexpected error"],
+          };
         }
         const failed = result.failures.length > 0;
 
         await (await db()).from("wa_webhook_events").insert({
-          tenant_id: tenantId,
+          tenant_id: result.tenantId ?? tenantId,
           status: failed ? "failed" : "processed",
           error: failed ? result.failures.join("; ").slice(0, 500) : null,
           // Keep the body only when we may need to retry it.
@@ -60,7 +63,7 @@ export const Route = createFileRoute("/api/public/webhooks/whatsapp")({
           saved: result.saved,
         });
 
-        return Response.json({ ok: !failed, saved: result.saved });
+        return Response.json({ ok: !failed, saved: result.saved }, { status: failed ? 503 : 200 });
       },
     },
   },
