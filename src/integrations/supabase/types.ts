@@ -324,6 +324,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "loyalty_customer_tenant_fk"
+            columns: ["tenant_id", "customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
             foreignKeyName: "loyalty_ledger_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -1016,6 +1023,7 @@ export type Database = {
           wa_account_id: string | null
           wa_operator_tenant_token: string | null
           whatsapp_phone: string | null
+          whatsapp_seat_capacity: number | null
         }
         Insert: {
           auto_replies_enabled?: boolean
@@ -1042,6 +1050,7 @@ export type Database = {
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
+          whatsapp_seat_capacity?: number | null
         }
         Update: {
           auto_replies_enabled?: boolean
@@ -1068,6 +1077,46 @@ export type Database = {
           wa_account_id?: string | null
           wa_operator_tenant_token?: string | null
           whatsapp_phone?: string | null
+          whatsapp_seat_capacity?: number | null
+        }
+        Relationships: []
+      }
+      wa_budget_uses: {
+        Row: {
+          kind: string
+          tenant_id: string
+          used_at: string
+        }
+        Insert: {
+          kind: string
+          tenant_id: string
+          used_at?: string
+        }
+        Update: {
+          kind?: string
+          tenant_id?: string
+          used_at?: string
+        }
+        Relationships: []
+      }
+      wa_channels: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          profile_id: string
+          tenant_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          profile_id: string
+          tenant_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          profile_id?: string
+          tenant_id?: string
         }
         Relationships: []
       }
@@ -1080,10 +1129,12 @@ export type Database = {
           guest_phone: string | null
           id: string
           intent: string
+          last_inbound_at: string | null
           last_message: string | null
           last_message_at: string
           next_action: string | null
           preferences: Json | null
+          provider_conversation_id: string | null
           sentiment: string | null
           status: string
           summary: string | null
@@ -1099,10 +1150,12 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           intent?: string
+          last_inbound_at?: string | null
           last_message?: string | null
           last_message_at?: string
           next_action?: string | null
           preferences?: Json | null
+          provider_conversation_id?: string | null
           sentiment?: string | null
           status?: string
           summary?: string | null
@@ -1118,10 +1171,12 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           intent?: string
+          last_inbound_at?: string | null
           last_message?: string | null
           last_message_at?: string
           next_action?: string | null
           preferences?: Json | null
+          provider_conversation_id?: string | null
           sentiment?: string | null
           status?: string
           summary?: string | null
@@ -1131,10 +1186,30 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_inbox_events: {
+        Row: {
+          event_id: string
+          received_at: string
+          tenant_id: string
+        }
+        Insert: {
+          event_id: string
+          received_at?: string
+          tenant_id: string
+        }
+        Update: {
+          event_id?: string
+          received_at?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       wa_messages: {
         Row: {
           body: string
           conversation_id: string
+          delivery_status: string | null
+          delivery_status_at: string | null
           direction: string
           id: string
           sent_at: string
@@ -1144,6 +1219,8 @@ export type Database = {
         Insert: {
           body: string
           conversation_id: string
+          delivery_status?: string | null
+          delivery_status_at?: string | null
           direction?: string
           id?: string
           sent_at?: string
@@ -1153,6 +1230,8 @@ export type Database = {
         Update: {
           body?: string
           conversation_id?: string
+          delivery_status?: string | null
+          delivery_status_at?: string | null
           direction?: string
           id?: string
           sent_at?: string
@@ -1336,6 +1415,37 @@ export type Database = {
           discount_cents: number
           voucher_code: string
         }[]
+      }
+      wa_confirm_booking: {
+        Args: { p_draft: string; p_phone: string; p_tenant: string }
+        Returns: string
+      }
+      wa_ingest_inbox: {
+        Args: {
+          p_body: string
+          p_conversation: string
+          p_event: string
+          p_message: string
+          p_name: string
+          p_phone: string
+          p_sent: string
+          p_tenant: string
+        }
+        Returns: string
+      }
+      wa_record_delivery: {
+        Args: {
+          p_at: string
+          p_event: string
+          p_message: string
+          p_status: string
+          p_tenant: string
+        }
+        Returns: boolean
+      }
+      wa_reserve_budget: {
+        Args: { p_kind: string; p_tenant: string }
+        Returns: boolean
       }
     }
     Enums: {
