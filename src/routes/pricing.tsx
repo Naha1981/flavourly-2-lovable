@@ -14,12 +14,12 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Flavourly plans from R499 a month for takeaways to R19,999 for restaurant groups. 14-day free trial, no card needed.",
+          "Flavourly: R999, R1,499 and R2,900 per venue per month. Seven days free, no card. Higher plans subject to acceptance.",
       },
       { property: "og:title", content: "Pricing — Flavourly" },
       {
         property: "og:description",
-        content: "Five plans, from single takeaway to multi-location group. Prices in ZAR, excl. VAT.",
+        content: "Three single-venue plans with clear usage limits. Starter pilot enrolment first.",
       },
     ],
   }),
@@ -33,19 +33,20 @@ function PricingPage() {
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-8 pt-14 text-center sm:px-6 lg:px-8">
           <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
-            14-day free trial · no card
+            7-day trial · no card
           </Badge>
           <h1 className="mt-5 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Pay for a shift, not a salary
+            A clear plan for your restaurant
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            One missed booking a week costs more than Starter. Every plan includes the AI inbox,
-            setup help from a real person, and a month-to-month agreement.
+            R999, R1,499 or R2,900 per venue per month, month-to-month. Each plan covers one venue
+            and one WhatsApp number. We are enrolling the first two venues on Starter;
+            activation follows connection and acceptance checks.
           </p>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="grid gap-5 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-5 lg:grid-cols-3">
             {plans.map((plan) => (
               <div
                 key={plan.name}
@@ -78,21 +79,25 @@ function PricingPage() {
                   className="mt-6 rounded-full"
                   variant={plan.popular ? "default" : "outline"}
                 >
-                  <Link to="/signup" search={{ plan: plan.name.toLowerCase() }}>
-                    Start free trial
+                  <Link to={plan.name === "Starter" ? "/signup" : "/contact"} search={plan.name === "Starter" ? { plan: "starter" } : {}}>
+                    {plan.name === "Starter" ? "Join Starter pilot" : "Ask about this plan"}
                   </Link>
                 </Button>
               </div>
             ))}
           </div>
 
+          <div className="mt-8 rounded-2xl border border-border/70 bg-card p-6 text-sm text-muted-foreground">
+            <p>Seven-day trial, no card. Proposed trial allowance: up to 100 replies, counted within your monthly allowance. No automatic charge.</p>
+            <p className="mt-3">Service replies only, within 24 hours of a customer messaging you. No cold messages, paid templates or campaigns. Sending remains paused until allowance enforcement is verified; extra capacity needs separate approval.</p>
+            <p className="mt-3">Connection, AI and sending are paused until activation checks pass. Capacity-confirmed bookings, loyalty, reviews and team features are not included as available until they pass acceptance. A booking request is not a confirmed reservation.</p>
+          </div>
           <div className="mt-12 rounded-2xl border border-border/70 bg-card p-8 text-center">
             <h2 className="font-display text-2xl font-semibold text-foreground">
               Not sure which plan fits?
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              Tell us how many covers you do on a Saturday and we'll tell you honestly which plan
-              pays for itself fastest.
+              Tell us about your venue and message volume. We will confirm what is ready before you commit.
             </p>
             <Button asChild variant="outline" className="mt-5 rounded-full">
               <Link to="/contact">Talk to sales</Link>

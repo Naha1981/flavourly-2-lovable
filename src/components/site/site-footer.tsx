@@ -10,8 +10,8 @@ export function SiteFooter() {
           <div className="max-w-sm">
             <Logo size="md" />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              The AI revenue employee for South African restaurants. Answers the phone at 2am,
-              remembers every VIP, fills quiet Tuesdays.
+              Customer conversations and booking requests for South African restaurants.
+              Pilot activation follows connection and acceptance checks.
             </p>
             <p className="mt-4 text-xs text-muted-foreground">Built in Johannesburg by NahaLabs.</p>
           </div>

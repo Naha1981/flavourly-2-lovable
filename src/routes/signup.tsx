@@ -23,12 +23,12 @@ export const Route = createFileRoute("/signup")({
       {
         name: "description",
         content:
-          "Create your Flavourly workspace in two minutes. Fourteen days free, no card, cancel any time.",
+          "Join the Flavourly Starter pilot. Seven days free, no card, up to 100 service replies after activation.",
       },
       { property: "og:title", content: "Start your free trial — Flavourly" },
       {
         property: "og:description",
-        content: "Set up your restaurant's AI revenue employee in two minutes.",
+        content: "One restaurant, one number. Activation follows connection and acceptance checks.",
       },
     ],
   }),
@@ -82,11 +82,11 @@ function SignupPage() {
 
   return (
     <AuthShell
-      title="Start your 14-day trial"
+      title="Start your 7-day trial"
       subtitle={
         plan
-          ? `You picked the ${plan} plan. No card needed to begin.`
-          : "No card needed. Your AI host answers from day one."
+          ? `You asked about ${plan}. Starter pilot enrolment first; no card or automatic charge.`
+          : "No card or automatic charge. Sending starts only after activation checks."
       }
       footer={
         <p className="text-sm text-muted-foreground">
@@ -97,6 +97,7 @@ function SignupPage() {
         </p>
       }
     >
+      <p className="mb-5 text-sm text-muted-foreground">One venue and one number. Trial: proposed allowance up to 100 replies, counted within Starter's 500 monthly replies; pilot cap 25 per day. Sending remains paused while these limits are verified. Replies only within 24 hours of an inbound customer message. Higher plans require a capacity check.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();

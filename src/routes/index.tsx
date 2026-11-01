@@ -651,12 +651,12 @@ function PricingPeek() {
               One useful intervention should justify the subscription.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Start with the level of automation your restaurant needs. Upgrade as more revenue
-              workflows move into Flavourly.
+              Seven days free, no card. One venue and one number per plan. Starter pilot first;
+              higher plans and untested features remain subject to acceptance.
             </p>
           </div>
           <Button asChild variant="outline" className="rounded-full">
-            <Link to="/pricing">Compare all five tiers</Link>
+            <Link to="/pricing">Compare the three plans</Link>
           </Button>
         </div>
 
@@ -692,8 +692,8 @@ function PricingPeek() {
                 className="mt-6 w-full rounded-full"
                 variant={plan.popular ? "default" : "outline"}
               >
-                <Link to="/signup" search={{ plan: plan.name.toLowerCase() }}>
-                  Start free trial
+                <Link to={plan.name === "Starter" ? "/signup" : "/contact"} search={plan.name === "Starter" ? { plan: "starter" } : {}}>
+                  {plan.name === "Starter" ? "Join Starter pilot" : "Ask about this plan"}
                 </Link>
               </Button>
             </div>

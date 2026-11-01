@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { TRIAL_DAYS } from "./pricing";
 import { slugify } from "./restaurant-profile";
 import type { Workspace } from "./workspace.functions";
 
@@ -33,7 +34,7 @@ export async function ensureWorkspace(
   const base = slugify(restaurantName);
   for (let i = 0; i < 6; i++) {
     const slug = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
-    const { error } = await c.from("tenant_profiles").insert({ tenant_id: slug, name: restaurantName });
+    const { error } = await c.from("tenant_profiles").insert({ tenant_id: slug, name: restaurantName, trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString() });
     if (error?.code === "23505") continue; // slug taken, try another
     if (error) throw error;
     const { error: mErr } = await c

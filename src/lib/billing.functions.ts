@@ -21,8 +21,7 @@ export const startCheckout = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ tenantId: tenant, tier }).parse(d))
   .handler(async ({ data }) => {
     await guard(data.tenantId);
-    const { createCheckout } = await import("./billing.server");
-    return createCheckout(data.tenantId, data.tier);
+    throw new Error("Self-serve checkout is paused during pilot acceptance. Contact us to confirm your plan; no payment has been started.");
   });
 
 export const cancelPlan = createServerFn({ method: "POST" })

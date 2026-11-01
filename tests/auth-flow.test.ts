@@ -77,6 +77,9 @@ describe("restaurant creation during onboarding", () => {
     const { ensureWorkspace } = await import("@/lib/workspace.server");
     const ws = await ensureWorkspace(state.db as unknown as Parameters<typeof ensureWorkspace>[0], "user-1", "Marble JHB");
     expect(ws).toEqual({ tenantId: "marble-jhb", name: "Marble JHB", role: "owner" });
+    const trialEnd = new Date(String(state.db.rows("tenant_profiles")[0]?.trial_ends_at)).getTime();
+    expect(trialEnd - Date.now()).toBeGreaterThan(7 * 86_400_000 - 5_000);
+    expect(trialEnd - Date.now()).toBeLessThanOrEqual(7 * 86_400_000);
     expect(state.db.rows("tenant_members")).toEqual([
       expect.objectContaining({ tenant_id: "marble-jhb", user_id: "user-1", role: "owner" }),
     ]);

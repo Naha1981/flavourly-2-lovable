@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "@/components/ui/button";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { formatZAR } from "@/lib/south-africa";
-import { cancelPlan, getBilling, startCheckout } from "@/lib/billing.functions";
-import { TIER_MONTHLY_MESSAGES, TIER_HOURLY_MESSAGES, type PlanTier } from "@/lib/billing/provider";
+import { cancelPlan, getBilling } from "@/lib/billing.functions";
+import { plans } from "@/lib/pricing";
 import { dashMeta, PageTitle } from "./dashboard";
 
 export const Route = createFileRoute("/dashboard/billing")({
@@ -14,12 +14,11 @@ export const Route = createFileRoute("/dashboard/billing")({
   component: BillingPage,
 });
 
-const tiers: PlanTier[] = ["starter", "casual", "premium", "signature", "group"];
+
 
 function BillingPage() {
   const { profile, ready } = useRestaurantProfile();
   const billing = useServerFn(getBilling);
-  const checkout = useServerFn(startCheckout);
   const cancel = useServerFn(cancelPlan);
   const [data, setData] = useState<Awaited<ReturnType<typeof getBilling>> | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,15 +35,6 @@ function BillingPage() {
     ? "Trial ends " + new Date(data.trialEndsAt).toLocaleDateString()
     : data.status.replace("_", " ");
 
-  const choose = async (tier: PlanTier) => {
-    setBusy(true);
-    try {
-      const result = await checkout({ data: { tenantId: profile.slug, tier } });
-      window.location.href = result.redirectUrl;
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <>
@@ -66,17 +56,14 @@ function BillingPage() {
         </div>
       </div>
 
+      <p className="mb-5 text-sm text-muted-foreground">Self-serve checkout is paused during pilot acceptance. No automatic charge. Existing subscription records and cancellation remain available.</p>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {tiers.map((tier) => (
-          <article key={tier} className={`glass-card rounded-2xl border p-5 ${data.plan === tier ? "border-primary" : "border-border"}`}>
-            <h2 className="font-display text-xl text-foreground">{tier}</h2>
-            <p className="mt-2 font-display text-2xl text-foreground">{formatZAR(({ starter: 49900, casual: 149900, premium: 399900, signature: 799900, group: 1999900 } as Record<PlanTier, number>)[tier])}<span className="text-sm text-muted-foreground">/month</span></p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {TIER_MONTHLY_MESSAGES[tier] === Infinity ? "Unlimited" : TIER_MONTHLY_MESSAGES[tier].toLocaleString()} messages/month · {TIER_HOURLY_MESSAGES[tier].toLocaleString()}/hour
-            </p>
-            <Button className="mt-4 w-full" disabled={busy || data.plan === tier} onClick={() => void choose(tier)}>
-              {data.plan === tier ? "Current plan" : "Choose plan"}
-            </Button>
+        {plans.map((plan) => (
+          <article key={plan.name} className="glass-card rounded-2xl border border-border p-5">
+            <h2 className="font-display text-xl text-foreground">{plan.name}</h2>
+            <p className="mt-2 font-display text-2xl text-foreground">{formatZAR(plan.price * 100)}<span className="text-sm text-muted-foreground">/venue/month</span></p>
+            <p className="mt-2 text-sm text-muted-foreground">{plan.highlight}. One venue, one number.</p>
+            <Button asChild variant="outline" className="mt-4 w-full"><Link to="/contact">Confirm plan with us</Link></Button>
           </article>
         ))}
       </div>
