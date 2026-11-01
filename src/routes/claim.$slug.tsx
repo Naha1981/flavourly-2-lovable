@@ -12,13 +12,12 @@ export const Route = createFileRoute("/claim/$slug")({
       { title: "Claim your restaurant app — Flavourly" },
       {
         name: "description",
-        content:
-          "Your Flavourly workspace is already built with your branding, menu and reviews. Claim it and go live in minutes.",
+        content: "Illustrative Flavourly preview. Your venue has not been imported or connected.",
       },
       { property: "og:title", content: "Claim your restaurant app — Flavourly" },
       {
         property: "og:description",
-        content: "We built your AI revenue employee already. Open it and see.",
+        content: "Explore a sample workspace before starting the Starter pilot.",
       },
     ],
   }),
@@ -38,10 +37,10 @@ function ClaimPage() {
   const venue = titleFromSlug(slug) || demoRestaurant.name;
 
   const included = [
-    "Your menu, hours and branding already loaded",
-    "WhatsApp host ready to answer tonight",
-    "Last 90 days of your public reviews imported",
-    "Live 14-day trial, no card, cancel any time",
+    "Add your own menu, hours and branding during setup",
+    "Connection, AI and sending stay paused until activation checks pass",
+    "No reviews or business data have been imported by this preview",
+    "Seven-day trial, no card or automatic charge",
   ];
 
   return (
@@ -52,27 +51,27 @@ function ClaimPage() {
             <Logo size="md" />
           </Link>
           <Badge variant="secondary" className="rounded-full text-[11px]">
-            Private preview for {venue}
+            Illustrative preview: {venue}
           </Badge>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:px-6">
         <Badge className="rounded-full px-3 py-1 text-xs">
-          <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Already built for you
+          <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Sample only - not connected
         </Badge>
         <h1 className="mt-5 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-          {venue}, your app is waiting
+          {venue}: an illustrative preview
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          We studied your website, menu and reviews and set the whole thing up. Nothing to install,
-          nothing to configure — open it and it's yours.
+          This page uses a name from the URL and sample figures. It is not evidence that we
+          researched, imported or connected this restaurant.
         </p>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div className="rounded-2xl border border-border/70 bg-card p-7">
             <h2 className="font-display text-lg font-semibold text-foreground">
-              What's inside already
+              What setup still requires
             </h2>
             <ul className="mt-4 grid gap-3">
               {included.map((item) => (
@@ -83,27 +82,28 @@ function ClaimPage() {
               ))}
             </ul>
             <Button asChild size="lg" className="mt-7 w-full rounded-full">
-              <Link to="/signup" search={{ plan: "premium" }}>
-                Claim your app <ArrowRight className="ml-1.5 h-4 w-4" />
+              <Link to="/signup" search={{ plan: "starter" }}>
+                Start Starter pilot <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Takes about two minutes. No card, no contract.
+              Setup and activation checks are required. No card or automatic charge.
             </p>
           </div>
 
           <div className="rounded-2xl border border-border/70 bg-card p-7">
             <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              A peek at your first dashboard
+              Illustrative dashboard - not your results
             </p>
             <dl className="mt-5 grid gap-5">
-              <Stat label="Yesterday's verified revenue" value={rand(revenue.yesterday)} />
+              <Stat label="Sample revenue" value={rand(revenue.yesterday)} />
               <Stat label="Covers served" value={String(revenue.covers)} />
               <Stat label="Average check" value={rand(revenue.averageCheck)} />
               <Stat label="Recovered this month" value={rand(revenue.recovered)} />
             </dl>
             <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
-              Sample figures shown until we connect your till — usually within a day of claiming.
+              All figures are illustrative, not verified revenue, customer results or a promise of a
+              till connection.
             </p>
           </div>
         </div>

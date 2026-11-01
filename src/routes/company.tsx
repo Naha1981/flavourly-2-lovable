@@ -56,17 +56,22 @@ function CompanyPage() {
             We got tired of watching good restaurants lose money at 22:00
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            NahaLabs builds software for businesses that run on shifts. Flavourly started when a
-            restaurateur friend showed us 200 unanswered WhatsApp messages from a single weekend —
-            every one of them a table somebody else got.
+            NahaLabs is developing Flavourly for restaurant customer conversations and booking
+            requests. The Starter pilot requires connection and acceptance checks; it is not a
+            promise of recovered revenue.
           </p>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
           <div className="grid gap-5 md:grid-cols-2">
             {values.map((value) => (
-              <article key={value.title} className="rounded-2xl border border-border/70 bg-card p-7">
-                <h2 className="font-display text-lg font-semibold text-foreground">{value.title}</h2>
+              <article
+                key={value.title}
+                className="rounded-2xl border border-border/70 bg-card p-7"
+              >
+                <h2 className="font-display text-lg font-semibold text-foreground">
+                  {value.title}
+                </h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{value.body}</p>
               </article>
             ))}
@@ -77,8 +82,8 @@ function CompanyPage() {
               Want to talk to a human?
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-              We answer our own messages. Usually within the hour, during South African trading
-              times.
+              A verified contact route still needs to be configured and tested. Check the current
+              status before trying to send an enquiry.
             </p>
             <Button asChild className="mt-5 rounded-full">
               <Link to="/contact">Contact us</Link>

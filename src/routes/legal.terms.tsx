@@ -22,11 +22,11 @@ export const Route = createFileRoute("/legal/terms")({
 const sections = [
   {
     heading: "Your trial",
-    body: "Every new workspace gets 14 days free. No card is required to begin and you can stop at any point without owing anything.",
+    body: "The Starter pilot offers a seven-day trial. No card or automatic charge. Connection, AI and sending remain paused until activation checks pass.",
   },
   {
     heading: "Billing",
-    body: "Plans are billed monthly in advance, in South African rand, excluding VAT. You can change or cancel your plan before the next billing date.",
+    body: "Prices are in South African rand, excluding VAT. Self-serve checkout is paused during pilot acceptance. No automatic charge; any paid activation requires a separate confirmed agreement.",
   },
   {
     heading: "Your content",
@@ -54,7 +54,7 @@ function TermsPage() {
         <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">
           Terms of service
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated September 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Last updated November 2026</p>
         <div className="mt-10 grid gap-8">
           {sections.map((section) => (
             <section key={section.heading}>

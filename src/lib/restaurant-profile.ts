@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
-import { demoRestaurant } from "./mock-data";
 import {
   getRestaurantProfile,
   updateRestaurantProfile,
@@ -25,11 +24,11 @@ export type RestaurantProfile = {
 };
 
 export const defaultProfile: RestaurantProfile = {
-  slug: demoRestaurant.slug,
-  name: demoRestaurant.name,
+  slug: "",
+  name: "",
   ownerName: "",
-  city: demoRestaurant.city,
-  cuisine: demoRestaurant.cuisine,
+  city: "",
+  cuisine: "",
   hours: "",
   averageCheck: 0,
   notes: "",
@@ -41,7 +40,11 @@ export const defaultProfile: RestaurantProfile = {
 };
 
 export const slugify = (v: string) =>
-  v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "restaurant";
+  v
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60) || "restaurant";
 
 /** Legacy no-op kept so older callers do not write tenant state into the browser. */
 export function patchStoredProfile(_patch: Partial<RestaurantProfile>) {
@@ -94,29 +97,35 @@ export function useRestaurantProfile() {
     };
   }, [load]);
 
-  const persist = useCallback(async (value: RestaurantProfile) => {
-    await save({
-      data: {
-        tenantId: value.slug,
-        name: value.name,
-        ownerName: value.ownerName,
-        city: value.city,
-        cuisine: value.cuisine,
-        hours: value.hours,
-        averageCheck: value.averageCheck,
-        notes: value.notes,
-        managerPhone: value.managerPhone,
-        waAccountId: value.waAccountId,
-      },
-    });
-  }, [save]);
+  const persist = useCallback(
+    async (value: RestaurantProfile) => {
+      await save({
+        data: {
+          tenantId: value.slug,
+          name: value.name,
+          ownerName: value.ownerName,
+          city: value.city,
+          cuisine: value.cuisine,
+          hours: value.hours,
+          averageCheck: value.averageCheck,
+          notes: value.notes,
+          managerPhone: value.managerPhone,
+          waAccountId: value.waAccountId,
+        },
+      });
+    },
+    [save],
+  );
 
-  const saveNow = useCallback(async (patch: Partial<RestaurantProfile> = {}) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    const next = { ...profile, ...patch, slug: profile.slug };
-    setProfile(next);
-    await persist(next);
-  }, [persist, profile]);
+  const saveNow = useCallback(
+    async (patch: Partial<RestaurantProfile> = {}) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      const next = { ...profile, ...patch, slug: profile.slug };
+      setProfile(next);
+      await persist(next);
+    },
+    [persist, profile],
+  );
 
   const update = useCallback(
     (patch: Partial<RestaurantProfile>) => {
@@ -124,7 +133,9 @@ export function useRestaurantProfile() {
         const next = { ...prev, ...patch, slug: prev.slug };
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
-          void persist(next).catch((error) => console.error("restaurant profile save failed", error));
+          void persist(next).catch((error) =>
+            console.error("restaurant profile save failed", error),
+          );
         }, 500);
         return next;
       });

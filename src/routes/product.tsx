@@ -1,13 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  BarChart3,
-  Crown,
-  Inbox,
-  Radar,
-  Send,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { BarChart3, Crown, Inbox, Radar, Send, ShieldCheck, Sparkles } from "lucide-react";
 
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -17,16 +9,16 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/product")({
   head: () => ({
     meta: [
-      { title: "The six engines — Flavourly" },
+      { title: "Pilot scope - Flavourly" },
       {
         name: "description",
         content:
-          "Inside Flavourly: revenue intelligence, the VIP engine, reputation shield, market radar, marketing autopilot and the AI inbox.",
+          "What the Starter pilot includes, what remains paused and what still needs acceptance.",
       },
-      { property: "og:title", content: "The six engines — Flavourly" },
+      { property: "og:title", content: "Pilot scope - Flavourly" },
       {
         property: "og:description",
-        content: "What Flavourly actually does for your restaurant, engine by engine.",
+        content: "Read the pilot scope and activation limits before signing up.",
       },
     ],
   }),
@@ -35,67 +27,64 @@ export const Route = createFileRoute("/product")({
 
 const engines = [
   {
-    icon: BarChart3,
-    name: "Revenue Intelligence",
-    blurb:
-      "Yesterday's verified revenue, this week's forecast and the single move that fixes a slow patch. No vanity numbers.",
+    icon: Inbox,
+    name: "Starter pilot scope",
+    blurb: "Customer conversations and booking-request capture after activation checks.",
     points: [
-      "Verified takings, covers and average check",
-      "Seven-day forecast against actuals",
-      "One recommended action each morning",
+      "One venue and one WhatsApp number",
+      "Menu and hours enquiries",
+      "A booking request is not a confirmed reservation",
+    ],
+  },
+  {
+    icon: BarChart3,
+    name: "Revenue reporting - not accepted yet",
+    blurb:
+      "Reporting needs verified source data and a live acceptance pass before it can be offered as available.",
+    points: [
+      "No verified revenue promise",
+      "No forecast accuracy claim",
+      "Not included as available during pilot acceptance",
     ],
   },
   {
     icon: Crown,
-    name: "VIP Engine",
-    blurb:
-      "Knows who is walking in tonight, what they drink, what they spent and why they matter.",
+    name: "Loyalty and VIP - not accepted yet",
+    blurb: "These features are not available as an accepted pilot capability.",
     points: [
-      "Tonight's VIP list before service",
-      "Lifetime value and visit history",
-      "Quiet nudges for guests going cold",
+      "No automatic customer reactivation",
+      "Guest data needs permission",
+      "Higher plans require capacity approval",
     ],
   },
   {
     icon: ShieldCheck,
-    name: "Reputation Shield",
-    blurb:
-      "A one-star lands at 23:00. The apology is drafted, in your voice, before you wake up.",
+    name: "Reviews - not accepted yet",
+    blurb: "Review requests need consent and live-route verification. Sending stays paused.",
     points: [
-      "Google, TripAdvisor and Facebook in one feed",
-      "Drafted replies you approve in a tap",
-      "Recovery offers for guests worth saving",
+      "No imported review-feed promise",
+      "No guaranteed rating improvement",
+      "No paid templates or cold messages",
     ],
   },
   {
     icon: Radar,
-    name: "Market Radar",
-    blurb: "Watches the restaurants around you so you hear about their moves first.",
+    name: "Market research - not accepted yet",
+    blurb: "Market and competitor features need a separate acceptance pass.",
     points: [
-      "Competitor menu and price changes",
-      "Scored gaps in your area",
-      "Demand trends by suburb",
+      "No live monitoring promise",
+      "No verified demand prediction",
+      "No customer results claimed",
     ],
   },
   {
     icon: Send,
-    name: "Marketing Autopilot",
-    blurb: "Fills quiet Tuesdays by messaging exactly the right people, not everybody.",
+    name: "Campaigns and extra channels - paused",
+    blurb: "Campaigns and a multi-channel inbox are not available as accepted pilot capabilities.",
     points: [
-      "Segments built from real spend",
-      "Campaigns you approve, then forget",
-      "Revenue attributed per send",
-    ],
-  },
-  {
-    icon: Inbox,
-    name: "AI Inbox",
-    blurb:
-      "WhatsApp, Instagram, Facebook and email in one thread, answered in seconds, day or night.",
-    points: [
-      "Bookings captured and confirmed",
-      "FAQ answers in your house voice",
-      "Complaints escalated to a human",
+      "No cold outreach or campaigns",
+      "No Instagram, Facebook or email connection promise",
+      "Activation does not happen just by signing up",
     ],
   },
 ];
@@ -107,21 +96,22 @@ function ProductPage() {
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-10 pt-14 sm:px-6 lg:px-8">
           <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs">
-            Six engines, one employee
+            Pilot scope and acceptance
           </Badge>
           <h1 className="mt-5 max-w-3xl font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Everything a great front-of-house manager does. At 2am. Without a shift.
+            Know what is ready before you commit.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            Flavourly is not a chatbot bolted onto a booking form. It's six engines that share one
-            memory of every guest who has ever eaten with you.
+            The Starter pilot focuses on customer conversations and booking requests. Connection, AI
+            and sending remain paused until activation checks pass. Other capabilities below are not
+            accepted as available.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild className="rounded-full">
               <Link to="/signup">Start free trial</Link>
             </Button>
             <Button asChild variant="outline" className="rounded-full">
-              <Link to="/dashboard/replies">Try the AI desk</Link>
+              <Link to="/dashboard/replies">Sign in to the AI desk</Link>
             </Button>
           </div>
         </section>

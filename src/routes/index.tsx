@@ -90,6 +90,10 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main>
+        <p className="mx-auto max-w-7xl px-4 pt-5 text-sm font-medium text-muted-foreground">
+          Illustrative product examples only. No real customer, booking or revenue results are
+          shown. Connection, AI and sending remain paused pending acceptance.
+        </p>
         <Hero />
         <RevenueLeakSection />
         <RevenueFlow />
@@ -198,7 +202,9 @@ function HeroExperience() {
             <Badge
               variant="outline"
               className="rounded-full border-forest/20 bg-forest/5 text-forest"
-            >Live</Badge>
+            >
+              Illustrative demo
+            </Badge>
           </div>
 
           <div className="mt-5 space-y-3">
@@ -212,7 +218,7 @@ function HeroExperience() {
               Yes please 🙏
             </Bubble>
             <Bubble side="right" time="23:42" delay={3600}>
-              Booked. I'll keep the table warm for Kabelo.
+              Your booking request is captured. The restaurant still needs to confirm it.
             </Bubble>
           </div>
 
@@ -402,7 +408,7 @@ function RevenueFlow() {
             The Flavourly loop
           </p>
           <h2 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-            From missed signal to booked table.
+            From missed signal to booking request.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
             Flavourly is designed around the commercial loop — not another collection of
@@ -453,7 +459,7 @@ function MagicLink() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full px-7">
               <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-                See Flavourly live in a restaurant <ArrowRight className="ml-1 h-4 w-4" />
+                See an illustrative workspace <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="rounded-full">
@@ -468,9 +474,9 @@ function MagicLink() {
               <div className="flex items-center justify-between border-b border-border/70 pb-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                    Your restaurant
+                    Example only
                   </p>
-                  <p className="mt-1 font-display text-2xl">Marble · Rosebank</p>
+                  <p className="mt-1 font-display text-2xl">Example restaurant</p>
                 </div>
                 <Badge className="rounded-full bg-forest/10 text-forest hover:bg-forest/10">
                   Preview
@@ -692,7 +698,10 @@ function PricingPeek() {
                 className="mt-6 w-full rounded-full"
                 variant={plan.popular ? "default" : "outline"}
               >
-                <Link to={plan.name === "Starter" ? "/signup" : "/contact"} search={plan.name === "Starter" ? { plan: "starter" } : {}}>
+                <Link
+                  to={plan.name === "Starter" ? "/signup" : "/contact"}
+                  search={plan.name === "Starter" ? { plan: "starter" } : {}}
+                >
                   {plan.name === "Starter" ? "Join Starter pilot" : "Ask about this plan"}
                 </Link>
               </Button>

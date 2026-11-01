@@ -125,11 +125,11 @@ function SignupPage() {
       >
         <div className="grid gap-2">
           <Label htmlFor="restaurant">Restaurant name</Label>
-          <Input id="restaurant" name="restaurant" placeholder="Marble" />
+          <Input id="restaurant" name="restaurant" placeholder="Your restaurant name" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="name">Your name</Label>
-          <Input id="name" name="name" placeholder="Warren Dlamini" />
+          <Input id="name" name="name" placeholder="Your name" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Work email</Label>
