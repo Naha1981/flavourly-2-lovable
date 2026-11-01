@@ -24,6 +24,7 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth-client";
+import { postLoginPath } from "@/lib/auth-rules";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -56,6 +57,15 @@ function useAuthGate() {
 
   useEffect(() => {
     let alive = true;
+    // Capture before either async auth callback can navigate to /login.
+    const requestedPath = postLoginPath(
+      window.location.pathname + window.location.search + window.location.hash,
+    );
+    const goToLogin = () => navigate({
+      to: "/login",
+      search: { redirect: requestedPath },
+      replace: true,
+    });
 
     const check = async () => {
       const { data } = await supabase.auth.getSession();
@@ -63,7 +73,7 @@ function useAuthGate() {
       if (data.session) {
         setState("authed");
       } else {
-        await navigate({ to: "/login", search: { redirect: window.location.pathname } });
+        await goToLogin();
       }
     };
 
@@ -74,7 +84,7 @@ function useAuthGate() {
       if (session) {
         setState("authed");
       } else {
-        void navigate({ to: "/login", search: { redirect: window.location.pathname } });
+        void goToLogin();
       }
     });
 

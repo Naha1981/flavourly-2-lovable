@@ -52,12 +52,19 @@ describe("sign-up", () => {
 describe("sign-in", () => {
   it("returns to the requested dashboard page", () => {
     expect(postLoginPath("/dashboard/inbox")).toBe("/dashboard/inbox");
+    expect(postLoginPath("/dashboard?tab=today")).toBe("/dashboard?tab=today");
+    expect(postLoginPath("/dashboard/inbox?status=open#latest")).toBe("/dashboard/inbox?status=open#latest");
   });
   it("never redirects outside the dashboard after sign-in", () => {
     expect(postLoginPath(undefined)).toBe("/dashboard");
     expect(postLoginPath("https://evil.example")).toBe("/dashboard");
     expect(postLoginPath("/dashboardx")).toBe("/dashboard");
     expect(postLoginPath("/pricing")).toBe("/dashboard");
+    expect(postLoginPath("/login")).toBe("/dashboard");
+    expect(postLoginPath("//evil.example/dashboard")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/../../login")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/../pricing")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/\\evil")).toBe("/dashboard");
   });
   it("explains an unconfirmed email separately from a wrong password", () => {
     expect(signInErrorMessage("Email not confirmed")).toBe("Confirm your email first, then sign in.");

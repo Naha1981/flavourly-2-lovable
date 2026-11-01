@@ -8,7 +8,14 @@ export function validateSignup(input: { restaurant: string; email: string; passw
 
 /** After sign-in, only ever return to a dashboard page — never an outside link. */
 export function postLoginPath(redirect: string | undefined): string {
-  return redirect && /^\/dashboard(\/|$)/.test(redirect) ? redirect : "/dashboard";
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || /[\\\x00-\x1f\x7f]/.test(redirect)) return "/dashboard";
+  try {
+    const url = new URL(redirect, "https://flavourly.invalid");
+    if (url.origin !== "https://flavourly.invalid" || !/^\/dashboard(\/|$)/.test(url.pathname)) return "/dashboard";
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return "/dashboard";
+  }
 }
 
 /** Friendly sign-in error text. */
