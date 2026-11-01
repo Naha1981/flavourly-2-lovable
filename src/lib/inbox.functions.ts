@@ -29,6 +29,7 @@ export type InboxMessage = {
   direction: string;
   body: string;
   sentAt: string;
+  deliveryStatus?: string | null;
 };
 
 export const listConversations = createServerFn({ method: "POST" })
@@ -64,13 +65,16 @@ export const listConversations = createServerFn({ method: "POST" })
   });
 
 export const listMessages = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ tenantId: tenant, conversationId: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ tenantId: tenant, conversationId: z.string().uuid() }).parse(d),
+  )
   .handler(async ({ data }): Promise<InboxMessage[]> => {
     await guard(data.tenantId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db } = await import("./db.server");
+    const supabaseAdmin = await db();
     const { data: rows, error } = await supabaseAdmin
       .from("wa_messages")
-      .select("id, direction, body, sent_at")
+      .select("id, direction, body, sent_at, delivery_status")
       .eq("tenant_id", data.tenantId)
       .eq("conversation_id", data.conversationId)
       .order("sent_at", { ascending: true })
@@ -79,7 +83,13 @@ export const listMessages = createServerFn({ method: "POST" })
       console.error("listMessages", error);
       return [];
     }
-    return (rows ?? []).map((r) => ({ id: r.id, direction: r.direction, body: r.body, sentAt: r.sent_at }));
+    return (rows ?? []).map((r) => ({
+      id: r.id,
+      direction: r.direction,
+      body: r.body,
+      sentAt: r.sent_at,
+      deliveryStatus: r.delivery_status,
+    }));
   });
 
 export const updateConversation = createServerFn({ method: "POST" })

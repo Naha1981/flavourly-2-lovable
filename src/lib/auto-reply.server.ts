@@ -146,6 +146,7 @@ export async function autoReply(input: {
     tenant_id: input.tenantId,
     wa_message_id: sent.data.messageId ?? null,
     direction: "out",
+    delivery_status: "accepted",
     body: reply,
     sent_at: now,
   });

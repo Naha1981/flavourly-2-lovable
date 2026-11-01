@@ -24,11 +24,11 @@ All three effect switches default off: WHATSAPP_CONNECT_ENABLED, WHATSAPP_SEND_E
 
 ## Verification
 
-581 automated tests in 45 files passed. Typecheck, production build, environment and test-focus checks passed. Every migration applied to a fresh local PostgreSQL engine (PGlite), with actual SQL checks for budgets, replay, capacity, duplicate confirmations, recorded visits/VIP and tenant boundaries. Changed-file lint passed; full-repository lint still fails inherited formatting rules (see proof report).
+582 automated tests in 45 files passed. Typecheck, production build, environment and test-focus checks passed. Every migration applied to a fresh local PostgreSQL engine (PGlite), with actual SQL checks for budgets, replay, capacity, duplicate confirmations, recorded visits/VIP and tenant boundaries. Changed-file lint passed; full-repository lint still fails inherited formatting rules (see proof report).
 
 Actual product onboarding screenshot and click test at desktop and 390px mobile: secure connect instructions, truthful unconnected state, paused connection feedback, no horizontal overflow. Logo fallback fixes unavailable hosted image asset.
 
-These are local synthetic tests. They are not live delivery, live authentication, stranger testing or 100/100 independent acceptance. Database proof is not production Supabase proof. The complete authenticated settings/inbox/provider-return flow still needs staging validation against real account contracts before launch.
+These are local synthetic tests. They are not live delivery, live authentication, stranger testing or 100/100 independent acceptance. Database proof is not production Supabase proof. Authenticated settings/inbox were additionally tested against a synthetic local auth and PostgreSQL-backed fixture: saved capacity 16 from the actual settings screen, ingested a signed synthetic customer message, displayed manager handoff, assigned Manager from the product, and displayed Delivered only after a signed synthetic receipt. These are not real logins or deliveries. Provider-return flow still needs staging validation against real account contracts before launch.
 
 ## Free-only boundaries
 
@@ -44,3 +44,15 @@ Sources checked 1 November 2026:
 ## Before any push or deployment
 
 Obtain separate Go + Sure for this candidate, then apply/rehearse migration in staging, configure server secrets securely, verify real account/profile response shape and free allowance, test the hosted return and bind flow with one approved restaurant number, test signed incoming customer messages and delivery status, verify database permissions under Supabase, test staff handoff and capacity from authenticated product screens. Do not claim live delivery merely because the send API accepted a request. No password changes, resets, new services or paid usage are authorized by this candidate.
+
+
+## Follow-up local acceptance
+
+Added delivery receipt handling and visible Accepted/Sent/Delivered/Read/Failed labels. Provider sample/test webhooks are ignored. Standby messages are saved without taking control from a human. Account verification now requires explicitly active and not-needing-reconnection. Fresh local SQL checks also prove foreign-tenant receipts cannot change delivery state.
+
+Deployment is currently blocked: the known Lovable project is live, with a built-in Supabase that must remain untouched. No isolated approved staging target/database is identified. Do not push main or apply migrations to that live backend as a shortcut. Existing provider-session allowance inspection failed before reading the site, so free connected-account slots remain unverified.
+
+Additional contracts read:
+- https://docs.zernio.com/accounts/list-accounts
+- https://docs.zernio.com/webhooks/inbox
+- https://docs.zernio.com/messages/send-inbox-message

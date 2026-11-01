@@ -201,12 +201,14 @@ function InboxPage() {
 
   return (
     <>
-      <PageTitle title="Inbox" sub="Guest messages from every channel, with AI replies ready." />
+      <PageTitle
+        title="Inbox"
+        sub="Guest WhatsApp messages and replies. Manager requests pause automatic replies."
+      />
 
       {isDemo && (
         <p className="mb-4 rounded-xl border border-dashed border-border bg-card/60 px-4 py-2.5 text-xs text-muted-foreground">
-          Showing sample chats. Real WhatsApp messages appear here automatically once your number is
-          linked.
+          No guest messages yet. Incoming WhatsApp messages will appear after your number is linked.
         </p>
       )}
 
@@ -380,7 +382,12 @@ function InboxPage() {
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.direction === "in" ? "bg-card" : "ml-auto bg-primary text-primary-foreground"}`}
                 >
                   {m.body}
-                  <p className="mt-1 text-[10px] opacity-70">{clock(m.sentAt)}</p>
+                  <p className="mt-1 text-[10px] opacity-70">
+                    {clock(m.sentAt)}
+                    {m.direction === "out"
+                      ? ` · ${{ accepted: "Accepted, not yet delivered", sent: "Sent", delivered: "Delivered", read: "Read", failed: "Delivery failed" }[m.deliveryStatus ?? "accepted"] ?? "Delivery not confirmed"}`
+                      : ""}
+                  </p>
                 </div>
               ))}
               <Link to="/dashboard/replies" className="mt-2 text-sm font-medium text-primary">

@@ -12,7 +12,7 @@ export function parseInboxEvent(raw: unknown) {
   // Provider JSON is validated below before use.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const r = raw as Record<string, any>;
-  if (r["event"] !== "message.received") return null;
+  if (r["test"] === true || r["event"] !== "message.received") return null;
   const m = r["message"] ?? {};
   const a = m.account ?? r["account"] ?? {};
   if (
@@ -55,9 +55,12 @@ export function parseInboxEvent(raw: unknown) {
     name: typeof sender?.name === "string" ? sender.name : null,
     body: text.trim().slice(0, 4000),
     sentAt: new Date(timestamp).toISOString(),
+    standby: m.metadata?.standby === true,
   };
 }
 export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
+  const statusResult = await ingestDeliveryStatus(parsed);
+  if (statusResult) return statusResult;
   const m = parseInboxEvent(parsed);
   if (!m) return { events: 1, saved: 0, failures: [] };
   const c = await db();
@@ -92,7 +95,7 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
       .eq("tenant_id", mapping.tenant_id)
       .eq("id", conversationId);
   } else if (keyword === "start") await recordOptIn(mapping.tenant_id, m.phone);
-  else if (Date.now() - Date.parse(m.sentAt) < 86400000) {
+  else if (!m.standby && Date.now() - Date.parse(m.sentAt) < 86400000) {
     try {
       const { autoReply } = await import("./auto-reply.server");
       await autoReply({
@@ -116,4 +119,55 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
     }
   }
   return { events: 1, saved: 1, failures: [], tenantId: mapping.tenant_id };
+}
+
+/** Delivery receipts are status evidence, never an instruction to retry or send. */
+async function ingestDeliveryStatus(raw: unknown): Promise<IngestResult | null> {
+  if (!raw || typeof raw !== "object") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = raw as Record<string, any>;
+  const status = (
+    {
+      "message.sent": "sent",
+      "message.delivered": "delivered",
+      "message.read": "read",
+      "message.failed": "failed",
+    } as Record<string, string>
+  )[r["event"]];
+  if (!status) return null;
+  if (r["test"] === true) return { events: 1, saved: 0, failures: [] };
+  const account = r["account"] ?? {};
+  const message = r["message"] ?? {};
+  const at = Date.parse(r["statusAt"] ?? r["timestamp"] ?? "");
+  if (
+    account.platform !== "whatsapp" ||
+    !account.accountId ||
+    !account.profileId ||
+    !message.id ||
+    !r["id"] ||
+    !Number.isFinite(at)
+  )
+    return { events: 1, saved: 0, failures: [] };
+  const c = await db();
+  const mapped = await c
+    .from("wa_channels")
+    .select("tenant_id")
+    .eq("account_id", account.accountId)
+    .eq("profile_id", account.profileId)
+    .maybeSingle();
+  if (mapped.error) return { events: 1, saved: 0, failures: ["Receipt account lookup failed"] };
+  if (!mapped.data) return { events: 1, saved: 0, failures: [] };
+  const result = await c.rpc("wa_record_delivery", {
+    p_tenant: mapped.data.tenant_id,
+    p_event: r["id"],
+    p_message: message.id,
+    p_status: status,
+    p_at: new Date(at).toISOString(),
+  });
+  return {
+    events: 1,
+    saved: 0,
+    failures: result.error ? ["Receipt could not be saved"] : [],
+    tenantId: mapped.data.tenant_id,
+  };
 }

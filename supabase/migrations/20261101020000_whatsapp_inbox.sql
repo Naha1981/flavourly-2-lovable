@@ -81,3 +81,18 @@ GRANT EXECUTE ON FUNCTION public.wa_ingest_inbox(text,text,text,text,text,text,t
 -- Ledger entries may never refer to a customer from another tenant.
 CREATE UNIQUE INDEX customers_tenant_id_unique ON public.customers(tenant_id,id);
 ALTER TABLE public.loyalty_ledger ADD CONSTRAINT loyalty_customer_tenant_fk FOREIGN KEY(tenant_id,customer_id) REFERENCES public.customers(tenant_id,id);
+ALTER TABLE public.wa_messages ADD COLUMN delivery_status text CHECK(delivery_status IN ('accepted','sent','delivered','read','failed'));
+ALTER TABLE public.wa_messages ADD COLUMN delivery_status_at timestamptz;
+CREATE FUNCTION public.wa_record_delivery(p_tenant text,p_event text,p_message text,p_status text,p_at timestamptz) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE claimed text;
+BEGIN
+  IF p_status NOT IN ('sent','delivered','read','failed') THEN RETURN false; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('wa-inbox:' || p_tenant,0));
+  INSERT INTO wa_inbox_events(event_id,tenant_id) VALUES(p_event,p_tenant) ON CONFLICT DO NOTHING RETURNING event_id INTO claimed;
+  IF claimed IS NULL THEN RETURN false; END IF;
+  UPDATE wa_messages SET delivery_status=p_status,delivery_status_at=p_at WHERE tenant_id=p_tenant AND wa_message_id=p_message AND direction='out' AND (delivery_status_at IS NULL OR delivery_status_at<=p_at) AND NOT(delivery_status='read' AND p_status IN ('sent','delivered'));
+  RETURN FOUND;
+END $$;
+REVOKE ALL ON FUNCTION public.wa_record_delivery(text,text,text,text,timestamptz) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.wa_record_delivery(text,text,text,text,timestamptz) TO service_role;

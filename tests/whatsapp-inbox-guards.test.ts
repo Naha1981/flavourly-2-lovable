@@ -78,6 +78,14 @@ describe("reply-only send guard", () => {
     });
 });
 describe("provider parser", () => {
+  it("ignores provider test deliveries and preserves standby for human control", () => {
+    expect(parseInboxEvent({ ...event(), test: true })).toBeNull();
+    const e = event();
+    expect(
+      parseInboxEvent({ ...e, message: { ...e.message, metadata: { standby: true } } })?.standby,
+    ).toBe(true);
+  });
+
   it("uses provider account identity and ignores attacker tenant hints", () => {
     expect(parseInboxEvent({ ...event(), tenantId: "venue-b" })?.accountId).toBe("account-a");
     expect(parseInboxEvent({ ...event(), tenantId: "venue-b" })).not.toHaveProperty("tenantId");

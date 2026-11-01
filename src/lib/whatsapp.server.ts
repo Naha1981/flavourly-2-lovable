@@ -106,13 +106,18 @@ export async function status(tenantId: string, _hint: string): Promise<Result<Wa
       platform?: string;
       profileId?: string;
       isActive?: boolean;
+      needsReconnection?: boolean;
       status?: string;
       username?: string;
     }>;
   }>(`/accounts?profileId=${encodeURIComponent(row.profile_id)}&platform=whatsapp`);
   if (!res.ok) return res;
   const accounts = (res.data.accounts ?? []).filter(
-    (a) => a.platform === "whatsapp" && a.profileId === row.profile_id && a.isActive !== false,
+    (a) =>
+      a.platform === "whatsapp" &&
+      a.profileId === row.profile_id &&
+      a.isActive === true &&
+      a.needsReconnection !== true,
   );
   if (accounts.length > 1)
     return {
