@@ -43,6 +43,7 @@ import { Route as GeoClaimTokenRouteImport } from './routes/geo-claim.$token'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as MSlugRouteImport } from './routes/m.$slug'
+import { Route as ReviewTokenRouteImport } from './routes/review/$token'
 import { Route as DashboardIntelligenceMenuMatrixRouteImport } from './routes/dashboard.intelligence.menu-matrix'
 import { Route as ApiPublicBillingWebhookRouteImport } from './routes/api/public/billing/webhook'
 import { Route as ApiPublicCronCustomerLifecycleRouteImport } from './routes/api/public/cron/customer-lifecycle'
@@ -223,6 +224,11 @@ const MSlugRoute = MSlugRouteImport.update({
   path: '/m/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewTokenRoute = ReviewTokenRouteImport.update({
+  id: '/review/$token',
+  path: '/review/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIntelligenceMenuMatrixRoute =
   DashboardIntelligenceMenuMatrixRouteImport.update({
     id: '/intelligence/menu-matrix',
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
+  '/review/$token': typeof ReviewTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
+  '/review/$token': typeof ReviewTokenRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
@@ -390,6 +398,7 @@ export interface FileRoutesById {
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/m/$slug': typeof MSlugRoute
+  '/review/$token': typeof ReviewTokenRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/intelligence/menu-matrix': typeof DashboardIntelligenceMenuMatrixRoute
   '/api/public/billing/webhook': typeof ApiPublicBillingWebhookRoute
@@ -436,6 +445,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
+    | '/review/$token'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
@@ -479,6 +489,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
+    | '/review/$token'
     | '/dashboard'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
@@ -523,6 +534,7 @@ export interface FileRouteTypes {
     | '/legal/privacy'
     | '/legal/terms'
     | '/m/$slug'
+    | '/review/$token'
     | '/dashboard/'
     | '/dashboard/intelligence/menu-matrix'
     | '/api/public/billing/webhook'
@@ -553,6 +565,7 @@ export interface RootRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalTermsRoute: typeof LegalTermsRoute
   MSlugRoute: typeof MSlugRoute
+  ReviewTokenRoute: typeof ReviewTokenRoute
   ApiPublicBillingWebhookRoute: typeof ApiPublicBillingWebhookRoute
   ApiPublicCronCustomerLifecycleRoute: typeof ApiPublicCronCustomerLifecycleRoute
   ApiPublicCronMilestonesRoute: typeof ApiPublicCronMilestonesRoute
@@ -802,6 +815,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review/$token': {
+      id: '/review/$token'
+      path: '/review/$token'
+      fullPath: '/review/$token'
+      preLoaderRoute: typeof ReviewTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/intelligence/menu-matrix': {
       id: '/dashboard/intelligence/menu-matrix'
       path: '/intelligence/menu-matrix'
@@ -924,6 +944,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalTermsRoute: LegalTermsRoute,
   MSlugRoute: MSlugRoute,
+  ReviewTokenRoute: ReviewTokenRoute,
   ApiPublicBillingWebhookRoute: ApiPublicBillingWebhookRoute,
   ApiPublicCronCustomerLifecycleRoute: ApiPublicCronCustomerLifecycleRoute,
   ApiPublicCronMilestonesRoute: ApiPublicCronMilestonesRoute,

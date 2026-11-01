@@ -1,8 +1,6 @@
 import { db } from "./db.server";
 import { nextFeedbackStep, type FeedbackState } from "./feedback";
-import { reservationStart } from "./booking/reminders";
 import { enqueueOutbox } from "./outbox.server";
-import { sastDateString } from "./whatsapp/quiet-hours";
 
 const HOUR = 3_600_000;
 const COMMENT_WINDOW_MS = 6 * HOUR;
@@ -12,57 +10,8 @@ const REPLY_WINDOW_MS = 36 * HOUR;
  * Asks guests how their evening was ~2h after their booking. Only for guests who
  * actually came (seated/completed, or confirmed attendance), never no-shows or cancellations.
  */
-export async function runFeedbackRequests(now: Date = new Date()) {
-  const c = await db();
-  const { data: rows, error } = await c
-    .from("reservations")
-    .select(
-      "id, tenant_id, customer_phone, customer_name, reservation_date, reservation_time, status, attendance_confirmed_at",
-    )
-    .in("status", ["confirmed", "seated", "completed"])
-    .gte("reservation_date", sastDateString(new Date(now.getTime() - 2 * 86_400_000)))
-    .lte("reservation_date", sastDateString(now));
-  if (error) throw error;
-
-  const { data: venues } = await c
-    .from("tenant_profiles")
-    .select("tenant_id, name, auto_replies_enabled");
-  const venueBy = new Map((venues ?? []).map((v) => [v.tenant_id as string, v]));
-
-  let queued = 0;
-  for (const r of rows ?? []) {
-    const venue = venueBy.get(r.tenant_id as string);
-    if (!venue?.auto_replies_enabled) continue;
-    const attended = r.status !== "confirmed" || r.attendance_confirmed_at !== null;
-    if (!attended) continue;
-    const start = reservationStart(
-      r.reservation_date as string,
-      (r.reservation_time as string).slice(0, 5),
-    );
-    const age = now.getTime() - start.getTime();
-    if (age < 2 * HOUR || age > 26 * HOUR) continue;
-
-    const { error: insErr } = await c.from("feedback_requests").insert({
-      tenant_id: r.tenant_id,
-      reservation_id: r.id,
-      customer_phone: r.customer_phone,
-      customer_name: r.customer_name,
-    });
-    if (insErr) {
-      if (insErr.code === "23505") continue; // already asked
-      throw insErr;
-    }
-    const first = ((r.customer_name as string) ?? "").split(" ")[0] || "there";
-    await enqueueOutbox({
-      tenantId: r.tenant_id as string,
-      phone: r.customer_phone as string,
-      text: `Thanks for dining with us at ${venue.name}, ${first}! How was your evening? Reply with a number from 1 (poor) to 5 (excellent).`,
-      automated: true,
-      dedupeKey: `feedback:${r.id}`,
-    });
-    queued += 1;
-  }
-  return { candidates: rows?.length ?? 0, queued };
+export async function runFeedbackRequests(_now: Date = new Date()) {
+  return { candidates: 0, queued: 0 };
 }
 
 async function alertManager(tenantId: string, incidentId: string, kind: string, text: string) {
@@ -146,7 +95,7 @@ export async function handleFeedbackReply(input: {
       .eq("id", req.id);
     const link = venue?.google_review_url as string | null | undefined;
     return link
-      ? `We're so glad, ${first}! If you have a minute, a Google review helps a small team enormously: ${link}`
+      ? `Thank you for your feedback, ${first}. You can share your honest experience in a Google review: ${link}`
       : `We're so glad you enjoyed it, ${first}! See you again soon.`;
   }
 
@@ -182,5 +131,9 @@ export async function handleFeedbackReply(input: {
       updated_at: stamp,
     })
     .eq("id", req.id);
-  return `I'm sorry we fell short, ${first}. What went wrong? Your reply goes straight to our manager.`;
+  const link = venue?.google_review_url as string | null | undefined;
+  return (
+    `I'm sorry we fell short, ${first}. What went wrong? Your reply goes to our manager.` +
+    (link ? ` You can also share your honest experience in a Google review: ${link}` : "")
+  );
 }

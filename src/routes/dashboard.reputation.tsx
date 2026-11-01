@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { reviewStatus, recordPaidVisit } from "@/lib/reviews.functions";
 import { Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,7 @@ import { dashMeta, PageTitle } from "./dashboard";
 
 export const Route = createFileRoute("/dashboard/reputation")({
   head: () =>
-    dashMeta(
-      "Reputation",
-      "Private feedback from guests who had a poor evening, so you can fix it before it becomes a review.",
-    ),
+    dashMeta("Reputation", "Guest feedback and neutral review invitations after paid visits."),
   component: ReputationPage,
 });
 
@@ -81,8 +79,9 @@ function ReputationPage() {
     <>
       <PageTitle
         title="Reputation"
-        sub="Guests who rate 1–3 stars come here privately. Only 4–5 star guests are sent to Google."
+        sub="Neutral review invitations go to consenting guests after a paid visit, regardless of their rating."
       />
+      <ReviewRequests tenantId={tenantId} />
       <p className="mb-4 text-sm text-muted-foreground">
         {openCount === 0
           ? "Nothing needs attention."
@@ -97,8 +96,8 @@ function ReputationPage() {
       <div className="grid gap-3">
         {items.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            No incidents yet. Feedback requests go out about two hours after a booking, once
-            auto-replies are on.
+            No incidents yet. Review followups stay paused until setup and live-route acceptance are
+            complete.
           </p>
         )}
         {items.map((i) => (
@@ -201,5 +200,103 @@ function ReputationPage() {
         ))}
       </div>
     </>
+  );
+}
+
+function ReviewRequests({ tenantId }: { tenantId: string }) {
+  const load = useServerFn(reviewStatus);
+  const record = useServerFn(recordPaidVisit);
+  const [status, setStatus] = useState<Awaited<ReturnType<typeof reviewStatus>> | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void load({ data: { tenantId } })
+      .then(setStatus)
+      .catch(() => setMessage("Review setup is unavailable."));
+  }, [load, tenantId]);
+  return (
+    <section className="mb-6 rounded-2xl border border-border p-5 space-y-3">
+      <h2 className="text-lg font-semibold">Post-visit reviews</h2>
+      <p>
+        {status?.enabled ? "Automation enabled" : "Automation paused"}
+        {status && !status.available ? " - database setup pending" : ""}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        Check-in after 15 minutes, honest review invitation 2 hours later, then one reminder after
+        48 hours. A click or STOP cancels the reminder. Messages use your shared reply allowance and
+        need a recent incoming customer message. Otherwise they are held, with no paid template or
+        automatic retry.
+      </p>
+      <form
+        className="grid gap-3 sm:grid-cols-2"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          setBusy(true);
+          setMessage("");
+          try {
+            const r = await record({
+              data: {
+                tenantId,
+                phone: String(f.get("phone")),
+                spendCents: Math.round(Number(f.get("amount")) * 100),
+                billRef: String(f.get("bill")),
+                reviewConsent: f.get("consent") === "on",
+              },
+            });
+            setMessage(
+              r?.already_recorded
+                ? "This bill was already recorded. No duplicate visit or review."
+                : "Paid visit recorded. Reviews only queue when venue setup is enabled.",
+            );
+            setStatus(await load({ data: { tenantId } }));
+          } catch {
+            setMessage("Paid visit could not be recorded. Check setup and your manager access.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <label className="text-sm">
+          Customer phone
+          <Input name="phone" required pattern="\+?[0-9]{9,15}" placeholder="27821234567" />
+        </label>
+        <label className="text-sm">
+          Paid amount (R)
+          <Input name="amount" type="number" min="0.01" max="1000000" step="0.01" required />
+        </label>
+        <label className="text-sm">
+          Bill reference
+          <Input name="bill" required maxLength={100} />
+        </label>
+        <label className="text-sm flex items-center gap-2">
+          <input name="consent" type="checkbox" />
+          Customer agreed to review followups on this number
+        </label>
+        <p className="text-sm text-muted-foreground sm:col-span-2">
+          Record only a settled bill. This records loyalty points; it does not take payment. Use the
+          same bill reference to avoid duplicates.
+        </p>
+        <Button disabled={busy || !status?.available} type="submit">
+          {busy ? "Recording..." : "Record paid visit"}
+        </Button>
+      </form>
+      {message && <p role="status">{message}</p>}
+      <ul className="text-sm space-y-2">
+        {status?.rows.map((r) => (
+          <li key={r.id}>
+            {r.step === "check_in"
+              ? "Check-in"
+              : r.step === "review"
+                ? "Review invitation"
+                : "Reminder"}
+            : {r.state}
+            {r.clicked_at ? " - link opened (review not confirmed)" : ""}
+            {r.error ? ` - ${r.error}` : ""}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -97,6 +97,9 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
   } else if (keyword === "start") await recordOptIn(mapping.tenant_id, m.phone);
   else if (!m.standby && Date.now() - Date.parse(m.sentAt) < 86400000) {
     try {
+      const { flagReviewFeedback } = await import("./review-requests.server");
+      if (await flagReviewFeedback(mapping.tenant_id, m.phone, m.body, conversationId))
+        return { events: 1, saved: 1, failures: [], tenantId: mapping.tenant_id };
       const { autoReply } = await import("./auto-reply.server");
       await autoReply({
         tenantId: mapping.tenant_id,
