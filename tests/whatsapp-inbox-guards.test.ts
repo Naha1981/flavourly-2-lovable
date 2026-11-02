@@ -147,3 +147,71 @@ describe("missing production allowance setup", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+describe("current provider populated profile response", () => {
+  it("matches exact nested profile ID and binds the existing account", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            {
+              _id: "account-a",
+              profileId: { _id: "profile-a", name: "Synthetic A" },
+              platform: "whatsapp",
+              isActive: true,
+            },
+          ],
+        }),
+      ),
+    );
+    expect(await status("venue-a", "ignored")).toMatchObject({
+      ok: true,
+      data: { isConnected: true, waAccountId: "account-a" },
+    });
+  });
+  it("does not accept a nested foreign profile", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            {
+              _id: "account-a",
+              profileId: { _id: "profile-other" },
+              platform: "whatsapp",
+              isActive: true,
+            },
+          ],
+        }),
+      ),
+    );
+    expect((await status("venue-a", "ignored")).ok).toBe(false);
+    expect(state.db.rows("wa_channels")[0]?.["account_id"]).toBe("account-a");
+  });
+});
+
+describe("provider send evidence", () => {
+  it("does not claim acceptance without a real message identifier", async () => {
+    for (const body of [{}, { message: {} }, { message: { id: 12 } }, { messageId: "" }]) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json(body)),
+      );
+      expect(
+        await sendText("venue-a", "account-a", "27821234567", "Synthetic reply"),
+      ).toMatchObject({ ok: false, error: expect.stringContaining("could not be verified") });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  });
+  it("preserves a verified top-level message identifier", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ messageId: "verified-reply" })),
+    );
+    expect(await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).toMatchObject({
+      ok: true,
+      data: { messageId: "verified-reply", status: "accepted" },
+    });
+  });
+});

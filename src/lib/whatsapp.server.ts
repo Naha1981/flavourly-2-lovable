@@ -109,7 +109,7 @@ export async function status(tenantId: string, _hint: string): Promise<Result<Wa
       _id?: string;
       id?: string;
       platform?: string;
-      profileId?: string;
+      profileId?: string | { _id?: string; id?: string };
       isActive?: boolean;
       needsReconnection?: boolean;
       status?: string;
@@ -120,7 +120,8 @@ export async function status(tenantId: string, _hint: string): Promise<Result<Wa
   const accounts = (res.data.accounts ?? []).filter(
     (a) =>
       a.platform === "whatsapp" &&
-      a.profileId === row.profile_id &&
+      (typeof a.profileId === "string" ? a.profileId : (a.profileId?._id ?? a.profileId?.id)) ===
+        row.profile_id &&
       a.isActive === true &&
       a.needsReconnection !== true,
   );
@@ -285,13 +286,11 @@ export async function sendText(
     { method: "POST", body: JSON.stringify({ accountId, message: text }) },
   );
   if (!result.ok) return result;
-  return {
-    ok: true,
-    data: {
-      ...(result.data.message?.id || result.data.messageId
-        ? { messageId: result.data.message?.id ?? result.data.messageId }
-        : {}),
-      status: "accepted",
-    },
-  };
+  const messageId = result.data.message?.id ?? result.data.messageId;
+  if (typeof messageId !== "string" || !messageId.trim())
+    return {
+      ok: false,
+      error: "Reply acceptance could not be verified. Review delivery before any retry.",
+    };
+  return { ok: true, data: { messageId, status: "accepted" } };
 }
