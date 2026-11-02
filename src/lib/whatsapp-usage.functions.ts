@@ -15,15 +15,6 @@ export const getReplyUsage = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<ReplyUsage> => {
     const { authorizeTenant, MANAGERS } = await import("./tenant-auth.server");
     await authorizeTenant(data.tenantId, MANAGERS);
-    const { db } = await import("./db.server");
-    const result = await (await db()).rpc("wa_reply_usage", { p_tenant: data.tenantId });
-    if (result.error || !result.data) {
-      const { replyUsageErrorReference } = await import("./whatsapp-usage-diagnostic.server");
-      const reference = replyUsageErrorReference(result.error);
-      console.error("[reply-usage] allowance check failed", { reference });
-      throw new Error(
-        `Reply usage could not be checked. Sending stays paused. Reference: ${reference}`,
-      );
-    }
-    return result.data as ReplyUsage;
+    const { readReplyUsage } = await import("./whatsapp-usage-read.server");
+    return readReplyUsage(data.tenantId);
   });

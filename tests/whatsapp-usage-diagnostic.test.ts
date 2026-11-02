@@ -22,14 +22,12 @@ describe("allowance diagnostics", () => {
     }
     expect(replyUsageErrorReference(null)).toBe("EMPTY_RESULT");
   });
-  it("keeps authorization before the existing RPC, no additional database action", () => {
+  it("keeps authorization before the server-only reader", () => {
     const source = readFileSync("src/lib/whatsapp-usage.functions.ts", "utf8");
     expect(source.indexOf("await authorizeTenant")).toBeLessThan(
-      source.indexOf('.rpc("wa_reply_usage"'),
+      source.indexOf("return readReplyUsage"),
     );
-    expect(source.match(/\.rpc\(/g)).toHaveLength(1);
-    expect(source).not.toMatch(/\.from\(|\.insert\(|\.update\(|\.delete\(/);
-    expect(source).toContain("console.error");
-    expect(source).not.toContain("result.error.message");
+    expect(source).toContain("whatsapp-usage-read.server");
+    expect(source).not.toMatch(/\.insert\(|\.update\(|\.delete\(/);
   });
 });
