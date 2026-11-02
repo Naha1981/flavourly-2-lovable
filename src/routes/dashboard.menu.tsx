@@ -306,7 +306,7 @@ function AddDish({
         <Button variant="ghost" onClick={() => setOpen(false)}>
           Close
         </Button>
-        <span className="ml-auto flex items-center gap-2">
+        <span className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
           <Input
             aria-label="New section name"
             className="h-9 w-40"
@@ -370,9 +370,9 @@ function DishRow({
   };
 
   return (
-    <article className="glass-card rounded-2xl border border-border p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+    <article className="glass-card min-w-0 rounded-2xl border border-border p-4">
+      <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 w-full sm:flex-1">
           <p className="truncate font-medium text-foreground">{item.name}</p>
           <p className="text-xs text-muted-foreground">
             {formatZAR(item.priceCents)}
@@ -381,8 +381,8 @@ function DishRow({
               : " · cost not set"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+          <label className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
             {item.isAvailable ? "In stock" : "Sold out"}
             <Switch
               checked={item.isAvailable}
