@@ -12,6 +12,7 @@ import { PF_SANDBOX_ENV } from "./helpers/fake-payfast";
 const state = vi.hoisted(() => ({
   token: "tok-123" as string | null,
   status: "active",
+  readError: null as { message: string } | null,
   updateError: null as { message: string } | null,
 }));
 
@@ -19,7 +20,7 @@ vi.mock("@/lib/db.server", () => ({ db: async () => ({}) }));
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { payfast_subscription_token: state.token }, error: null }) }) }),
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { payfast_subscription_token: state.token }, error: state.readError }) }) }),
       update: (patch: { plan_status: string }) => ({
         eq: async () => {
           if (!state.updateError) state.status = patch.plan_status;
@@ -41,6 +42,7 @@ beforeEach(() => {
   Object.assign(process.env, PF_SANDBOX_ENV);
   state.token = "tok-123";
   state.status = "active";
+  state.readError = null;
   state.updateError = null;
   mockFetch.mockReset().mockResolvedValue(new Response("{}", { status: 200 }));
   globalThis.fetch = mockFetch;
@@ -97,6 +99,13 @@ describe("cancelSubscription", () => {
     expect(state.status).toBe("canceled");
   });
 
+  it("does not cancel locally or call PayFast when the subscription lookup fails", async () => {
+    state.readError = { message: "lookup unavailable" };
+    await expect(cancelSubscription("marble-jhb")).rejects.toThrow("lookup unavailable");
+    expect(state.status).toBe("active");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it("reports a failure to save the cancellation", async () => {
     state.updateError = { message: "db down" };
     await expect(cancelSubscription("marble-jhb")).rejects.toThrow("db down");
@@ -125,7 +134,7 @@ describe("PayFast source-IP allow-list", () => {
   });
 
   it("ignores malformed entries instead of matching everything", () => {
-    expect(ipAllowed("1.2.3.4", ["", "garbage", "1.2.3.4/99", "1.2.3/24"])).toBe(false);
+    expect(ipAllowed("1.2.3.4", ["", "garbage", "1.2.3.4/99", "1.2.3/24", "1.2.3.4/", "1.2.3.4/ /", "1.2.3.4/24/extra"])).toBe(false);
   });
 
   it("assertPayFastSource accepts an address inside a configured CIDR range and rejects others", () => {

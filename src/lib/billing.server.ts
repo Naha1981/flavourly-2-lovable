@@ -243,8 +243,10 @@ async function cancelAtPayFast(token: string) {
 export async function cancelSubscription(tenantId: string) {
   assertPayFastConfigured();
   const c = supabaseAdmin;
-  const { data: tenant } = await c.from("tenant_profiles")
+  const { data: tenant, error: readError } = await c.from("tenant_profiles")
     .select("payfast_subscription_token").eq("tenant_id", tenantId).maybeSingle();
+  if (readError) throw new Error(readError.message);
+  if (!tenant) throw new Error("Subscription account not found.");
 
   // Cancel at PayFast FIRST and surface a refusal. Marking the restaurant
   // cancelled while PayFast keeps debiting its card is the worst outcome.
@@ -389,12 +391,14 @@ function ipv4ToInt(ip: string): number | null {
 export function ipAllowed(ip: string, allowList: string[]): boolean {
   const source = ipv4ToInt(ip);
   for (const entry of allowList) {
-    const [base, bitsText] = entry.split("/");
+    const [base, bitsText, extra] = entry.split("/");
+    if (extra !== undefined) continue;
     if (!base) continue;
     if (bitsText === undefined) {
       if (base === ip) return true;
       continue;
     }
+    if (!/^\d{1,2}$/.test(bitsText)) continue;
     const bits = Number(bitsText);
     const baseInt = ipv4ToInt(base);
     if (source === null || baseInt === null || !Number.isInteger(bits) || bits < 0 || bits > 32) continue;
