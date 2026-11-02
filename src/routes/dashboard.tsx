@@ -51,7 +51,7 @@ const nav = [
 ] as const;
 
 /** When login is enforced, send signed-out visitors to /login. Runs in the browser because the session lives there. */
-function useAuthGate() {
+export function useAuthGate() {
   const navigate = useNavigate();
   const [state, setState] = useState<"checking" | "authed">("checking");
 
@@ -61,15 +61,20 @@ function useAuthGate() {
     const requestedPath = postLoginPath(
       window.location.pathname + window.location.search + window.location.hash,
     );
-    const goToLogin = () => navigate({
-      to: "/login",
-      search: { redirect: requestedPath },
-      replace: true,
-    });
+    const goToLogin = () =>
+      navigate({
+        to: "/login",
+        search: { redirect: requestedPath },
+        replace: true,
+      });
 
     const check = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
       if (!alive) return;
+      if (error) {
+        await goToLogin();
+        return;
+      }
       if (data.session) {
         setState("authed");
       } else {
@@ -77,7 +82,9 @@ function useAuthGate() {
       }
     };
 
-    void check();
+    void check().catch(() => {
+      if (alive) void goToLogin();
+    });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!alive) return;
@@ -145,6 +152,12 @@ function DashboardLayout() {
           <Link to="/">
             <Logo />
           </Link>
+          <button
+            onClick={() => void leave()}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            Sign out
+          </button>
         </header>
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-10">
           <Outlet />

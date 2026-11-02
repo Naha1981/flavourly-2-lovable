@@ -10,6 +10,23 @@ function Today() {
     <div className="space-y-6">
       <PageTitle title="Your workspace" sub="No verified operating summary is available yet." />
       <section className="rounded-2xl border border-border bg-card p-6">
+        <h2 className="font-display text-2xl">Start with your restaurant menu</h2>
+        <p className="mt-3 text-muted-foreground">
+          Save your restaurant details, then add your first dish and price. Your menu stays in your
+          own workspace when you return. No customer messages are sent.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button asChild>
+            <Link to="/onboarding" search={{ step: "profile" }}>
+              Set up restaurant
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/dashboard/menu">Add a dish</Link>
+          </Button>
+        </div>
+      </section>
+      <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-2xl">Connect real information first</h2>
         <p className="mt-3 text-muted-foreground">
           This page does not show invented bookings, guests, revenue, forecasts or campaign results.

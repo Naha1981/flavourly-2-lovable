@@ -13,17 +13,20 @@ export async function ensureWorkspace(
   userId: string,
   restaurantName: string,
 ): Promise<Workspace> {
-  const { data: existing } = await c
+  const { data: existing, error: membershipReadError } = await c
     .from("tenant_members")
     .select("tenant_id, role")
     .eq("user_id", userId)
     .limit(1);
+  if (membershipReadError) throw membershipReadError;
   if (existing?.[0]) {
-    const { data: t } = await c
+    const { data: t, error: profileReadError } = await c
       .from("tenant_profiles")
       .select("name")
       .eq("tenant_id", existing[0]["tenant_id"])
       .maybeSingle();
+    if (profileReadError) throw profileReadError;
+    if (!t) throw new Error("The linked restaurant profile is unavailable.");
     return {
       tenantId: existing[0]["tenant_id"] as string,
       name: (t?.["name"] as string | undefined) ?? restaurantName,
@@ -34,7 +37,11 @@ export async function ensureWorkspace(
   const base = slugify(restaurantName);
   for (let i = 0; i < 6; i++) {
     const slug = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
-    const { error } = await c.from("tenant_profiles").insert({ tenant_id: slug, name: restaurantName, trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString() });
+    const { error } = await c.from("tenant_profiles").insert({
+      tenant_id: slug,
+      name: restaurantName,
+      trial_ends_at: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString(),
+    });
     if (error?.code === "23505") continue; // slug taken, try another
     if (error) throw error;
     const { error: mErr } = await c

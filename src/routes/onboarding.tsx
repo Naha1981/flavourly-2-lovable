@@ -3,6 +3,8 @@ import { z } from "zod";
 import { useState } from "react";
 import { Check, CheckCircle2, Circle } from "lucide-react";
 
+import { useAuthGate } from "./dashboard";
+
 import { Logo } from "@/components/brand/logo";
 import { ReplyDrafter } from "@/components/app/reply-drafter";
 import { WhatsAppConnect } from "@/components/app/whatsapp-connect";
@@ -41,9 +43,10 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 function Onboarding() {
+  const { state: authState } = useAuthGate();
   const { step } = Route.useSearch();
   const navigate = useNavigate({ from: "/onboarding" });
-  const { profile, update, saveNow, ready } = useRestaurantProfile();
+  const { profile, update, saveNow, ready, error } = useRestaurantProfile();
   const [savingProfile, setSavingProfile] = useState(false);
   const go = (s: Step) => navigate({ search: { step: s } });
   const idx = steps.indexOf(step);
@@ -53,6 +56,13 @@ function Onboarding() {
     { label: "WhatsApp linked", done: profile.waConnected },
     { label: "First AI reply tested", done: profile.aiTested },
   ];
+
+  if (authState === "checking")
+    return (
+      <p role="status" className="p-6">
+        Checking your session...
+      </p>
+    );
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,6 +95,11 @@ function Onboarding() {
         </ol>
 
         <section className="glass-card rounded-2xl border border-border p-5 sm:p-8">
+          {error && (
+            <p role="alert" className="mb-4 text-destructive">
+              {error}
+            </p>
+          )}
           {!ready ? null : step === "profile" ? (
             <form
               className="grid gap-5"
@@ -95,6 +110,8 @@ function Onboarding() {
                   try {
                     await saveNow();
                     go("whatsapp");
+                  } catch {
+                    // Stay on this step. The profile hook shows a retryable save error.
                   } finally {
                     setSavingProfile(false);
                   }

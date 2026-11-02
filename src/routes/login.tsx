@@ -45,7 +45,7 @@ function LoginPage() {
         password: String(f.get("password") ?? ""),
       });
       if (error) {
-        toast.error(signInErrorMessage(error.message));
+        toast.error(signInErrorMessage(error.message, error.code));
         return;
       }
       const ws = await enterWorkspace();
@@ -67,7 +67,7 @@ function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Your tables have been busy while you were away."
+      subtitle="Sign in to return to your restaurant and saved work."
       footer={
         <p className="text-sm text-muted-foreground">
           No account yet?{" "}
@@ -97,7 +97,9 @@ function LoginPage() {
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-xs font-medium text-forest hover:underline">Forgot password?</Link>
+            <Link to="/forgot-password" className="text-xs font-medium text-forest hover:underline">
+              Forgot password?
+            </Link>
           </div>
           <Input
             id="password"

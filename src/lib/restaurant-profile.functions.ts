@@ -55,12 +55,13 @@ function toProfile(row: Record<string, unknown>, tenantId: string): RestaurantPr
 
 async function firstTenantForUser(userId: string): Promise<string | null> {
   const c = await db();
-  const { data } = await c
+  const { data, error } = await c
     .from("tenant_members")
     .select("tenant_id, created_at")
     .eq("user_id", userId)
     .order("created_at")
     .limit(1);
+  if (error) throw error;
   return data?.[0]?.tenant_id ? String(data[0]["tenant_id"]) : null;
 }
 
@@ -72,7 +73,7 @@ export const getRestaurantProfile = createServerFn({ method: "POST" })
 
     await authorizeTenant(tenantId);
     const c = await db();
-    const { data } = await c
+    const { data, error } = await c
       .from("tenant_profiles")
       .select(
         "tenant_id, name, owner_name, city, cuisine, hours, average_check_cents, notes, manager_phone, wa_account_id",
@@ -80,6 +81,8 @@ export const getRestaurantProfile = createServerFn({ method: "POST" })
       .eq("tenant_id", tenantId)
       .maybeSingle();
 
+    if (error) throw error;
+    if (!data) throw new Error("Your restaurant profile is unavailable.");
     return data ? toProfile(data as Record<string, unknown>, tenantId) : null;
   });
 

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { enterWorkspace } from "@/lib/auth-client";
 import { captureTelemetry } from "@/lib/telemetry";
-import { validateSignup } from "@/lib/auth-rules";
+import { signupErrorMessage, validateSignup } from "@/lib/auth-rules";
 
 const searchSchema = z.object({
   plan: z.string().optional(),
@@ -68,22 +68,22 @@ function SignupPage() {
           error_code: "signup_rejected",
           retryable: true,
         });
-        toast.error(
-          "Account creation could not complete. Please check your details or contact the team.",
-        );
+        toast.error(signupErrorMessage(error.code));
         return;
       }
-      captureTelemetry("workflow_completed", {
-        workflow: "signup",
-        status: data.session ? "active" : "confirmation_required",
-      });
       if (!data.session) {
         // Email confirmation is on: the workspace is created on first sign-in.
+        captureTelemetry("workflow_completed", {
+          workflow: "signup",
+          status: "confirmation_required",
+        });
         toast.success("Check your email to confirm your address, then sign in.");
         navigate({ to: "/login", search: {} });
         return;
       }
-      await enterWorkspace(restaurant);
+      const workspace = await enterWorkspace(restaurant);
+      if (!workspace) throw new Error("Workspace creation did not complete");
+      captureTelemetry("workflow_completed", { workflow: "signup", status: "active" });
       toast.success("Workspace created — let's set up your restaurant.");
       navigate({ to: "/onboarding", search: { step: "profile" } });
     } catch {

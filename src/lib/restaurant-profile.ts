@@ -72,21 +72,28 @@ export function useRestaurantProfile() {
   const save = useServerFn(updateRestaurantProfile);
   const [profile, setProfile] = useState<RestaurantProfile>(defaultProfile);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const profileRef = useRef<RestaurantProfile>(defaultProfile);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let active = true;
     load()
       .then((record) => {
-        if (!active || !record) return;
-        setProfile((prev) => ({
-          ...mergeRecord(record),
-          testSent: prev.testSent,
-          aiTested: prev.aiTested,
-          waConnected: prev.waConnected,
-        }));
+        if (!active) return;
+        if (!record) {
+          setError("No restaurant is linked to this account. Please sign in again.");
+          return;
+        }
+        const next = mergeRecord(record);
+        profileRef.current = next;
+        setProfile(next);
+        setError(null);
       })
-      .catch((error) => console.error("restaurant profile load failed", error))
+      .catch(() => {
+        if (active) setError("Your restaurant could not load. Reload to try again.");
+      })
       .finally(() => {
         if (active) setReady(true);
       });
@@ -113,35 +120,50 @@ export function useRestaurantProfile() {
           waAccountId: value.waAccountId,
         },
       });
+      setError(null);
     },
     [save],
+  );
+
+  const queueSave = useCallback(
+    (value: RestaurantProfile) => {
+      const task = saveQueue.current.catch(() => undefined).then(() => persist(value));
+      saveQueue.current = task;
+      return task;
+    },
+    [persist],
   );
 
   const saveNow = useCallback(
     async (patch: Partial<RestaurantProfile> = {}) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      const next = { ...profile, ...patch, slug: profile.slug };
+      const next = { ...profileRef.current, ...patch, slug: profileRef.current.slug };
+      profileRef.current = next;
       setProfile(next);
-      await persist(next);
+      try {
+        await queueSave(next);
+      } catch (failure) {
+        setError("Your changes could not be saved. Please try again.");
+        throw failure;
+      }
     },
-    [persist, profile],
+    [queueSave],
   );
 
   const update = useCallback(
     (patch: Partial<RestaurantProfile>) => {
-      setProfile((prev) => {
-        const next = { ...prev, ...patch, slug: prev.slug };
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-          void persist(next).catch((error) =>
-            console.error("restaurant profile save failed", error),
-          );
-        }, 500);
-        return next;
-      });
+      const next = { ...profileRef.current, ...patch, slug: profileRef.current.slug };
+      profileRef.current = next;
+      setProfile(next);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void queueSave(next).catch(() =>
+          setError("Your changes could not be saved. Please try again."),
+        );
+      }, 500);
     },
-    [persist],
+    [queueSave],
   );
 
-  return { profile, update, saveNow, ready };
+  return { profile, update, saveNow, ready, error };
 }

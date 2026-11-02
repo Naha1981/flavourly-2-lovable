@@ -16,19 +16,22 @@ export const myWorkspace = createServerFn({ method: "POST" })
   .handler(async ({ context }): Promise<Workspace | null> => {
     const { db } = await import("./db.server");
     const c = await db();
-    const { data } = await c
+    const { data, error: membershipReadError } = await c
       .from("tenant_members")
       .select("tenant_id, role, created_at")
       .eq("user_id", context.userId)
       .order("created_at")
       .limit(1);
+    if (membershipReadError) throw membershipReadError;
     const m = data?.[0];
     if (!m) return null;
-    const { data: t } = await c
+    const { data: t, error: profileReadError } = await c
       .from("tenant_profiles")
       .select("name")
       .eq("tenant_id", m["tenant_id"])
       .maybeSingle();
+    if (profileReadError) throw profileReadError;
+    if (!t) throw new Error("The linked restaurant profile is unavailable.");
     return {
       tenantId: m["tenant_id"] as string,
       name: (t?.name as string | undefined) ?? (m["tenant_id"] as string),
