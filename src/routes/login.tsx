@@ -12,6 +12,8 @@ import { lovable } from "@/integrations/lovable";
 import { enterWorkspace } from "@/lib/auth-client";
 import { postLoginPath, signInErrorMessage } from "@/lib/auth-rules";
 
+const GOOGLE_REDIRECT_KEY = "fl_postlogin_redirect";
+
 const searchSchema = z.object({
   redirect: z.string().optional(),
 });
@@ -159,6 +161,38 @@ function LoginPage() {
           Sign in
         </Button>
       </form>
+      <div className="my-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">or</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={busy}
+        onClick={() => void googleSignIn()}
+        className="w-full rounded-full"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="mr-2 h-4 w-4">
+          <path
+            fill="#EA4335"
+            d="M12 5.04c1.62 0 3.06.56 4.2 1.64l3.12-3.12C17.46 1.8 14.96.75 12 .75 7.62.75 3.84 3.27 2.04 6.94l3.66 2.84C6.55 7.03 9.02 5.04 12 5.04z"
+          />
+          <path
+            fill="#4285F4"
+            d="M23.25 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58l3.68 2.85c2.15-1.99 3.5-4.92 3.5-8.67z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M5.7 14.22a7.06 7.06 0 0 1 0-4.44L2.04 6.94a11.26 11.26 0 0 0 0 10.12l3.66-2.84z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 23.25c3.04 0 5.6-1 7.46-2.72l-3.68-2.85c-1.02.69-2.33 1.1-3.78 1.1-2.98 0-5.45-1.99-6.3-4.66l-3.66 2.84c1.8 3.67 5.58 6.29 9.96 6.29z"
+          />
+        </svg>
+        Sign in with Google
+      </Button>
     </AuthShell>
   );
 }
