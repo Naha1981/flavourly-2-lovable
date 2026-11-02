@@ -37,6 +37,51 @@ function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
+  // Completes a full-page Google OAuth return: the browser lands back on the
+  // app root without the ?redirect param, so the intended path is kept in
+  // sessionStorage before the redirect starts.
+  useEffect(() => {
+    const stored = sessionStorage.getItem(GOOGLE_REDIRECT_KEY);
+    if (stored === null) return;
+    sessionStorage.removeItem(GOOGLE_REDIRECT_KEY);
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      const ws = await enterWorkspace();
+      if (!ws) return;
+      navigate({ to: postLoginPath(stored) });
+    })();
+  }, [navigate]);
+
+  const googleSignIn = async () => {
+    setBusy(true);
+    try {
+      sessionStorage.setItem(GOOGLE_REDIRECT_KEY, redirect ?? "");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Couldn't start Google sign-in. Please try again.");
+        return;
+      }
+      if (result.redirected) return; // Browser is heading to Google
+      // Popup/inline flow: the session is already set.
+      const ws = await enterWorkspace();
+      if (!ws) {
+        toast.error(
+          "No restaurant is linked to this account yet. Start a free trial to create one.",
+        );
+        return;
+      }
+      toast.success("Welcome back.");
+      navigate({ to: postLoginPath(redirect) });
+    } catch {
+      toast.error("Couldn't sign you in with Google. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (form: HTMLFormElement) => {
     setBusy(true);
     try {
