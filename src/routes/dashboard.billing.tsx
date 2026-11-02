@@ -7,15 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { formatZAR } from "@/lib/south-africa";
 import { cancelPlan, getBilling } from "@/lib/billing.functions";
-import { plans } from "@/lib/pricing";
+import { plans, MESSAGE_USAGE_FEE_NOTICE } from "@/lib/pricing";
 import { dashMeta, PageTitle } from "./dashboard";
 
 export const Route = createFileRoute("/dashboard/billing")({
   head: () => dashMeta("Billing", "Flavourly subscription, trial and message allowance."),
   component: BillingPage,
 });
-
-
 
 function BillingPage() {
   const { profile, ready } = useRestaurantProfile();
@@ -28,14 +26,16 @@ function BillingPage() {
     if (ready) setData(await billing({ data: { tenantId: profile.slug } }));
   }, [billing, profile.slug, ready]);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
 
   if (!ready || !data) return null;
 
-  const trialText = data.status === "trialing" && data.trialEndsAt
-    ? "Trial ends " + new Date(data.trialEndsAt).toLocaleDateString()
-    : data.status.replace("_", " ");
-
+  const trialText =
+    data.status === "trialing" && data.trialEndsAt
+      ? "Trial ends " + new Date(data.trialEndsAt).toLocaleDateString()
+      : data.status.replace("_", " ");
 
   return (
     <>
@@ -46,23 +46,48 @@ function BillingPage() {
           <p className="text-xs text-muted-foreground">Current plan</p>
           <p className="mt-1 font-display text-xl text-foreground">{data.plan}</p>
         </div>
-
       </div>
 
-      <p className="mb-5 text-sm text-muted-foreground">Self-serve checkout is paused during pilot acceptance. No automatic charge. Existing subscription records and cancellation remain available.</p>
+      <p className="mb-5 text-sm text-muted-foreground">
+        Self-serve checkout is paused during pilot acceptance. No automatic charge. Existing
+        subscription records and cancellation remain available.
+      </p>
+      <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-foreground">
+        {MESSAGE_USAGE_FEE_NOTICE}
+      </p>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {plans.map((plan) => (
           <article key={plan.name} className="glass-card rounded-2xl border border-border p-5">
             <h2 className="font-display text-xl text-foreground">{plan.name}</h2>
-            <p className="mt-2 font-display text-2xl text-foreground">{formatZAR(plan.price * 100)}<span className="text-sm text-muted-foreground">/venue/month</span></p>
-            <p className="mt-2 text-sm text-muted-foreground">{plan.highlight}. One venue, one number.</p>
-            <Button asChild variant="outline" className="mt-4 w-full"><Link to="/contact">Confirm plan with us</Link></Button>
+            <p className="mt-2 font-display text-2xl text-foreground">
+              {formatZAR(plan.price * 100)}
+              <span className="text-sm text-muted-foreground">/venue/month</span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {plan.highlight}. One venue, one number.
+            </p>
+            <Button asChild variant="outline" className="mt-4 w-full">
+              <Link to="/contact">Confirm plan with us</Link>
+            </Button>
           </article>
         ))}
       </div>
 
       {data.hasSubscription && (
-        <Button variant="outline" className="mt-6" disabled={busy} onClick={async () => { setBusy(true); try { await cancel({ data: { tenantId: profile.slug } }); await reload(); } finally { setBusy(false); } }}>
+        <Button
+          variant="outline"
+          className="mt-6"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await cancel({ data: { tenantId: profile.slug } });
+              await reload();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
           Cancel subscription
         </Button>
       )}

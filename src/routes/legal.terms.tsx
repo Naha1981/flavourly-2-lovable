@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
+import { MESSAGE_USAGE_FEE_NOTICE } from "@/lib/pricing";
 
 export const Route = createFileRoute("/legal/terms")({
   head: () => ({
@@ -27,6 +28,10 @@ const sections = [
   {
     heading: "Billing",
     body: "Prices are in South African rand, excluding VAT. Self-serve checkout is paused during pilot acceptance. No automatic charge; any paid activation requires a separate confirmed agreement.",
+  },
+  {
+    heading: "Messaging usage charges",
+    body: MESSAGE_USAGE_FEE_NOTICE,
   },
   {
     heading: "Your content",

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { plans, rand } from "@/lib/mock-data";
+import { MESSAGE_USAGE_FEE_NOTICE } from "@/lib/pricing";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Flavourly: R999, R1,499 and R2,900 per venue per month. Seven days free, no card. Higher plans subject to acceptance.",
+          "Flavourly: R999, R1,500 and R2,900 per venue per month. Seven days free, no card. Higher plans subject to acceptance.",
       },
       { property: "og:title", content: "Pricing — Flavourly" },
       {
@@ -39,9 +40,9 @@ function PricingPage() {
             A clear plan for your restaurant
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            R999, R1,499 or R2,900 per venue per month, month-to-month. Each plan covers one venue
-            and one WhatsApp number. We are enrolling the first two venues on Starter;
-            activation follows connection and acceptance checks.
+            R999, R1,500 or R2,900 per venue per month, month-to-month. Each plan covers one venue
+            and one WhatsApp number. We are enrolling the first two venues on Starter; activation
+            follows connection and acceptance checks.
           </p>
         </section>
 
@@ -79,7 +80,10 @@ function PricingPage() {
                   className="mt-6 rounded-full"
                   variant={plan.popular ? "default" : "outline"}
                 >
-                  <Link to={plan.name === "Starter" ? "/signup" : "/contact"} search={plan.name === "Starter" ? { plan: "starter" } : {}}>
+                  <Link
+                    to={plan.name === "Starter" ? "/signup" : "/contact"}
+                    search={plan.name === "Starter" ? { plan: "starter" } : {}}
+                  >
                     {plan.name === "Starter" ? "Join Starter pilot" : "Ask about this plan"}
                   </Link>
                 </Button>
@@ -88,16 +92,29 @@ function PricingPage() {
           </div>
 
           <div className="mt-8 rounded-2xl border border-border/70 bg-card p-6 text-sm text-muted-foreground">
-            <p>Seven-day trial, no card. Proposed trial allowance: up to 100 replies, counted within your monthly allowance. No automatic charge.</p>
-            <p className="mt-3">Service replies only, within 24 hours of a customer messaging you. No cold messages, paid templates or campaigns. Sending remains paused until allowance enforcement is verified; extra capacity needs separate approval.</p>
-            <p className="mt-3">Connection, AI and sending are paused until activation checks pass. Capacity-confirmed bookings, loyalty, reviews and team features are not included as available until they pass acceptance. A booking request is not a confirmed reservation.</p>
+            <p className="font-medium text-foreground">{MESSAGE_USAGE_FEE_NOTICE}</p>
+            <p className="mt-3">
+              Seven-day trial, no card. Proposed trial allowance: up to 100 replies, counted within
+              your monthly allowance. No automatic charge.
+            </p>
+            <p className="mt-3">
+              Service replies only, within 24 hours of a customer messaging you. No cold messages,
+              paid templates or campaigns. Sending remains paused until allowance enforcement is
+              verified; extra capacity needs separate approval.
+            </p>
+            <p className="mt-3">
+              Connection, AI and sending are paused until activation checks pass. Capacity-confirmed
+              bookings, loyalty, reviews and team features are not included as available until they
+              pass acceptance. A booking request is not a confirmed reservation.
+            </p>
           </div>
           <div className="mt-12 rounded-2xl border border-border/70 bg-card p-8 text-center">
             <h2 className="font-display text-2xl font-semibold text-foreground">
               Not sure which plan fits?
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              Tell us about your venue and message volume. We will confirm what is ready before you commit.
+              Tell us about your venue and message volume. We will confirm what is ready before you
+              commit.
             </p>
             <Button asChild variant="outline" className="mt-5 rounded-full">
               <Link to="/contact">Talk to sales</Link>
