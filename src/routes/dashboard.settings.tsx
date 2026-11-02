@@ -1,3 +1,4 @@
+import { ActivationReadiness } from "@/components/app/activation-readiness";
 import { PrivacyControls } from "@/components/app/privacy-controls";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
@@ -38,6 +39,7 @@ function SettingsPage() {
         <h2 className="font-medium text-foreground">WhatsApp</h2>
         <WhatsAppConnect profile={profile} update={update} />
       </section>
+      <ActivationReadiness tenantId={profile.slug} />
       <PrivacyControls tenantId={profile.slug} />
     </>
   );

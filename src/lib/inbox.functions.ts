@@ -45,7 +45,7 @@ export const listConversations = createServerFn({ method: "POST" })
       .limit(100);
     if (error) {
       console.error("listConversations", error);
-      return [];
+      throw new Error("Inbox data could not load. Please retry; no empty result is assumed.");
     }
     return (rows ?? []).map((r) => ({
       id: r.id,
@@ -81,7 +81,7 @@ export const listMessages = createServerFn({ method: "POST" })
       .limit(200);
     if (error) {
       console.error("listMessages", error);
-      return [];
+      throw new Error("Inbox data could not load. Please retry; no empty result is assumed.");
     }
     return (rows ?? []).map((r) => ({
       id: r.id,

@@ -193,8 +193,8 @@ describe("approval-required replies", () => {
   });
 });
 
-describe("outbound delivery retries", () => {
-  it("retries a failed send 10 minutes later, then gives up after 3 attempts", async () => {
+describe("outbound delivery safety", () => {
+  it("holds a failed send after one attempt across later cron runs", async () => {
     const { enqueueOutbox, processOutbox } = await import("@/lib/outbox.server");
     state.send = vi.fn().mockResolvedValue({ ok: false, error: "operator offline" });
     await enqueueOutbox({
@@ -203,29 +203,18 @@ describe("outbound delivery retries", () => {
       automated: true,
       text: "See you at 19:00.",
     });
-    const job = () => state.db.rows("outbox_jobs")[0]!;
-
-    expect(await processOutbox()).toMatchObject({ retried: 1 });
-    expect(job()).toMatchObject({ status: "pending", attempts: 1, error: "operator offline" });
-    expect(job()["scheduled_for"]).toBe("2026-10-05T08:10:00.000Z");
-
-    vi.setSystemTime(new Date("2026-10-05T08:11:00Z"));
-    expect(await processOutbox()).toMatchObject({ retried: 1 });
-    vi.setSystemTime(new Date("2026-10-05T08:22:00Z"));
-    expect(await processOutbox()).toMatchObject({ failed: 1 });
-    expect(job()).toMatchObject({ status: "failed", attempts: 3 });
-
+    expect(await processOutbox()).toMatchObject({ failed: 1, retried: 0 });
+    expect(state.db.rows("outbox_jobs")[0]).toMatchObject({ status: "failed", attempts: 1 });
     vi.setSystemTime(new Date("2026-10-05T09:00:00Z"));
     await processOutbox();
-    expect(state.send).toHaveBeenCalledTimes(3);
+    expect(state.send).toHaveBeenCalledTimes(1);
   });
-
-  it("delivers on retry and logs the message in the conversation", async () => {
+  it("never turns an ambiguous timeout into an automatic second send or audit claim", async () => {
     const { enqueueOutbox, processOutbox } = await import("@/lib/outbox.server");
     state.send = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, error: "timeout" })
-      .mockResolvedValueOnce({ ok: true, data: { messageId: "wa-out-9" } });
+      .mockResolvedValueOnce({ ok: true, data: { messageId: "would-duplicate" } });
     state.db.rows("wa_conversations").push({ id: "conv-1", tenant_id: TENANT });
     await enqueueOutbox({
       tenantId: TENANT,
@@ -234,15 +223,11 @@ describe("outbound delivery retries", () => {
       text: "Confirmed!",
       conversationId: "conv-1",
     });
-
     await processOutbox();
     vi.setSystemTime(new Date("2026-10-05T08:15:00Z"));
-    expect(await processOutbox()).toMatchObject({ sent: 1 });
-    expect(state.db.rows("wa_messages")[0]).toMatchObject({
-      direction: "out",
-      wa_message_id: "wa-out-9",
-      body: "Confirmed!",
-    });
+    expect(await processOutbox()).toMatchObject({ sent: 0, retried: 0 });
+    expect(state.send).toHaveBeenCalledTimes(1);
+    expect(state.db.rows("wa_messages")).toHaveLength(0);
   });
 
   it("holds automated sends outside 07:00–20:00 Johannesburg time", async () => {

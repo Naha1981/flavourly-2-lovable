@@ -113,6 +113,7 @@ function InboxPage() {
   const { profile, ready } = useRestaurantProfile();
   const tenantId = profile.slug;
 
+  const [loadError, setLoadError] = useState(false);
   const [live, setLive] = useState<InboxConversation[] | null>(null);
   const [thread, setThread] = useState<InboxMessage[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -125,8 +126,9 @@ function InboxPage() {
     try {
       const rows = await listConversations({ data: { tenantId } });
       setLive(rows);
+      setLoadError(false);
     } catch {
-      setLive([]);
+      setLoadError(true);
     }
   }, [ready, tenantId]);
 
@@ -206,7 +208,15 @@ function InboxPage() {
         sub="Guest WhatsApp messages and replies. Manager requests pause automatic replies."
       />
 
-      {isDemo && (
+      {loadError && (
+        <p role="alert" className="mb-4 rounded-xl border border-destructive p-4">
+          Inbox could not refresh. The last loaded messages may be out of date.{" "}
+          <button className="underline" onClick={() => void refresh()}>
+            Retry inbox
+          </button>
+        </p>
+      )}
+      {!loadError && isDemo && (
         <p className="mb-4 rounded-xl border border-dashed border-border bg-card/60 px-4 py-2.5 text-xs text-muted-foreground">
           No guest messages yet. Incoming WhatsApp messages will appear after your number is linked.
         </p>

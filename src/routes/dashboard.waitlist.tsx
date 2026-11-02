@@ -62,7 +62,7 @@ function WaitlistPage() {
       <PageTitle
         title="Waitlist"
         sub={
-          "Guests text WAITLIST 4 Friday to join. A cancellation offers the table automatically to the longest-waiting party that fits."
+          "After WhatsApp activation, guests can text WAITLIST 4 Friday to join. Cancellation offers require an active reply connection and a recent incoming message."
         }
       />
       {loadError && <p role="alert">{loadError}</p>}

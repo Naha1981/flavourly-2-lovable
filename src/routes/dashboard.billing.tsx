@@ -20,17 +20,34 @@ function BillingPage() {
   const billing = useServerFn(getBilling);
   const cancel = useServerFn(cancelPlan);
   const [data, setData] = useState<Awaited<ReturnType<typeof getBilling>> | null>(null);
+  const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const reload = useCallback(async () => {
-    if (ready) setData(await billing({ data: { tenantId: profile.slug } }));
+    if (!ready || !profile.slug) return;
+    try {
+      setData(await billing({ data: { tenantId: profile.slug } }));
+      setError(false);
+    } catch {
+      setError(true);
+    }
   }, [billing, profile.slug, ready]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  if (!ready || !data) return null;
+  if (error)
+    return (
+      <section role="alert" className="rounded-2xl border border-border p-5">
+        <h1 className="font-display text-2xl">Billing could not load</h1>
+        <p className="mt-2">No payment has been started. Retry or contact the team.</p>
+        <Button className="mt-4" onClick={() => void reload()}>
+          Retry billing
+        </Button>
+      </section>
+    );
+  if (!ready || !data) return <p role="status">Loading billing...</p>;
 
   const trialText =
     data.status === "trialing" && data.trialEndsAt

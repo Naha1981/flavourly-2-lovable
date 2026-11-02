@@ -72,7 +72,7 @@ function CampaignsPage() {
         sub={
           items.some((c) => c.status === "sent")
             ? `${formatZAR(totalRevenue)} in recorded guest spend and ${totalBookings} booking${totalBookings === 1 ? "" : "s"} in the 7 days after send.`
-            : "Send your first campaign to see real results here."
+            : "Campaign drafts are available. WhatsApp campaign sending is disabled in this replies-only pilot."
         }
       />
       {loadError && <p role="alert">{loadError}</p>}

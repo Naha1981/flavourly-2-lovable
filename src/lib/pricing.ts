@@ -44,4 +44,4 @@ export const plans = [
 
 /** Shown before a customer agrees to paid messaging usage. */
 export const MESSAGE_USAGE_FEE_NOTICE =
-  "WhatsApp messaging beyond your plan's included volume is billed separately based on usage. Any extra usage and its rates must be agreed before activation.";
+  "Your plan includes a monthly volume of WhatsApp messaging. Additional messaging may carry usage charges. Any extra usage and its rates must be agreed before activation. No automatic overage charges during the pilot.";

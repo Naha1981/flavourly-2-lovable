@@ -15,8 +15,8 @@ describe("approved public launch offer", () => {
 
 describe("messaging usage disclosure", () => {
   it("states separate usage billing without naming a provider", () => {
-    expect(MESSAGE_USAGE_FEE_NOTICE).toContain("included volume");
-    expect(MESSAGE_USAGE_FEE_NOTICE).toContain("billed separately based on usage");
+    expect(MESSAGE_USAGE_FEE_NOTICE).toContain("includes a monthly volume");
+    expect(MESSAGE_USAGE_FEE_NOTICE).toContain("Additional messaging may carry usage charges");
     expect(MESSAGE_USAGE_FEE_NOTICE).toContain("agreed before activation");
     expect(MESSAGE_USAGE_FEE_NOTICE).not.toMatch(/meta|zernio|payfast|lovable/i);
   });

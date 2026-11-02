@@ -13,9 +13,7 @@ import { AiBudgetExceeded, assertAiBudget } from "@/lib/ai-budget.server";
 function mockRpc(calls: number | null, error: string | null = null) {
   return {
     rpc: async (_fn: string, _args: Record<string, unknown>) =>
-      error
-        ? { data: null, error: { message: error } }
-        : { data: calls, error: null },
+      error ? { data: null, error: { message: error } } : { data: calls, error: null },
   };
 }
 
@@ -31,20 +29,35 @@ describe("assertAiBudget", () => {
   });
 
   it("refuses the call past the cap and alerts the owner once per crossing", async () => {
-    await expect(assertAiBudget("t-1", "gemini-live-tool:x", mockRpc(201) as never)).rejects.toBeInstanceOf(
-      AiBudgetExceeded,
-    );
+    await expect(
+      assertAiBudget("t-1", "gemini-live-tool:x", mockRpc(201) as never),
+    ).rejects.toBeInstanceOf(AiBudgetExceeded);
     expect(alerts).toEqual([{ key: "ai-budget:t-1", level: "warning" }]);
   });
 
   it("honours the env-configured cap", async () => {
     process.env["FLAVOURLY_AI_DAILY_CALLS_PER_TENANT"] = "5";
     await expect(assertAiBudget("t-1", "test", mockRpc(5) as never)).resolves.toBeUndefined();
-    await expect(assertAiBudget("t-1", "test", mockRpc(6) as never)).rejects.toBeInstanceOf(AiBudgetExceeded);
+    await expect(assertAiBudget("t-1", "test", mockRpc(6) as never)).rejects.toBeInstanceOf(
+      AiBudgetExceeded,
+    );
   });
 
-  it("fails open (with a logged error) when metering itself breaks", async () => {
-    await expect(assertAiBudget("t-1", "test", mockRpc(null, "relation ai_usage_counters does not exist") as never)).resolves.toBeUndefined();
+  it("fails closed when metering itself breaks", async () => {
+    await expect(
+      assertAiBudget(
+        "t-1",
+        "test",
+        mockRpc(null, "relation ai_usage_counters does not exist") as never,
+      ),
+    ).rejects.toThrow("AI usage could not be checked");
     expect(alerts).toEqual([]);
   });
+});
+
+it("rejects empty or invalid budget responses", async () => {
+  for (const count of [null, Number.NaN, 0, -1])
+    await expect(assertAiBudget("t-1", "test", mockRpc(count))).rejects.toThrow(
+      "AI usage could not be checked",
+    );
 });

@@ -159,17 +159,17 @@ describe("outbox opt-out enforcement", () => {
 });
 
 describe("outbox attempt accounting", () => {
-  it("does not burn an attempt when the operator is waking", async () => {
+  it("holds an ambiguous unavailable operator result without retry", async () => {
     state.send.mockResolvedValue({ ok: false, error: "unreachable", waking: true });
     const { enqueueOutbox, processOutbox } = await import("@/lib/outbox.server");
     await enqueueOutbox({ tenantId: TENANT, phone: PHONE, text: "hi", automated: true });
     await processOutbox();
     const job = state.db.rows("outbox_jobs")[0]!;
-    expect(job["status"]).toBe("pending");
-    expect(job["attempts"]).toBe(0);
+    expect(job["status"]).toBe("failed");
+    expect(job["attempts"]).toBe(1);
   });
 
-  it("burns attempts only on real failures and fails after the cap", async () => {
+  it("makes only one attempt on provider refusal", async () => {
     state.send.mockResolvedValue({ ok: false, error: "permanent reject" });
     const { enqueueOutbox, processOutbox } = await import("@/lib/outbox.server");
     await enqueueOutbox({ tenantId: TENANT, phone: PHONE, text: "hi", automated: true });
@@ -179,6 +179,7 @@ describe("outbox attempt accounting", () => {
     }
     const job = state.db.rows("outbox_jobs")[0]!;
     expect(job["status"]).toBe("failed");
-    expect(job["attempts"]).toBe(3);
+    expect(job["attempts"]).toBe(1);
+    expect(state.send).toHaveBeenCalledTimes(1);
   });
 });

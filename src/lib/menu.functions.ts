@@ -178,6 +178,8 @@ export const listMenuAdmin = createServerFn({ method: "POST" })
         c.from("menu_items").select("*").eq("tenant_id", data.tenantId).order("name"),
         c.from("menu_item_pairings").select("*").eq("tenant_id", data.tenantId),
       ]);
+      if (cats.error || items.error || pairs.error)
+        throw new Error("Your saved menu could not load. Retry; no empty menu is assumed.");
       return {
         categories: (cats.data ?? []).map((r) => ({
           id: r.id,

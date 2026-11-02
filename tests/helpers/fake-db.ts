@@ -172,6 +172,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rpc = async (name: string, p: Record<string, any>) => {
+    if (name === "wa_reply_usage") return { data: { allowed: true }, error: null };
     if (name === "wa_reserve_budget") return { data: true, error: null };
     if (name !== "wa_ingest_inbox") return { data: null, error: { message: "Unknown test RPC" } };
     if (

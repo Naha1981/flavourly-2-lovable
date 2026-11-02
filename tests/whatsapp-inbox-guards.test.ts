@@ -75,7 +75,8 @@ describe("reply-only send guard", () => {
       );
       expect(result.ok).toBe(false);
       expect(fetch).not.toHaveBeenCalled();
-      if (scenario === "budget-exhausted") expect(state.db.rows("wa_conversations")[0]).toMatchObject({ status: "needs_approval" });
+      if (scenario === "budget-exhausted")
+        expect(state.db.rows("wa_conversations")[0]).toMatchObject({ status: "needs_approval" });
     });
 });
 describe("provider parser", () => {
@@ -106,11 +107,43 @@ describe("one-number plan guard", () => {
     try {
       expect((await bootstrap("venue-a", "Venue A")).ok).toBe(false);
       expect(fetch).not.toHaveBeenCalled();
-    } finally { delete process.env["WHATSAPP_CONNECT_ENABLED"]; }
+    } finally {
+      delete process.env["WHATSAPP_CONNECT_ENABLED"];
+    }
   });
   it("does not silently replace an existing linked account", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ accounts: [{ _id: "account-other", profileId: "profile-a", platform: "whatsapp", isActive: true }] })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            { _id: "account-other", profileId: "profile-a", platform: "whatsapp", isActive: true },
+          ],
+        }),
+      ),
+    );
     expect((await status("venue-a", "account-other")).ok).toBe(false);
     expect(state.db.rows("wa_channels")[0]?.["account_id"]).toBe("account-a");
+  });
+});
+
+describe("missing production allowance setup", () => {
+  it("blocks before the old reserve or provider when the read RPC is missing", async () => {
+    const rpc = vi
+      .spyOn(state.db, "rpc")
+      .mockResolvedValue({ data: null, error: { message: "PGRST202" } });
+    const result = await sendText("venue-a", "account-a", "27821234567", "hello");
+    expect(result.ok).toBe(false);
+    expect(rpc).toHaveBeenCalledWith("wa_reply_usage", { p_tenant: "venue-a" });
+    expect(rpc).not.toHaveBeenCalledWith("wa_reserve_budget", expect.anything());
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("blocks a denied allowance even when the old reservation would succeed", async () => {
+    const rpc = vi
+      .spyOn(state.db, "rpc")
+      .mockResolvedValue({ data: { allowed: false }, error: null });
+    expect((await sendText("venue-a", "account-a", "27821234567", "hello")).ok).toBe(false);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

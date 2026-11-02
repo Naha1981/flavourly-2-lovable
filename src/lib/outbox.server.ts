@@ -3,9 +3,6 @@ import { sendWhatsApp } from "./wa-account.server";
 import { isWithinSendWindow, nextSendWindowStart } from "./whatsapp/quiet-hours";
 import { decideApproval } from "./approval-classifier";
 
-const MAX_ATTEMPTS = 3;
-const RETRY_MS = 10 * 60 * 1000;
-
 export async function enqueueOutbox(input: {
   tenantId: string;
   phone: string;
@@ -240,34 +237,18 @@ export async function processOutbox(limit = 50) {
           .eq("id", job.conversation_id);
       }
       stats.sent += 1;
-    } else if ("waking" in res && res.waking) {
-      // Operator cold start: not a real attempt. Retry shortly without burning one.
+    } else {
+      // A provider failure or timeout is ambiguous. Never retry a guest message automatically.
       await c
         .from("outbox_jobs")
         .update({
-          status: "pending",
-          error: res.error,
-          scheduled_for: new Date(Date.now() + RETRY_MS).toISOString(),
+          status: "failed",
+          attempts: job.attempts + 1,
+          error: "Delivery not confirmed; held for team review, no automatic retry. " + res.error,
         })
-        .eq("id", job.id);
-      stats.retried += 1;
-    } else if (job.attempts + 1 >= MAX_ATTEMPTS) {
-      await c
-        .from("outbox_jobs")
-        .update({ status: "failed", attempts: job.attempts + 1, error: res.error })
+        .eq("tenant_id", job.tenant_id)
         .eq("id", job.id);
       stats.failed += 1;
-    } else {
-      await c
-        .from("outbox_jobs")
-        .update({
-          status: "pending",
-          attempts: job.attempts + 1,
-          error: res.error,
-          scheduled_for: new Date(Date.now() + RETRY_MS).toISOString(),
-        })
-        .eq("id", job.id);
-      stats.retried += 1;
     }
   }
   return stats;

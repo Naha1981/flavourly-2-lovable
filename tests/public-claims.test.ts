@@ -30,7 +30,7 @@ describe("public claims remain fail-closed during pilot acceptance", () => {
   });
   it("does not pretend an enquiry was sent", () => {
     const s = source("routes/contact.tsx");
-    expect(s).toContain("This page does not send messages");
+    expect(s).toContain("Nothing is sent automatically");
     expect(s).not.toContain("toast.success");
     expect(s).not.toContain("Message sent");
   });
