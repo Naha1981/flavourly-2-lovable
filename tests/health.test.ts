@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  checkOperator,
   buildHealthReport,
   CRON_EXPECTATIONS,
   healthHttpStatus,
@@ -73,7 +74,15 @@ const heartbeatRows = Object.keys(CRON_EXPECTATIONS).map((job) => ({
   updated_at: minutesAgo(1),
 }));
 
-const okFetch = (() => Promise.resolve(new Response("ok"))) as typeof fetch;
+beforeEach(() => {
+  process.env["WHATSAPP_SEND_ENABLED"] = "true";
+  process.env["ZERNIO_API_KEY"] = "synthetic-test-key";
+});
+afterEach(() => {
+  delete process.env["WHATSAPP_SEND_ENABLED"];
+  delete process.env["ZERNIO_API_KEY"];
+});
+const okFetch = (() => Promise.resolve(Response.json({ accounts: [] }))) as typeof fetch;
 const deadFetch = (() => Promise.reject(new Error("ECONNREFUSED"))) as typeof fetch;
 
 describe("buildHealthReport", () => {
@@ -121,12 +130,12 @@ describe("buildHealthReport", () => {
     delete process.env["OPERATOR_URL"];
   });
 
-  it("is down (503) when OPERATOR_URL is missing in a deployed env", async () => {
-    delete process.env["OPERATOR_URL"];
+  it("is down (503) when the current provider is not configured", async () => {
+    delete process.env["ZERNIO_API_KEY"];
     const c = mockClient([...heartbeatRows]);
     const report = await buildHealthReport(c as never, NOW, okFetch);
     expect(report.status).toBe("down");
-    expect(report.operator.detail).toContain("OPERATOR_URL");
+    expect(report.operator.detail).toContain("not configured");
   });
 
   it("is down (503) when a messaging-critical cron has never run", async () => {
@@ -172,5 +181,26 @@ describe("recordCronHeartbeat", () => {
   it("never throws when the table is unreachable", async () => {
     const c = mockClient([], true);
     await expect(recordCronHeartbeat(c as never, "outbox")).resolves.toBeUndefined();
+  });
+});
+
+describe("current provider contract", () => {
+  it("does not call the deprecated URL when activation is paused", async () => {
+    delete process.env["WHATSAPP_SEND_ENABLED"];
+    process.env["OPERATOR_URL"] = "https://old.example";
+    let calls = 0;
+    expect(
+      (
+        await checkOperator((async () => {
+          calls++;
+          return Response.json({ accounts: [] });
+        }) as typeof fetch)
+      ).ok,
+    ).toBe(false);
+    expect(calls).toBe(0);
+    delete process.env["OPERATOR_URL"];
+  });
+  it("rejects a successful HTTP response without the account list", async () => {
+    expect((await checkOperator(async () => Response.json({ unexpected: true }))).ok).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { replyUsageErrorReference } from "./whatsapp-usage-diagnostic.server";
 import { db } from "./db.server";
 import { authorizeTenant, actorId } from "./tenant-auth.server";
 import { redactExport, validateDeleteConfirmation } from "./privacy";
@@ -13,7 +14,7 @@ export async function exportWorkspaceData(tenantId: string) {
   });
   if (error || !data || typeof data !== "object")
     throw new Error(
-      "Workspace export could not complete. Database privacy setup or owner access is unavailable. No partial download was created.",
+      `Workspace export could not complete. Database privacy setup or owner access is unavailable. No partial download was created. Reference: ${replyUsageErrorReference(error)}`,
     );
   return JSON.stringify(
     redactExport({ version: 1, tenantId, exportedAt: new Date().toISOString(), data }),

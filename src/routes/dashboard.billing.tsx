@@ -58,6 +58,11 @@ function BillingPage() {
     <>
       <PageTitle title="Billing" sub={trialText} />
       <WhatsAppUsage tenantId={profile.slug} />
+      <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm">
+        The prices below are the current pilot offer, not a change to an existing subscription.
+        Older plan names keep their original contract until a new plan is agreed. No new checkout
+        can start here.
+      </p>
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Current plan</p>

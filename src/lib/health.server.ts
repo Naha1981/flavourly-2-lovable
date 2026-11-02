@@ -77,10 +77,10 @@ export interface HealthReport {
 async function checkDb(c: Pick<SupabaseClient, "from">): Promise<ComponentStatus> {
   try {
     const { error } = await c.from("cron_state").select("job").limit(1);
-    if (error) return { ok: false, detail: "query failed: " + error.message };
+    if (error) return { ok: false, detail: "query failed" };
     return { ok: true, detail: "reachable" };
-  } catch (error) {
-    return { ok: false, detail: error instanceof Error ? error.message : "unreachable" };
+  } catch {
+    return { ok: false, detail: "database unavailable" };
   }
 }
 
@@ -88,24 +88,31 @@ async function checkDb(c: Pick<SupabaseClient, "from">): Promise<ComponentStatus
  * Require a successful health response. Authentication failures and server
  * failures are not healthy merely because the service answered.
  */
-async function checkOperator(fetchFn: typeof fetch = fetch): Promise<ComponentStatus> {
-  const baseUrl = process.env["OPERATOR_URL"];
-  if (!baseUrl) return { ok: false, detail: "OPERATOR_URL is not configured" };
+export async function checkOperator(fetchFn: typeof fetch = fetch): Promise<ComponentStatus> {
+  const enabled =
+    process.env["WHATSAPP_CONNECT_ENABLED"] === "true" ||
+    process.env["WHATSAPP_SEND_ENABLED"] === "true";
+  if (!enabled)
+    return { ok: false, detail: "WhatsApp activation paused; provider delivery not verified" };
+  const key = process.env["ZERNIO_API_KEY"];
+  if (!key) return { ok: false, detail: "WhatsApp provider is not configured" };
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    try {
-      const response = await fetchFn(baseUrl.replace(/\/$/, "") + "/health", {
-        signal: controller.signal,
-      });
-      if (!response.ok)
-        return { ok: false, detail: `health endpoint returned HTTP ${response.status}` };
-    } finally {
-      clearTimeout(timer);
-    }
-    return { ok: true, detail: "reachable" };
+    // Same current inbox provider as whatsapp.server.ts. Read-only, no account creation.
+    const response = await fetchFn("https://zernio.com/api/v1/accounts", {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok)
+      return { ok: false, detail: `provider account read returned HTTP ${response.status}` };
+    const body = (await response.json()) as { accounts?: unknown };
+    if (!Array.isArray(body.accounts))
+      return { ok: false, detail: "provider account response could not be verified" };
+    return {
+      ok: true,
+      detail: "provider account read reachable; delivery and free capacity not verified",
+    };
   } catch {
-    return { ok: false, detail: "unreachable" };
+    return { ok: false, detail: "current WhatsApp provider unavailable" };
   }
 }
 
