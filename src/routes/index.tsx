@@ -92,7 +92,8 @@ function Landing() {
       <main>
         <p className="mx-auto max-w-7xl px-4 pt-5 text-sm font-medium text-muted-foreground">
           Illustrative product examples only. No real customer, booking or revenue results are
-          shown. Connection, AI and sending remain paused pending acceptance.
+          shown. Connect your own WhatsApp Business number, turn on auto-replies and run a test
+          enquiry before relying on replies.
         </p>
         <Hero />
         <RevenueLeakSection />

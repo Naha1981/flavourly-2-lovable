@@ -10,8 +10,9 @@ export function SiteFooter() {
           <div className="max-w-sm">
             <Logo size="md" />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Customer conversations and booking requests for South African restaurants.
-              Pilot activation follows connection and acceptance checks.
+              Customer conversations and booking requests for South African restaurants. Connect
+              your own WhatsApp Business number, turn on auto-replies and run a test enquiry before
+              relying on replies.
             </p>
             <p className="mt-4 text-xs text-muted-foreground">Built in Johannesburg by NahaLabs.</p>
           </div>
