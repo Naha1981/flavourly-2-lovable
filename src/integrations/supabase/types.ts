@@ -145,6 +145,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_state: {
+        Row: {
+          job: string
+          last_tenant: string | null
+          updated_at: string
+        }
+        Insert: {
+          job: string
+          last_tenant?: string | null
+          updated_at?: string
+        }
+        Update: {
+          job?: string
+          last_tenant?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           birthday: string | null
@@ -1389,6 +1407,10 @@ export type Database = {
         Args: { p_customer: string; p_tenant: string }
         Returns: number
       }
+      privacy_export_workspace: {
+        Args: { p_actor: string; p_tenant: string }
+        Returns: Json
+      }
       record_visit: {
         Args: {
           p_bill_ref: string
@@ -1443,6 +1465,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      wa_reply_usage: { Args: { p_tenant: string }; Returns: Json }
       wa_reserve_budget: {
         Args: { p_kind: string; p_tenant: string }
         Returns: boolean
