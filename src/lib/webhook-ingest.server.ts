@@ -129,7 +129,7 @@ async function ingestDeliveryStatus(raw: unknown): Promise<IngestResult | null> 
   const result = await c.rpc("wa_record_delivery", {
     p_tenant: mapped.data.tenant_id,
     p_event: r["id"],
-    p_message: message.id,
+    p_message: message.platformMessageId ?? message.id,
     p_status: status,
     p_at: new Date(at).toISOString(),
   });

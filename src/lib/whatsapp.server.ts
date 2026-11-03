@@ -333,12 +333,17 @@ export async function sendText(
         "The reply allowance is reached or unavailable. The team must take over; no automatic retry.",
     };
   }
-  const result = await api<{ message?: { id?: string }; messageId?: string }>(
-    `/inbox/conversations/${encodeURIComponent(conversation.provider_conversation_id)}/messages`,
-    { method: "POST", body: JSON.stringify({ accountId, message: text }) },
-  );
+  const result = await api<{
+    success?: boolean;
+    data?: { messageId?: string };
+    message?: { id?: string };
+    messageId?: string;
+  }>(`/inbox/conversations/${encodeURIComponent(conversation.provider_conversation_id)}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ accountId, message: text }),
+  });
   if (!result.ok) return result;
-  const messageId = result.data.message?.id ?? result.data.messageId;
+  const messageId = result.data.data?.messageId ?? result.data.message?.id ?? result.data.messageId;
   if (typeof messageId !== "string" || !messageId.trim())
     return {
       ok: false,

@@ -210,6 +210,22 @@ describe("provider send evidence", () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     }
   });
+  it("reads the documented nested Zernio send response without a second provider call", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          success: true,
+          data: { messageId: "wamid.verified-reply", conversationId: "conversation-a" },
+        }),
+      ),
+    );
+    expect(await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).toMatchObject({
+      ok: true,
+      data: { messageId: "wamid.verified-reply", status: "accepted" },
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
   it("preserves a verified top-level message identifier", async () => {
     vi.stubGlobal(
       "fetch",
