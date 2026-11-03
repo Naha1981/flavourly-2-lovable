@@ -5,11 +5,7 @@ export async function readActivationReadiness(tenantId: string) {
   const c = await db();
   const [allowance, channel] = await Promise.all([
     c.rpc("wa_reply_usage", { p_tenant: tenantId }),
-    c
-      .from("wa_channels")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .maybeSingle(),
+    c.from("wa_channels").select("*").eq("tenant_id", tenantId).maybeSingle(),
   ]);
   return {
     checkedAt: new Date().toISOString(),

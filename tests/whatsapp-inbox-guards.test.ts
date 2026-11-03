@@ -49,13 +49,11 @@ describe("customer-owned provider routing", () => {
     vi.stubEnv("WHATSAPP_CREDENTIALS_ENCRYPTION_KEY", "ab".repeat(32));
     vi.stubEnv("WHATSAPP_CUSTOMER_OWNED_ENABLED", "true");
     state.db.rows("wa_channels")[0]!["credential_mode"] = "customer";
-    state.db
-      .rows("wa_tenant_credentials")
-      .push({
-        tenant_id: "venue-a",
-        state: "ready",
-        api_key_ciphertext: encryptCredential("fixture-tenant-only-key", "venue-a"),
-      });
+    state.db.rows("wa_tenant_credentials").push({
+      tenant_id: "venue-a",
+      state: "ready",
+      api_key_ciphertext: encryptCredential("fixture-tenant-only-key", "venue-a"),
+    });
     expect((await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).ok).toBe(
       true,
     );
