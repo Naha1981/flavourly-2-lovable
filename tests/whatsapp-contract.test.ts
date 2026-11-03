@@ -12,11 +12,13 @@ describe("WhatsApp inbox contract", () => {
     expect(ai).toContain("openai/gpt-oss-120b");
     expect(ai).not.toContain("lovable.dev");
   });
-  it("checks the raw signature before parsing", () => {
+  it("checks raw-body signature before any ingest effects", () => {
     expect(webhook).toContain('request.headers.get("x-zernio-signature")');
     expect(webhook).toContain('request.headers.get("x-late-signature")');
-    expect(webhook).toContain('createHmac("sha256", secret)');
-    expect(webhook.indexOf("timingSafeEqual(a, b)")).toBeLessThan(webhook.indexOf("JSON.parse"));
+    expect(webhook).toContain('createHmac("sha256", secret ??');
+    expect(webhook.indexOf("timingSafeEqual(a, b)")).toBeLessThan(
+      webhook.indexOf("const { ingestPayload"),
+    );
   });
   it("defaults effects off and requires a recent incoming conversation", () => {
     expect(client).toContain('process.env["WHATSAPP_SEND_ENABLED"] !== "true"');

@@ -5,14 +5,21 @@ export async function readActivationReadiness(tenantId: string) {
   const c = await db();
   const [allowance, channel] = await Promise.all([
     c.rpc("wa_reply_usage", { p_tenant: tenantId }),
-    c.from("wa_channels").select("account_id").eq("tenant_id", tenantId).maybeSingle(),
+    c
+      .from("wa_channels")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .maybeSingle(),
   ]);
   return {
     checkedAt: new Date().toISOString(),
     connectEnabled: process.env["WHATSAPP_CONNECT_ENABLED"] === "true",
     sendEnabled: process.env["WHATSAPP_SEND_ENABLED"] === "true",
     aiEnabled: process.env["WHATSAPP_AI_ENABLED"] === "true",
-    providerConfigured: Boolean(process.env["ZERNIO_API_KEY"]),
+    providerConfigured:
+      channel.data?.credential_mode === "customer"
+        ? Boolean(process.env["WHATSAPP_CREDENTIALS_ENCRYPTION_KEY"])
+        : Boolean(process.env["ZERNIO_API_KEY"]),
     aiConfigured: Boolean(process.env["GROQ_API_KEY"]),
     allowanceRpcReady: !allowance.error && Boolean(allowance.data),
     allowanceReference:

@@ -11,8 +11,32 @@ export type WaStatus = {
   qrExpiresAt: string | null;
 };
 const BASE = "https://zernio.com/api/v1";
-async function api<T>(path: string, init: RequestInit = {}): Promise<Result<T>> {
-  const key = process.env["ZERNIO_API_KEY"];
+async function api<T>(path: string, init: RequestInit = {}, tenantId?: string): Promise<Result<T>> {
+  let key: string | null | undefined;
+  try {
+    const { ownedProviderKey } = await import("./tenant-whatsapp.server");
+    const connection = tenantId ? await channel(tenantId) : null;
+    if (
+      connection?.credential_mode === "customer" &&
+      process.env["WHATSAPP_CUSTOMER_OWNED_ENABLED"] !== "true"
+    )
+      return {
+        ok: false,
+        error: "Customer-owned messaging is paused. No shared account was used.",
+      };
+    key =
+      tenantId && connection?.credential_mode === "customer"
+        ? await ownedProviderKey(tenantId)
+        : null;
+    if (connection?.credential_mode === "customer" && !key)
+      return { ok: false, error: "Your messaging key is missing. No shared account was used." };
+  } catch {
+    return {
+      ok: false,
+      error: "Messaging connection needs attention. Ask the owner to check setup.",
+    };
+  }
+  key ??= process.env["ZERNIO_API_KEY"];
   if (!key) return { ok: false, error: "WhatsApp isn't configured yet." };
   try {
     const res = await fetch(BASE + path, {
@@ -20,12 +44,20 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<Result<T>> 
       signal: AbortSignal.timeout(20000),
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     });
-    if (!res.ok)
+    if (!res.ok) {
+      if (res.status === 401 && tenantId) {
+        const c = await db();
+        await c
+          .from("wa_tenant_credentials")
+          .update({ state: "needs_attention" })
+          .eq("tenant_id", tenantId);
+      }
       return {
         ok: false,
         error: "WhatsApp couldn't complete that request. The team can try again later.",
         status: res.status,
       };
+    }
     return { ok: true, data: (await res.json()) as T };
   } catch {
     return { ok: false, error: "WhatsApp couldn't be reached. No automatic retry was sent." };
@@ -51,15 +83,27 @@ export async function bootstrap(
       ok: false,
       error: "WhatsApp connection is paused until the free account allowance is checked.",
     };
+  const { customerOwnedEnabled, ownedProviderKey, ensureCustomerWebhook } =
+    await import("./tenant-whatsapp.server");
   const c = await db();
   let row = await channel(tenantId);
+  const customerKey = row?.credential_mode === "customer" ? await ownedProviderKey(tenantId) : null;
+  if (!row && customerOwnedEnabled())
+    return {
+      ok: false,
+      error: "Save your own messaging account key and select its business profile first.",
+    };
   if (row?.account_id)
     return {
       ok: false,
       error: "This plan already has a linked number. Ask the team before replacing it.",
     };
   // Shared team allowance: never start another paid connected account.
-  const capacity = await api<{ accounts: Array<{ isActive?: boolean }> }>("/accounts");
+  const capacity = await api<{ accounts: Array<{ isActive?: boolean }> }>(
+    "/accounts",
+    {},
+    tenantId,
+  );
   if (!capacity.ok || !Array.isArray(capacity.data.accounts))
     return {
       ok: false,
@@ -69,7 +113,7 @@ export async function bootstrap(
     return {
       ok: false,
       error:
-        "The two free shared connections are in use. No paid connection was started. Ask the team for help.",
+        "The two free connections are in use. No paid connection was started. Ask the team for help.",
     };
   if (!row) {
     const result = await api<{ profile: { _id?: string; id?: string } }>("/profiles", {
@@ -94,13 +138,23 @@ export async function bootstrap(
   const redirect = APP_URL();
   if (!redirect.startsWith("https://"))
     return { ok: false, error: "A secure return address is required." };
+  if (customerKey) {
+    try {
+      await ensureCustomerWebhook(tenantId, row.profile_id, customerKey);
+    } catch {
+      return {
+        ok: false,
+        error: "Your inbox route could not be verified. Ask the team before retrying.",
+      };
+    }
+  }
   const webhookSecret = process.env["ZERNIO_WEBHOOK_SECRET"];
-  if (!webhookSecret)
+  if (!customerKey && !webhookSecret)
     return { ok: false, error: "Inbox verification is not configured. No number was connected." };
   const webhookUrl = redirect + "/api/public/webhooks/whatsapp";
   const existingHooks = await api<{
     webhooks: Array<{ url?: string; isActive?: boolean; profileIds?: string[]; events?: string[] }>;
-  }>("/webhooks/settings");
+  }>("/webhooks/settings", {}, tenantId);
   if (!existingHooks.ok)
     return { ok: false, error: "Inbox routing could not be checked. Please try again later." };
   const requiredEvents = [
@@ -118,23 +172,29 @@ export async function bootstrap(
       hook.profileIds[0] === row.profile_id &&
       requiredEvents.every((event) => hook.events?.includes(event)),
   );
-  if (!routed) {
-    const created = await api<unknown>("/webhooks/settings", {
-      method: "POST",
-      body: JSON.stringify({
-        name: "Flavourly " + String(row.profile_id).slice(-20),
-        url: webhookUrl,
-        secret: webhookSecret,
-        profileIds: [row.profile_id],
-        events: requiredEvents,
-        isActive: true,
-      }),
-    });
+  if (!customerKey && !routed) {
+    const created = await api<unknown>(
+      "/webhooks/settings",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Flavourly " + String(row.profile_id).slice(-20),
+          url: webhookUrl,
+          secret: webhookSecret,
+          profileIds: [row.profile_id],
+          events: requiredEvents,
+          isActive: true,
+        }),
+      },
+      tenantId,
+    );
     if (!created.ok)
       return { ok: false, error: "Inbox routing could not be prepared. No number was connected." };
   }
   const result = await api<{ authUrl: string }>(
     `/connect/whatsapp?profileId=${encodeURIComponent(row.profile_id)}&signup=hosted&onboarding=business_app&brandName=Flavourly&redirect_url=${encodeURIComponent(redirect + "/dashboard/settings")}`,
+    {},
+    tenantId,
   );
   if (!result.ok) return result;
   try {
@@ -167,7 +227,7 @@ export async function status(tenantId: string, _hint: string): Promise<Result<Wa
       status?: string;
       username?: string;
     }>;
-  }>(`/accounts?profileId=${encodeURIComponent(row.profile_id)}&platform=whatsapp`);
+  }>(`/accounts?profileId=${encodeURIComponent(row.profile_id)}&platform=whatsapp`, {}, tenantId);
   if (!res.ok) return res;
   const accounts = (res.data.accounts ?? []).filter(
     (a) =>
@@ -338,10 +398,14 @@ export async function sendText(
     data?: { messageId?: string };
     message?: { id?: string };
     messageId?: string;
-  }>(`/inbox/conversations/${encodeURIComponent(conversation.provider_conversation_id)}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ accountId, message: text }),
-  });
+  }>(
+    `/inbox/conversations/${encodeURIComponent(conversation.provider_conversation_id)}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ accountId, message: text }),
+    },
+    tenantId,
+  );
   if (!result.ok) return result;
   const messageId = result.data.data?.messageId ?? result.data.message?.id ?? result.data.messageId;
   if (typeof messageId !== "string" || !messageId.trim())

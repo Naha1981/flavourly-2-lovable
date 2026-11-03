@@ -10,6 +10,7 @@ vi.mock("../src/lib/db.server", () => ({
   APP_URL: () => process.env["PUBLIC_APP_URL"] ?? "",
 }));
 import { sendText, bootstrap, status } from "@/lib/whatsapp.server";
+import { encryptCredential } from "@/lib/tenant-whatsapp.server";
 import { parseInboxEvent } from "@/lib/webhook-ingest.server";
 const event = () => ({
   id: "event-1",
@@ -42,6 +43,37 @@ afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env["WHATSAPP_SEND_ENABLED"];
   delete process.env["ZERNIO_API_KEY"];
+});
+describe("customer-owned provider routing", () => {
+  it("uses tenant key, never shared key, for an owned account", async () => {
+    vi.stubEnv("WHATSAPP_CREDENTIALS_ENCRYPTION_KEY", "ab".repeat(32));
+    vi.stubEnv("WHATSAPP_CUSTOMER_OWNED_ENABLED", "true");
+    state.db.rows("wa_channels")[0]!["credential_mode"] = "customer";
+    state.db
+      .rows("wa_tenant_credentials")
+      .push({
+        tenant_id: "venue-a",
+        state: "ready",
+        api_key_ciphertext: encryptCredential("fixture-tenant-only-key", "venue-a"),
+      });
+    expect((await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).ok).toBe(
+      true,
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer fixture-tenant-only-key" }),
+      }),
+    );
+    vi.unstubAllEnvs();
+  });
+  it("missing tenant credentials never fall back to shared key", async () => {
+    state.db.rows("wa_channels")[0]!["credential_mode"] = "customer";
+    expect((await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).ok).toBe(
+      false,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
 describe("reply-only send guard", () => {
   it("sends a recent customer reply through the inbox only", async () => {

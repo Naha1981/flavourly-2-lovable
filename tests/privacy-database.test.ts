@@ -19,6 +19,38 @@ beforeAll(async () => {
 }, 30000);
 afterAll(async () => pg?.close());
 describe("privacy RPCs on disposable PostgreSQL engine", () => {
+  it("stores credentials atomically, hides secrets from exports and denies browser roles", async () => {
+    await pg.query("SELECT wa_save_customer_connection($1,$2,$3,$4)", [
+      "qa-a",
+      "synthetic-profile",
+      "synthetic-encrypted-key",
+      "synthetic-encrypted-hook",
+    ]);
+    await expect(
+      pg.query("SELECT wa_save_customer_connection($1,$2,$3,$4)", [
+        "qa-a",
+        "different-profile",
+        "replacement",
+        "replacement",
+      ]),
+    ).rejects.toThrow("Existing setup");
+    expect(JSON.stringify((await call("privacy_export_workspace")).rows)).not.toContain(
+      "synthetic-encrypted",
+    );
+    expect(
+      JSON.stringify(
+        (await pg.query("SELECT profile_id FROM wa_channels WHERE tenant_id='qa-a'")).rows,
+      ),
+    ).toContain("synthetic-profile");
+    await pg.exec("SET ROLE authenticated");
+    await expect(pg.exec("SELECT * FROM wa_tenant_credentials")).rejects.toThrow(
+      "permission denied",
+    );
+    await expect(pg.exec("SELECT wa_save_customer_connection('qa-b','p','k','s')")).rejects.toThrow(
+      "permission denied",
+    );
+    await pg.exec("RESET ROLE");
+  });
   it("applies every migration and exports only the owning workspace", async () => {
     const r = await call("privacy_export_workspace");
     const s = JSON.stringify(r.rows);
@@ -77,6 +109,9 @@ describe("privacy RPCs on disposable PostgreSQL engine", () => {
       { tenant_id: "qa-b" },
     ]);
     expect((await pg.query("SELECT count(*)::int AS n FROM auth.users")).rows).toEqual([{ n: 2 }]);
+    expect((await pg.query("SELECT count(*)::int AS n FROM wa_tenant_credentials")).rows).toEqual([
+      { n: 0 },
+    ]);
   });
   it("prevents a stale job recreating a deleted workspace", async () => {
     await expect(
