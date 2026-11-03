@@ -228,7 +228,7 @@ function Onboarding() {
             <div className="grid gap-6">
               <Heading
                 title="Your activation checklist"
-                sub="Complete setup, then wait for activation checks. Connection alone does not enable AI or sending."
+                sub="Connect your number, turn on auto-replies in Settings, and confirm one incoming enquiry and reply. Connection alone is not delivery proof."
               />
               <ul className="grid gap-3">
                 {checklist.map((c) => (

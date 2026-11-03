@@ -23,7 +23,7 @@ export const Route = createFileRoute("/legal/terms")({
 const sections = [
   {
     heading: "Your trial",
-    body: "The Starter pilot offers a seven-day trial. No card or automatic charge. Connection, AI and sending remain paused until activation checks pass.",
+    body: "The Starter pilot offers a seven-day trial. No card or automatic charge. Connect your own WhatsApp Business number, turn on auto-replies and run a test enquiry before relying on replies.",
   },
   {
     heading: "Billing",

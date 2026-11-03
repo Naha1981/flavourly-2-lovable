@@ -57,8 +57,8 @@ function CompanyPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             NahaLabs is developing Flavourly for restaurant customer conversations and booking
-            requests. The Starter pilot requires connection and acceptance checks; it is not a
-            promise of recovered revenue.
+            requests. The Starter pilot requires your own-number connection, auto-reply opt-in and a
+            successful test enquiry; it is not a promise of recovered revenue.
           </p>
         </section>
 

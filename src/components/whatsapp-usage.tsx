@@ -49,7 +49,7 @@ export function WhatsAppUsage({ tenantId }: { tenantId: string }) {
           )}
           <p className="mt-2 text-sm">
             {usage.allowed
-              ? "Allowance available. Connection and sending still require activation approval."
+              ? "Allowance available. Check your connected number and auto-reply setting, then confirm a test enquiry and reply."
               : "Automatic replies stopped. A team member must take over."}
           </p>
         </>

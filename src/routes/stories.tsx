@@ -36,8 +36,9 @@ function StoriesPage() {
         <section className="mt-8 rounded-2xl border border-border bg-card p-7">
           <h2 className="font-display text-2xl">Starter pilot</h2>
           <p className="mt-3 text-muted-foreground">
-            Seven-day trial, no card or automatic charge. Connection, AI and sending stay paused
-            until activation checks pass. A booking request is not a confirmed reservation.
+            Seven-day trial, no card or automatic charge. Connect your own WhatsApp Business number,
+            turn on auto-replies and run a test enquiry before relying on replies. A booking request
+            is not a confirmed reservation.
           </p>
           <Button asChild className="mt-5 rounded-full">
             <Link to="/pricing">See pilot scope and limits</Link>

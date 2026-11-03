@@ -38,7 +38,7 @@ function ClaimPage() {
 
   const included = [
     "Add your own menu, hours and branding during setup",
-    "Connection, AI and sending stay paused until activation checks pass",
+    "Connect your own WhatsApp Business number, turn on auto-replies and run a test enquiry before relying on replies.",
     "No reviews or business data have been imported by this preview",
     "Seven-day trial, no card or automatic charge",
   ];

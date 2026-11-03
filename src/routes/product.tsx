@@ -102,9 +102,9 @@ function ProductPage() {
             Know what is ready before you commit.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            The Starter pilot focuses on customer conversations and booking requests. Connection, AI
-            and sending remain paused until activation checks pass. Other capabilities below are not
-            accepted as available.
+            The Starter pilot focuses on customer conversations and booking requests. Connect your
+            own WhatsApp Business number, turn on auto-replies and run a test enquiry before relying
+            on replies. Other capabilities below are not accepted as available.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild className="rounded-full">

@@ -99,7 +99,7 @@ function SignupPage() {
       subtitle={
         plan
           ? `You asked about ${plan}. Starter pilot enrolment first; no card or automatic charge.`
-          : "No card or automatic charge. Sending starts only after activation checks."
+          : "No card or automatic charge. Connect your number, enable auto-replies and test an enquiry before relying on replies."
       }
       footer={
         <p className="text-sm text-muted-foreground">
@@ -111,10 +111,10 @@ function SignupPage() {
       }
     >
       <p className="mb-5 text-sm text-muted-foreground">
-        One venue and one number. Trial: proposed allowance up to 100 replies, counted within
-        Starter's 500 monthly replies; pilot cap 25 per day. Sending remains paused while these
-        limits are verified. Replies only within 24 hours of an inbound customer message. Higher
-        plans require a capacity check.
+        One venue and one number. Trial allowance: up to 100 replies, counted within Starter's 500
+        monthly replies; pilot cap 25 per day. Replies only within 24 hours of an inbound customer
+        message. Higher plans require a capacity check. Connect your number and test a reply before
+        relying on it.
       </p>
       <form
         onSubmit={(event) => {

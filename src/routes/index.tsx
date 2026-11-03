@@ -658,8 +658,9 @@ function PricingPeek() {
               One useful intervention should justify the subscription.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Seven days free, no card. One venue and one number per plan. Starter pilot first;
-              higher plans and untested features remain subject to acceptance.
+              Seven days free, no card. One venue and one number per plan. Starter enrolment first;
+              higher plans require a capacity check. Features beyond menu enquiries and
+              booking-request capture are not yet verified for live use.
             </p>
           </div>
           <Button asChild variant="outline" className="rounded-full">
