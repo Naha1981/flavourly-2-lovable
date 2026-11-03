@@ -58,6 +58,19 @@ export async function bootstrap(
       ok: false,
       error: "This plan already has a linked number. Ask the team before replacing it.",
     };
+  // Shared team allowance: never start another paid connected account.
+  const capacity = await api<{ accounts: Array<{ isActive?: boolean }> }>("/accounts");
+  if (!capacity.ok || !Array.isArray(capacity.data.accounts))
+    return {
+      ok: false,
+      error: "The free connection allowance could not be verified. No number was connected.",
+    };
+  if (capacity.data.accounts.filter((account) => account.isActive === true).length >= 2)
+    return {
+      ok: false,
+      error:
+        "The two free shared connections are in use. No paid connection was started. Ask the team for help.",
+    };
   if (!row) {
     const result = await api<{ profile: { _id?: string; id?: string } }>("/profiles", {
       method: "POST",
@@ -81,8 +94,47 @@ export async function bootstrap(
   const redirect = APP_URL();
   if (!redirect.startsWith("https://"))
     return { ok: false, error: "A secure return address is required." };
+  const webhookSecret = process.env["ZERNIO_WEBHOOK_SECRET"];
+  if (!webhookSecret)
+    return { ok: false, error: "Inbox verification is not configured. No number was connected." };
+  const webhookUrl = redirect + "/api/public/webhooks/whatsapp";
+  const existingHooks = await api<{
+    webhooks: Array<{ url?: string; isActive?: boolean; profileIds?: string[]; events?: string[] }>;
+  }>("/webhooks/settings");
+  if (!existingHooks.ok)
+    return { ok: false, error: "Inbox routing could not be checked. Please try again later." };
+  const requiredEvents = [
+    "message.received",
+    "message.sent",
+    "message.delivered",
+    "message.read",
+    "message.failed",
+  ];
+  const routed = existingHooks.data.webhooks?.some(
+    (hook) =>
+      hook.url === webhookUrl &&
+      hook.isActive === true &&
+      hook.profileIds?.length === 1 &&
+      hook.profileIds[0] === row.profile_id &&
+      requiredEvents.every((event) => hook.events?.includes(event)),
+  );
+  if (!routed) {
+    const created = await api<unknown>("/webhooks/settings", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "Flavourly " + String(row.profile_id).slice(-20),
+        url: webhookUrl,
+        secret: webhookSecret,
+        profileIds: [row.profile_id],
+        events: requiredEvents,
+        isActive: true,
+      }),
+    });
+    if (!created.ok)
+      return { ok: false, error: "Inbox routing could not be prepared. No number was connected." };
+  }
   const result = await api<{ authUrl: string }>(
-    `/connect/whatsapp?profileId=${encodeURIComponent(row.profile_id)}&redirect_url=${encodeURIComponent(redirect + "/dashboard/settings")}`,
+    `/connect/whatsapp?profileId=${encodeURIComponent(row.profile_id)}&signup=hosted&onboarding=business_app&brandName=Flavourly&redirect_url=${encodeURIComponent(redirect + "/dashboard/settings")}`,
   );
   if (!result.ok) return result;
   try {

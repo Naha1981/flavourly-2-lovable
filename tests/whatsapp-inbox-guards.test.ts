@@ -1,8 +1,14 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import { createFakeDb } from "./helpers/fake-db";
 const state = vi.hoisted(() => ({ db: null as unknown as ReturnType<typeof createFakeDb> }));
-vi.mock("@/lib/db.server", () => ({ db: async () => state.db }));
-vi.mock("../src/lib/db.server", () => ({ db: async () => state.db }));
+vi.mock("@/lib/db.server", () => ({
+  db: async () => state.db,
+  APP_URL: () => process.env["PUBLIC_APP_URL"] ?? "",
+}));
+vi.mock("../src/lib/db.server", () => ({
+  db: async () => state.db,
+  APP_URL: () => process.env["PUBLIC_APP_URL"] ?? "",
+}));
 import { sendText, bootstrap, status } from "@/lib/whatsapp.server";
 import { parseInboxEvent } from "@/lib/webhook-ingest.server";
 const event = () => ({
@@ -213,5 +219,80 @@ describe("provider send evidence", () => {
       ok: true,
       data: { messageId: "verified-reply", status: "accepted" },
     });
+  });
+});
+
+describe("self-service own-number routing", () => {
+  beforeEach(() => {
+    process.env["WHATSAPP_CONNECT_ENABLED"] = "true";
+    process.env["ZERNIO_WEBHOOK_SECRET"] = "synthetic-secret";
+    state.db.rows("wa_channels")[0]!["account_id"] = null;
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).endsWith("/accounts")) return Response.json({ accounts: [] });
+      if (String(url).endsWith("/webhooks/settings")) return Response.json({ webhooks: [] });
+      return Response.json({ authUrl: "https://zernio.com/connect/whatsapp/test" });
+    });
+  });
+  afterEach(() => {
+    delete process.env["WHATSAPP_CONNECT_ENABLED"];
+    delete process.env["ZERNIO_WEBHOOK_SECRET"];
+    delete process.env["PUBLIC_APP_URL"];
+  });
+  it("prepares one exact-profile inbox hook before the hosted coexistence flow", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(true);
+    const calls = vi.mocked(fetch).mock.calls;
+    const post = calls.find(
+      ([url, init]) => String(url).endsWith("/webhooks/settings") && init?.method === "POST",
+    );
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
+      profileIds: ["profile-a"],
+      url: "https://flavourly.nahalabs.co.za/api/public/webhooks/whatsapp",
+    });
+    expect(
+      calls.some(([url]) =>
+        String(url).includes("signup=hosted&onboarding=business_app&brandName=Flavourly"),
+      ),
+    ).toBe(true);
+  });
+  it("stops before connecting if the webhook secret is missing", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    delete process.env["ZERNIO_WEBHOOK_SECRET"];
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(false);
+    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).endsWith("/accounts"))).toBe(
+      true,
+    );
+  });
+  it("does not modify an existing other-app webhook", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).endsWith("/accounts")
+        ? Response.json({ accounts: [] })
+        : String(url).endsWith("/webhooks/settings")
+          ? Response.json({
+              webhooks: [
+                {
+                  url: "https://revup.nahalabs.co.za/webhooks/zernio/",
+                  isActive: true,
+                  profileIds: [],
+                },
+              ],
+            })
+          : Response.json({ authUrl: "https://zernio.com/connect/whatsapp/test" }),
+    );
+    await bootstrap("venue-a", "Synthetic A");
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([, init]) => init?.method === "PUT" || init?.method === "DELETE"),
+    ).toBe(false);
+  });
+  it("refuses a third paid connection before profile/webhook creation", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({ accounts: [{ isActive: true }, { isActive: true }] }),
+    );
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(false);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

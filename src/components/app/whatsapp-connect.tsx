@@ -66,16 +66,16 @@ export function WhatsAppConnect({ profile, update }: Props) {
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           {linked
-            ? "Incoming customer messages can appear in your Flavourly inbox. Live replies stay paused until enabled by your team."
-            : "Use the secure connection page, then return here to check your number. An old connection is not treated as verified."}
+            ? "Your number is verified. Turn on auto-replies under Venue, rewards and auto-replies, then ask a colleague to send your business number a test enquiry. Check Activation checks below before relying on live replies."
+            : "Connect your own WhatsApp Business number through the secure setup. Keep using your Business app. You choose and verify your number; no NahaLabs number is substituted."}
         </p>
       </div>
       <ul className="grid gap-2 text-sm text-muted-foreground">
         <li>Only reply to customers who messaged your restaurant first.</li>
         <li>Replies stop after 24 hours. No paid templates or cold messages.</li>
         <li>
-          Starter pilot: proposed allowance up to 100 trial replies, counted within 500 monthly
-          replies; pilot cap 25 per day. Sending remains paused until these limits are verified.
+          Starter pilot: up to 100 trial replies within 500 monthly replies; pilot cap 25 per day.
+          Live replies require the activation checks below to pass.
         </li>
         <li>
           Menu answers use your saved menu. Bookings need a capacity check. Ask for a manager at any
