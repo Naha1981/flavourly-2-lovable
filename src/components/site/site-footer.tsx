@@ -44,7 +44,7 @@ export function SiteFooter() {
 
         <div className="mt-10 flex flex-col gap-2 border-t border-border/70 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Flavourly by NahaLabs. All rights reserved.</p>
-          <p>Prices in ZAR, excluding VAT.</p>
+          <p>Prices in ZAR.</p>
         </div>
       </div>
     </footer>

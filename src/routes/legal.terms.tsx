@@ -27,7 +27,7 @@ const sections = [
   },
   {
     heading: "Billing",
-    body: "Prices are in South African rand, excluding VAT. Self-serve checkout is paused during pilot acceptance. No automatic charge; any paid activation requires a separate confirmed agreement.",
+    body: "Prices are in South African rand. Self-serve checkout is paused during pilot acceptance. No automatic charge; any paid activation requires a separate confirmed agreement.",
   },
   {
     heading: "Messaging usage charges",

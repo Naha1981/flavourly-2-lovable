@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState } from "react";
-import { Check, CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle } from "lucide-react";
 
 import { useAuthGate } from "./dashboard";
 
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { onboardingChecklist } from "@/lib/onboarding-checklist";
 import { slugify, useRestaurantProfile } from "@/lib/restaurant-profile";
 
 const steps = ["profile", "whatsapp", "test", "done"] as const;
@@ -49,13 +50,7 @@ function Onboarding() {
   const { profile, update, saveNow, ready, error } = useRestaurantProfile();
   const [savingProfile, setSavingProfile] = useState(false);
   const go = (s: Step) => navigate({ search: { step: s } });
-  const idx = steps.indexOf(step);
-
-  const checklist = [
-    { label: "Restaurant profile saved", done: Boolean(profile.name && profile.hours) },
-    { label: "WhatsApp linked", done: profile.waConnected },
-    { label: "First AI reply tested", done: profile.aiTested },
-  ];
+  const checklist = onboardingChecklist(profile);
 
   if (authState === "checking")
     return (
@@ -83,10 +78,8 @@ function Onboarding() {
                 onClick={() => go(s)}
                 className={`flex w-full items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-sm lg:rounded-lg ${s === step ? "bg-card font-medium text-foreground shadow-sm" : "text-muted-foreground"}`}
               >
-                <span
-                  className={`grid size-5 place-items-center rounded-full text-[11px] ${i < idx ? "bg-forest text-primary-foreground" : "border border-border"}`}
-                >
-                  {i < idx ? <Check className="size-3" /> : i + 1}
+                <span className="grid size-5 place-items-center rounded-full border border-border text-[11px]">
+                  {i + 1}
                 </span>
                 {labels[s]}
               </button>
@@ -228,7 +221,7 @@ function Onboarding() {
             <div className="grid gap-6">
               <Heading
                 title="Your activation checklist"
-                sub="Connect your number, turn on auto-replies in Settings, and confirm one incoming enquiry and reply. Connection alone is not delivery proof."
+                sub="Connect your number, turn on auto-replies in Settings, and confirm one incoming enquiry and reply. A saved number is not live connection or delivery proof."
               />
               <ul className="grid gap-3">
                 {checklist.map((c) => (
