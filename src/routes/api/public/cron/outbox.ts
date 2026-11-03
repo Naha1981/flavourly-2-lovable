@@ -10,7 +10,14 @@ export const Route = createFileRoute("/api/public/cron/outbox")({
         if (denied) return denied;
         const { processOutbox } = await import("@/lib/outbox.server");
         const { withCronAlert } = await import("@/lib/alerts.server");
-        return Response.json({ ok: true, result: await withCronAlert("outbox", () => processOutbox()) });
+        const { processReplyJobs } = await import("@/lib/reply-jobs.server");
+        return Response.json({
+          ok: true,
+          result: await withCronAlert("outbox", async () => ({
+            replies: await processReplyJobs(2),
+            outbox: await processOutbox(),
+          })),
+        });
       },
     },
   },

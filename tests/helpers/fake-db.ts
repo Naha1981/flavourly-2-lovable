@@ -213,6 +213,26 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
       direction: "in",
       body: p["p_body"],
     });
+    // Mirrors transactional STOP/START handling in the nine-argument queue RPC.
+    if ("p_standby" in p) {
+      const keyword = String(p["p_body"])
+        .trim()
+        .toLowerCase()
+        .replace(/[.!]+$/, "");
+      if (["stop", "stopall", "unsubscribe", "opt out", "optout", "quit"].includes(keyword)) {
+        if (
+          !t("wa_opt_outs").some(
+            (r) => r["tenant_id"] === p["p_tenant"] && r["phone"] === p["p_phone"],
+          )
+        )
+          t("wa_opt_outs").push({ tenant_id: p["p_tenant"], phone: p["p_phone"] });
+        conversation["status"] = "resolved";
+      } else if (["start", "unstop", "subscribe", "resubscribe"].includes(keyword)) {
+        tables["wa_opt_outs"] = t("wa_opt_outs").filter(
+          (r) => r["tenant_id"] !== p["p_tenant"] || r["phone"] !== p["p_phone"],
+        );
+      }
+    }
     return { data: conversation["id"], error: null };
   };
   return { from, tables, rows: t, injectError, rpc };

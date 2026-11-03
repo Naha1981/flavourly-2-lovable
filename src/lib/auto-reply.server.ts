@@ -26,8 +26,23 @@ export async function autoReply(input: {
   conversationId: string;
   waAccountId?: string | null;
   waMessageId?: string | null;
+  durable?: {
+    beforeSend: (text: string) => Promise<boolean>;
+    accepted: (messageId: string) => Promise<void>;
+  };
 }): Promise<{ replied: boolean; heldForApproval?: boolean }> {
   const c = await db();
+  // Synthetic workspaces must never answer the owner's normal contacts.
+  if (input.tenantId.startsWith("synthetic")) {
+    const allowed = await c
+      .from("wa_reply_test_targets")
+      .select("phone")
+      .eq("tenant_id", input.tenantId)
+      .eq("phone", input.phone.replace(/\D/g, ""))
+      .maybeSingle();
+    if (allowed.error || !allowed.data || !/^SYNTHETIC QA enquiry(?: \d+)?:/.test(input.text))
+      return { replied: false, heldForApproval: true };
+  }
   const { data: venue } = await c
     .from("tenant_profiles")
     .select("auto_replies_enabled, name")
@@ -121,7 +136,10 @@ export async function autoReply(input: {
     return { replied: false, heldForApproval: held.approvalRequired };
   }
 
+  if (input.durable && !(await input.durable.beforeSend(reply)))
+    return { replied: false, heldForApproval: true };
   const sent = await sendWhatsApp(input.tenantId, input.phone, reply, input.waAccountId);
+  if (!sent.ok && input.durable) throw new Error(sent.error);
   if (!sent.ok) {
     await enqueueOutbox({
       tenantId: input.tenantId,
@@ -139,6 +157,11 @@ export async function autoReply(input: {
       .eq("id", input.conversationId);
     console.error("auto-reply send failed", input.tenantId, sent.error);
     return { replied: false, heldForApproval: true };
+  }
+  if (input.durable) {
+    if (!sent.data.messageId) throw new Error("Provider acceptance is uncertain; do not resend.");
+    await input.durable.accepted(sent.data.messageId);
+    return { replied: true };
   }
   const now = new Date().toISOString();
   await c.from("wa_messages").insert({

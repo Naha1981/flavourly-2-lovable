@@ -81,46 +81,12 @@ export async function ingestPayload(parsed: unknown): Promise<IngestResult> {
     p_name: m.name,
     p_body: m.body,
     p_sent: m.sentAt,
+    p_standby: m.standby,
   });
   if (result.error) return { events: 1, saved: 0, failures: ["Inbox could not be saved"] };
   if (!result.data) return { events: 1, saved: 0, failures: [] };
-  const conversationId = String(result.data);
-  const { optOutKeyword, recordOptOut, recordOptIn } = await import("./opt-out.server");
-  const keyword = optOutKeyword(m.body);
-  if (keyword === "stop") {
-    await recordOptOut(mapping.tenant_id, m.phone);
-    await c
-      .from("wa_conversations")
-      .update({ status: "resolved" })
-      .eq("tenant_id", mapping.tenant_id)
-      .eq("id", conversationId);
-  } else if (keyword === "start") await recordOptIn(mapping.tenant_id, m.phone);
-  else if (!m.standby && Date.now() - Date.parse(m.sentAt) < 86400000) {
-    try {
-      const { flagReviewFeedback } = await import("./review-requests.server");
-      if (await flagReviewFeedback(mapping.tenant_id, m.phone, m.body, conversationId))
-        return { events: 1, saved: 1, failures: [], tenantId: mapping.tenant_id };
-      const { autoReply } = await import("./auto-reply.server");
-      await autoReply({
-        tenantId: mapping.tenant_id,
-        phone: m.phone,
-        name: m.name,
-        text: m.body,
-        conversationId,
-        waAccountId: m.accountId,
-        waMessageId: m.messageId,
-      });
-    } catch {
-      await c
-        .from("wa_conversations")
-        .update({
-          status: "needs_approval",
-          next_action: "Reply could not be prepared. A team member needs to take over.",
-        })
-        .eq("tenant_id", mapping.tenant_id)
-        .eq("id", conversationId);
-    }
-  }
+  // The RPC saved the inbound and reply job atomically. Drafting/sending belongs
+  // to the existing cron worker, never the provider's short-lived HTTP request.
   return { events: 1, saved: 1, failures: [], tenantId: mapping.tenant_id };
 }
 
