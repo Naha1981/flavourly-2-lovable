@@ -1,5 +1,6 @@
+import { signInWithCooldown } from "@/lib/login-cooldown";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 
@@ -36,6 +37,9 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const [busy, setBusy] = useState(false);
+  const [loginWait, setLoginWait] = useState<string | null>(null);
+  const loginAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => loginAbort.current?.abort(), []);
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
 
@@ -85,13 +89,29 @@ function LoginPage() {
   };
 
   const submit = async (form: HTMLFormElement) => {
+    if (busy) return;
     setBusy(true);
+    setLoginWait(null);
+    loginAbort.current?.abort();
+    const controller = new AbortController();
+    loginAbort.current = controller;
     try {
       const f = new FormData(form);
-      const { error } = await supabase.auth.signInWithPassword({
+      const credentials = {
         email: String(f.get("email") ?? "").trim(),
         password: String(f.get("password") ?? ""),
-      });
+      };
+      const { error } = await signInWithCooldown(
+        () => supabase.auth.signInWithPassword(credentials),
+        {
+          signal: controller.signal,
+          onWait: (seconds) =>
+            setLoginWait(
+              `Sign-in is busy. Waiting ${seconds} seconds before one retry. Keep this page open.`,
+            ),
+        },
+      );
+      if (controller.signal.aborted) return;
       if (error) {
         toast.error(signInErrorMessage(error.message, error.code));
         return;
@@ -106,9 +126,12 @@ function LoginPage() {
       toast.success("Welcome back.");
       navigate({ to: postLoginPath(redirect) });
     } catch {
-      toast.error("Couldn't sign you in. Please try again.");
+      if (!controller.signal.aborted) toast.error("Couldn't sign you in. Please try again.");
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) {
+        setBusy(false);
+        setLoginWait(null);
+      }
     }
   };
 
@@ -157,6 +180,11 @@ function LoginPage() {
             placeholder="••••••••"
           />
         </div>
+        {loginWait && (
+          <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
+            {loginWait}
+          </p>
+        )}
         <Button type="submit" disabled={busy} className="mt-2 w-full rounded-full">
           Sign in
         </Button>
