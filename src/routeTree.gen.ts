@@ -36,6 +36,7 @@ import { Route as DashboardReputationRouteImport } from './routes/dashboard.repu
 import { Route as DashboardRevenueEmployeeRouteImport } from './routes/dashboard.revenue-employee'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardSocialRouteImport } from './routes/dashboard.social'
+import { Route as DashboardSupportRouteImport } from './routes/dashboard.support'
 import { Route as DashboardVoiceRouteImport } from './routes/dashboard.voice'
 import { Route as DashboardWaitlistRouteImport } from './routes/dashboard.waitlist'
 import { Route as DashboardWhatsappHealthRouteImport } from './routes/dashboard.whatsapp-health'
@@ -189,6 +190,11 @@ const DashboardSocialRoute = DashboardSocialRouteImport.update({
   path: '/social',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSupportRoute = DashboardSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardVoiceRoute = DashboardVoiceRouteImport.update({
   id: '/voice',
   path: '/voice',
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
@@ -391,6 +399,7 @@ export interface FileRoutesById {
   '/dashboard/revenue-employee': typeof DashboardRevenueEmployeeRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/social': typeof DashboardSocialRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/voice': typeof DashboardVoiceRoute
   '/dashboard/waitlist': typeof DashboardWaitlistRoute
   '/dashboard/whatsapp-health': typeof DashboardWhatsappHealthRoute
@@ -438,6 +447,7 @@ export interface FileRouteTypes {
     | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/support'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
@@ -482,6 +492,7 @@ export interface FileRouteTypes {
     | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/support'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
@@ -527,6 +538,7 @@ export interface FileRouteTypes {
     | '/dashboard/revenue-employee'
     | '/dashboard/settings'
     | '/dashboard/social'
+    | '/dashboard/support'
     | '/dashboard/voice'
     | '/dashboard/waitlist'
     | '/dashboard/whatsapp-health'
@@ -766,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSocialRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/support': {
+      id: '/dashboard/support'
+      path: '/support'
+      fullPath: '/dashboard/support'
+      preLoaderRoute: typeof DashboardSupportRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/voice': {
       id: '/dashboard/voice'
       path: '/voice'
@@ -894,6 +913,7 @@ interface DashboardRouteChildren {
   DashboardRevenueEmployeeRoute: typeof DashboardRevenueEmployeeRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSocialRoute: typeof DashboardSocialRoute
+  DashboardSupportRoute: typeof DashboardSupportRoute
   DashboardVoiceRoute: typeof DashboardVoiceRoute
   DashboardWaitlistRoute: typeof DashboardWaitlistRoute
   DashboardWhatsappHealthRoute: typeof DashboardWhatsappHealthRoute
@@ -914,6 +934,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardRevenueEmployeeRoute: DashboardRevenueEmployeeRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSocialRoute: DashboardSocialRoute,
+  DashboardSupportRoute: DashboardSupportRoute,
   DashboardVoiceRoute: DashboardVoiceRoute,
   DashboardWaitlistRoute: DashboardWaitlistRoute,
   DashboardWhatsappHealthRoute: DashboardWhatsappHealthRoute,
