@@ -9,6 +9,7 @@ import {
   CreditCard,
   Home,
   Inbox,
+  LifeBuoy,
   Megaphone,
   MapPinned,
   Mic,
