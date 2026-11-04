@@ -1121,18 +1121,21 @@ export type Database = {
         Row: {
           account_id: string | null
           created_at: string
+          credential_mode: string
           profile_id: string
           tenant_id: string
         }
         Insert: {
           account_id?: string | null
           created_at?: string
+          credential_mode?: string
           profile_id: string
           tenant_id: string
         }
         Update: {
           account_id?: string | null
           created_at?: string
+          credential_mode?: string
           profile_id?: string
           tenant_id?: string
         }
@@ -1207,16 +1210,25 @@ export type Database = {
       wa_inbox_events: {
         Row: {
           event_id: string
+          receipt_at: string | null
+          receipt_message: string | null
+          receipt_status: string | null
           received_at: string
           tenant_id: string
         }
         Insert: {
           event_id: string
+          receipt_at?: string | null
+          receipt_message?: string | null
+          receipt_status?: string | null
           received_at?: string
           tenant_id: string
         }
         Update: {
           event_id?: string
+          receipt_at?: string | null
+          receipt_message?: string | null
+          receipt_status?: string | null
           received_at?: string
           tenant_id?: string
         }
@@ -1265,6 +1277,137 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_opt_outs: {
+        Row: {
+          opted_out_at: string
+          phone: string
+          source: string
+          tenant_id: string
+        }
+        Insert: {
+          opted_out_at?: string
+          phone: string
+          source?: string
+          tenant_id: string
+        }
+        Update: {
+          opted_out_at?: string
+          phone?: string
+          source?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      wa_reply_jobs: {
+        Row: {
+          account_id: string
+          body: string
+          claim_token: string | null
+          claimed_at: string | null
+          conversation_id: string
+          created_at: string
+          error: string | null
+          guest_name: string | null
+          id: string
+          inbound_at: string
+          message_id: string
+          phone: string
+          provider_message_id: string | null
+          reply_text: string | null
+          state: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          body: string
+          claim_token?: string | null
+          claimed_at?: string | null
+          conversation_id: string
+          created_at?: string
+          error?: string | null
+          guest_name?: string | null
+          id?: string
+          inbound_at: string
+          message_id: string
+          phone: string
+          provider_message_id?: string | null
+          reply_text?: string | null
+          state?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          body?: string
+          claim_token?: string | null
+          claimed_at?: string | null
+          conversation_id?: string
+          created_at?: string
+          error?: string | null
+          guest_name?: string | null
+          id?: string
+          inbound_at?: string
+          message_id?: string
+          phone?: string
+          provider_message_id?: string | null
+          reply_text?: string | null
+          state?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_reply_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_reply_test_targets: {
+        Row: {
+          phone: string
+          tenant_id: string
+        }
+        Insert: {
+          phone: string
+          tenant_id: string
+        }
+        Update: {
+          phone?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      wa_tenant_credentials: {
+        Row: {
+          api_key_ciphertext: string
+          state: string
+          tenant_id: string
+          updated_at: string
+          webhook_id: string | null
+          webhook_secret_ciphertext: string
+        }
+        Insert: {
+          api_key_ciphertext: string
+          state?: string
+          tenant_id: string
+          updated_at?: string
+          webhook_id?: string | null
+          webhook_secret_ciphertext: string
+        }
+        Update: {
+          api_key_ciphertext?: string
+          state?: string
+          tenant_id?: string
+          updated_at?: string
+          webhook_id?: string | null
+          webhook_secret_ciphertext?: string
+        }
+        Relationships: []
       }
       wa_webhook_events: {
         Row: {
@@ -1438,23 +1581,75 @@ export type Database = {
           voucher_code: string
         }[]
       }
+      wa_accept_reply: {
+        Args: { p_claim: string; p_job: string; p_provider: string }
+        Returns: boolean
+      }
+      wa_begin_reply_send: {
+        Args: { p_claim: string; p_job: string; p_text: string }
+        Returns: boolean
+      }
+      wa_claim_reply: {
+        Args: never
+        Returns: {
+          account_id: string
+          body: string
+          claim_token: string | null
+          claimed_at: string | null
+          conversation_id: string
+          created_at: string
+          error: string | null
+          guest_name: string | null
+          id: string
+          inbound_at: string
+          message_id: string
+          phone: string
+          provider_message_id: string | null
+          reply_text: string | null
+          state: string
+          tenant_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "wa_reply_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       wa_confirm_booking: {
         Args: { p_draft: string; p_phone: string; p_tenant: string }
         Returns: string
       }
-      wa_ingest_inbox: {
-        Args: {
-          p_body: string
-          p_conversation: string
-          p_event: string
-          p_message: string
-          p_name: string
-          p_phone: string
-          p_sent: string
-          p_tenant: string
-        }
-        Returns: string
-      }
+      wa_ingest_inbox:
+        | {
+            Args: {
+              p_body: string
+              p_conversation: string
+              p_event: string
+              p_message: string
+              p_name: string
+              p_phone: string
+              p_sent: string
+              p_tenant: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_body: string
+              p_conversation: string
+              p_event: string
+              p_message: string
+              p_name: string
+              p_phone: string
+              p_sent: string
+              p_standby: boolean
+              p_tenant: string
+            }
+            Returns: string
+          }
+      wa_reconcile_reply: { Args: { p_job: string }; Returns: boolean }
       wa_record_delivery: {
         Args: {
           p_at: string
@@ -1468,6 +1663,15 @@ export type Database = {
       wa_reply_usage: { Args: { p_tenant: string }; Returns: Json }
       wa_reserve_budget: {
         Args: { p_kind: string; p_tenant: string }
+        Returns: boolean
+      }
+      wa_save_customer_connection: {
+        Args: {
+          p_key: string
+          p_profile: string
+          p_secret: string
+          p_tenant: string
+        }
         Returns: boolean
       }
     }
