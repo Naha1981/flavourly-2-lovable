@@ -30,7 +30,7 @@ export function MessageTriage({ profile }: { profile: RestaurantProfile }) {
     setError(null);
     try {
       const res = await analyse({
-        data: { message, restaurant: { name: profile.name, hours: profile.hours || undefined, notes: profile.notes || undefined } },
+        data: { tenantId: profile.slug, message, restaurant: { name: profile.name, hours: profile.hours || undefined, notes: profile.notes || undefined } },
       });
       if (res.ok) setResult(res);
       else setError(res.error);

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { triageMessage } from "./message-triage.server";
 
 const schema = z.object({
+  tenantId: z.string().trim().min(1).max(80),
   message: z.string().trim().min(1).max(2000),
   guestName: z.string().max(80).optional(),
   restaurant: z.object({
@@ -16,7 +17,7 @@ const schema = z.object({
 export const analyseMessage = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => schema.parse(d))
   .handler(async ({ data }) => {
-    const { requireUser } = await import("./tenant-auth.server");
-    await requireUser();
+    const { authorizeTenant } = await import("./tenant-auth.server");
+    await authorizeTenant(data.tenantId);
     return triageMessage(data);
   });
