@@ -53,12 +53,13 @@ export async function setCronWatermark(
   job: string,
   lastTenant: string,
 ): Promise<void> {
-  try {
-    await c.from("cron_state").delete().eq("job", job);
-    await c.from("cron_state").insert({ job, last_tenant: lastTenant, updated_at: new Date().toISOString() });
-  } catch {
-    // Watermark loss only causes re-processing, never skipped tenants.
-  }
+  const { error } = await c
+    .from("cron_state")
+    .upsert(
+      { job, last_tenant: lastTenant, updated_at: new Date().toISOString() },
+      { onConflict: "job" },
+    );
+  if (error) throw new Error("Cron progress was not saved: " + error.message);
 }
 
 /** Rotate an ordered tenant list to start just after `lastTenant`, wrapping once. */

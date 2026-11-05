@@ -42,6 +42,7 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
     let op: "select" | "insert" | "update" | "delete" = "select";
     let payload: Row | Row[] | null = null;
     let returning = false;
+    let conflict: string[] | null = null;
     let single: "one" | "maybe" | null = null;
     let limitN: number | null = null;
     let rangeFrom: number | null = null;
@@ -63,6 +64,13 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
           ...p,
         }));
         for (const item of items) {
+          if (conflict) {
+            const old = rows.find((r) => conflict!.every((k) => r[k] === item[k]));
+            if (old) {
+              Object.assign(old, item);
+              continue;
+            }
+          }
           for (const cols of uniques[table] ?? []) {
             if (cols.some((c) => item[c] == null)) continue;
             if (rows.some((r) => cols.every((c) => r[c] === item[c])))
@@ -97,6 +105,12 @@ export function createFakeDb(uniques: Record<string, string[][]> = {}) {
       insert(p: Row | Row[]) {
         op = "insert";
         payload = p;
+        return b;
+      },
+      upsert(p: Row | Row[], options: { onConflict?: string } = {}) {
+        op = "insert";
+        payload = p;
+        conflict = (options.onConflict ?? "id").split(",");
         return b;
       },
       update(p: Row) {
