@@ -56,6 +56,14 @@ function mockClient(rows: Row[] = [], fail = false) {
         payload = p;
         return Promise.resolve(run());
       },
+      upsert: (p: Row) => {
+        if (fail) return Promise.resolve({ data: null, error: { message: "connection refused" } });
+        const key = p["job"];
+        const i = store.findIndex((r) => r["job"] === key);
+        if (i >= 0) store[i] = { ...store[i], ...p };
+        else store.push({ ...p });
+        return Promise.resolve({ data: null, error: null });
+      },
       delete: () => {
         op = "delete";
         return chain;

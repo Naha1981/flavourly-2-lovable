@@ -41,13 +41,15 @@ export async function recordCronHeartbeat(
   now: Date = new Date(),
 ): Promise<void> {
   try {
+    // Single atomic upsert: a half-failed delete+insert pair used to leave the
+    // heartbeat row missing entirely, which the health check then reported as
+    // a critical "never ran" until the next successful run rewrote it.
     await c
       .from("cron_state")
-      .delete()
-      .eq("job", HEARTBEAT_PREFIX + job);
-    await c
-      .from("cron_state")
-      .insert({ job: HEARTBEAT_PREFIX + job, last_tenant: null, updated_at: now.toISOString() });
+      .upsert(
+        { job: HEARTBEAT_PREFIX + job, last_tenant: null, updated_at: now.toISOString() },
+        { onConflict: "job" },
+      );
   } catch {
     // A lost heartbeat shows up as staleness on the health check; it must
     // never fail the cron run itself.
