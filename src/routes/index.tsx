@@ -170,7 +170,7 @@ function HeroExperience() {
               I found a window table at 19:00. Shall I book it?
             </Bubble>
             <Bubble side="left" time="23:42" delay={2600}>
-              Yes please 🙏
+              Yes please
             </Bubble>
             <Bubble side="right" time="23:42" delay={3600}>
               Your booking request is captured. The restaurant still needs to confirm it.
