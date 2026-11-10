@@ -466,3 +466,22 @@
     animation: none !important;
   }
 }
+
+/* Short home review: product content leads, no decorative layers or delayed text. */
+.flavourly-short-home {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.flavourly-short-home .hero-field {background:var(--background)}
+.flavourly-short-home .hero-title {font-family:inherit;font-size:clamp(2.25rem,4.5vw,4.5rem);font-weight:650;letter-spacing:-.045em;line-height:1.06}
+.flavourly-short-home .hero-title span {color:inherit}
+.flavourly-short-home .hero-field>div.relative {padding-top:48px;padding-bottom:56px;gap:56px}
+.flavourly-short-home .hero-field .glass-card {background:var(--card);backdrop-filter:none;box-shadow:0 12px 36px #2b24110d}
+.flavourly-short-home .hero-field .hero-stage {animation:none}
+.flavourly-short-home .font-display {font-family:inherit;letter-spacing:-.035em}
+@media(max-width:639px){.flavourly-short-home .hero-field>div.relative{padding:40px 24px;gap:40px}.flavourly-short-home .hero-title{font-size:36px}.flavourly-short-home .hero-title+p{font-size:16px;line-height:1.5;margin-top:20px}.flavourly-short-home .hero-title+p+div{margin-top:24px}}
+.flavourly-short-home .hero-field>div.relative>*{min-width:0}
+.flavourly-short-home .hero-field a{white-space:normal;text-align:center;overflow-wrap:anywhere}
+.flavourly-short-home .hero-field .justify-between{flex-wrap:wrap}
+.flavourly-short-home .hero-title{overflow-wrap:anywhere}
+@media(max-width:639px){.flavourly-short-home .hero-title{font-size:2.25rem}.flavourly-short-home .hero-field .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flavourly-short-home .hero-field .grid-cols-3>div{min-width:0;padding-left:6px;padding-right:6px;overflow-wrap:anywhere}}
+.flavourly-short-home a{white-space:normal;overflow-wrap:anywhere}
+.flavourly-short-home .grid>*{min-width:0}
+.flavourly-short-home .hero-field .grid-cols-3>div>p:first-child{font-size:10px;letter-spacing:0;white-space:nowrap}

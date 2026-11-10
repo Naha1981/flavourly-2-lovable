@@ -87,22 +87,13 @@ const engines = [
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flavourly-short-home min-h-screen bg-background">
       <SiteHeader />
       <main>
-        <p className="mx-auto max-w-7xl px-4 pt-5 text-sm font-medium text-muted-foreground">
-          Illustrative product examples only. No real customer, booking or revenue results are
-          shown. Connect your own WhatsApp Business number, turn on auto-replies and run a test
-          enquiry before relying on replies.
-        </p>
         <Hero />
-        <RevenueLeakSection />
-        <RevenueFlow />
-        <MagicLink />
         <Engines />
-        <Story />
         <PricingPeek />
-        <FinalCta />
+        <p className="mx-auto max-w-7xl px-6 py-6 text-sm text-muted-foreground">Illustrative product examples only. No real customer, booking or revenue results are shown.</p>
       </main>
       <SiteFooter />
     </div>
@@ -112,26 +103,19 @@ function Landing() {
 function Hero() {
   return (
     <section className="hero-field relative overflow-hidden border-b border-border/70">
-      <div className="hero-grid absolute inset-0" aria-hidden="true" />
-      <div className="hero-signal hero-signal-one" aria-hidden="true" />
-      <div className="hero-signal hero-signal-two" aria-hidden="true" />
+      
+      
+      
 
       <div className="relative mx-auto grid max-w-7xl gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.03fr_0.97fr] lg:items-center lg:gap-16 lg:px-8 lg:pb-24 lg:pt-20">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-forest/15 bg-card/75 px-3 py-1.5 text-xs font-medium text-forest shadow-sm backdrop-blur">
-            <span className="live-dot h-1.5 w-1.5 rounded-full bg-forest" />
-            Revenue intelligence for restaurants
-          </div>
-
-          <h1 className="hero-title mt-6 max-w-3xl text-balance-tight font-display text-5xl leading-[0.98] text-foreground sm:text-6xl lg:text-7xl">
+          <h1 className="hero-title mt-0 max-w-3xl text-balance-tight font-display text-5xl leading-[0.98] text-foreground sm:text-6xl lg:text-7xl">
             Your restaurant is losing revenue
             <span className="block text-primary">while you're busy running it.</span>
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Flavourly watches customer demand, missed messages, quiet trading periods and returning
-            guests — then helps your team turn those opportunities into bookings and repeat
-            business.
+            Flavourly helps your team turn opportunities into bookings and repeat business.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -141,41 +125,11 @@ function Hero() {
               className="rounded-full px-7 text-base shadow-[var(--shadow-lift)]"
             >
               <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-                See what Flavourly finds <ArrowRight className="ml-1 h-4 w-4" />
+                See what Flavourly finds
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="rounded-full border-border bg-card/80 px-7 text-base backdrop-blur"
-            >
-              <Link to="/signup">Start free trial</Link>
-            </Button>
           </div>
 
-          <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            {[
-              "Works with your existing WhatsApp",
-              "Designed for busy restaurant teams",
-              "South African pricing in ZAR",
-            ].map((item) => (
-              <span key={item} className="flex items-center gap-2">
-                <Check className="h-4 w-4 shrink-0 text-forest" />
-                {item}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-8 flex items-center gap-3 border-t border-border/60 pt-5 text-sm text-muted-foreground">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-forest/10">
-              <Sparkles className="h-4 w-4 text-forest" />
-            </div>
-            <p>
-              <span className="font-medium text-foreground">Not another dashboard.</span> Flavourly
-              is built to spot the next commercial move.
-            </p>
-          </div>
         </div>
 
         <HeroExperience />
@@ -187,7 +141,7 @@ function Hero() {
 function HeroExperience() {
   return (
     <div className="relative mx-auto w-full max-w-[34rem]">
-      <div className="hero-orbit absolute -inset-8 rounded-[3rem]" aria-hidden="true" />
+      
       <div className="relative rounded-[2rem] border border-foreground/10 bg-card/80 p-3 shadow-[var(--shadow-lift)] backdrop-blur-xl">
         <div className="rounded-[1.5rem] border border-border/70 bg-background/95 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4 border-b border-border/70 pb-4">
@@ -224,7 +178,7 @@ function HeroExperience() {
           </div>
 
           <div
-            className="stage-in mt-5 rounded-[1.4rem] border border-forest/15 bg-forest/5 p-4"
+            className="mt-5 rounded-[1.4rem] border border-forest/15 bg-forest/5 p-4"
             style={{ "--stage-delay": "4600ms" } as React.CSSProperties}
           >
             <div className="flex items-center justify-between gap-3">
@@ -242,24 +196,7 @@ function HeroExperience() {
         </div>
       </div>
 
-      <div className="hero-float glass-card absolute -bottom-5 -left-4 hidden w-56 rounded-2xl p-4 sm:block">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-          Tonight
-        </p>
-        <p className="mt-1 font-display text-2xl text-foreground">VIP arriving</p>
-        <p className="mt-1 text-sm text-muted-foreground">Thabo · 19:00 · 4 guests</p>
-      </div>
 
-      <div className="hero-float hero-float-delay glass-card absolute -right-4 -top-5 hidden w-52 rounded-2xl p-4 sm:block">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-          Tuesday
-        </p>
-        <p className="mt-1 font-display text-2xl text-foreground">Demand watch</p>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-primary">
-          <ArrowDownRight className="h-3.5 w-3.5" />
-          Quiet period detected
-        </p>
-      </div>
     </div>
   );
 }
@@ -287,7 +224,7 @@ function Bubble({
   const isRight = side === "right";
   return (
     <div
-      className={`stage-in ${isRight ? "flex justify-end" : "flex justify-start"}`}
+      className={`${isRight ? "flex justify-end" : "flex justify-start"}`}
       style={{ "--stage-delay": `${delay}ms` } as React.CSSProperties}
     >
       <div
@@ -528,11 +465,8 @@ function Engines() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
       <div className="max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          One system. Six revenue engines.
-        </p>
-        <h2 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-          Every part of Flavourly answers one question: what should we do next?
+        <h2 className="font-display text-4xl leading-tight sm:text-5xl">
+          Six revenue engines.
         </h2>
       </div>
 
@@ -548,10 +482,7 @@ function Engines() {
               </div>
               <h3 className="mt-5 font-display text-2xl">{engine.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{engine.line}</p>
-              <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-sm font-medium text-forest">
-                <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" />
-                {engine.benefit}
-              </p>
+
             </article>
           </Reveal>
         ))}
@@ -651,12 +582,7 @@ function PricingPeek() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              Pricing
-            </p>
-            <h2 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
-              One useful intervention should justify the subscription.
-            </h2>
+            <h2 className="font-display text-4xl leading-tight sm:text-5xl">Pricing</h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
               Seven days free, no card. One venue and one number per plan. Starter enrolment first;
               higher plans require a capacity check. Features beyond menu enquiries and
