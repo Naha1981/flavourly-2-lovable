@@ -16,3 +16,5 @@ describe('public menu on a separate UI host',()=>{
 });
 
 describe('menu removal confirmation',()=>{it('uses an accessible confirmation with cancel and failure state',()=>{const source=readFileSync(new URL('../src/routes/dashboard.menu.tsx',import.meta.url),'utf8');expect(source).toContain('<AlertDialog open={confirmDelete}');expect(source).toContain('Keep dish');expect(source).toContain("Couldn't remove the dish.");expect(source).not.toContain('if (confirm(');});});
+
+describe('reply desk connection after reload',()=>{it('uses a fresh verified status instead of the transient profile flag',()=>{const source=readFileSync(new URL('../src/components/app/reply-drafter.tsx',import.meta.url),'utf8');expect(source).toContain('res.ok && res.data.isConnected');expect(source).toContain('waAccountId: verifiedAccount');expect(source).not.toContain('const canSend = profile.waConnected');expect(source).toContain('setVerifiedAccount(null)');});});

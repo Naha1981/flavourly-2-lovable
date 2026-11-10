@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { draftReply } from "@/lib/reply-drafts.functions";
-import { sendWhatsAppText } from "@/lib/whatsapp.functions";
+import { getWhatsAppStatus, sendWhatsAppText } from "@/lib/whatsapp.functions";
 import type { RestaurantProfile } from "@/lib/restaurant-profile";
 
 type Intent = "auto" | "booking" | "faq" | "complaint";
@@ -86,16 +86,30 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
     }
   };
 
+  const checkConnection = useServerFn(getWhatsAppStatus);
+  const [verifiedAccount, setVerifiedAccount] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setVerifiedAccount(null);
+    if (profile.slug) {
+      void checkConnection({ data: { tenantId: profile.slug, waAccountId: profile.waAccountId || profile.slug } })
+        .then((res) => {
+          if (active && res.ok && res.data.isConnected) setVerifiedAccount(res.data.waAccountId);
+        }).catch(() => { /* No verified connection means no sending. */ });
+    }
+    return () => { active = false; };
+  }, [checkConnection, profile.slug, profile.waAccountId]);
+
   const sendReply = async () => {
-    if (!result || !profile.waAccountId) return;
+    if (!result || !verifiedAccount) return;
     setSending(true);
-    const res = await send({ data: { tenantId: profile.slug, waAccountId: profile.waAccountId, to: guestPhone, text: result.reply } });
+    const res = await send({ data: { tenantId: profile.slug, waAccountId: verifiedAccount, to: guestPhone, text: result.reply } });
     setSending(false);
     if (res.ok) toast.success("Reply sent on WhatsApp.");
     else toast.error(res.error);
   };
 
-  const canSend = profile.waConnected && profile.waAccountId && /^\+?\d{9,15}$/.test(guestPhone);
+  const canSend = verifiedAccount && /^\+?\d{9,15}$/.test(guestPhone);
 
   return (
     <div className={`grid gap-6 ${compact ? "" : "lg:grid-cols-2"}`}>
@@ -208,8 +222,8 @@ export function ReplyDrafter({ profile, initialMessage = "", onDrafted, compact 
                 </Button>
               )}
             </div>
-            {!compact && !profile.waConnected && (
-              <p className="text-xs text-muted-foreground">Link WhatsApp in Settings to send straight from here.</p>
+            {!compact && !verifiedAccount && (
+              <p className="text-xs text-muted-foreground">A verified WhatsApp connection is required. Check your connection in Settings.</p>
             )}
           </>
         )}
