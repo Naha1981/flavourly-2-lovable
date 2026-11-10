@@ -19,7 +19,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex min-h-11 min-w-0 items-center">
-          <Logo size="md" className="shrink-0" />
+          <Logo size="lg" className="h-14 shrink-0 sm:h-16" />
           <span className="sr-only">Flavourly home</span>
         </Link>
 
