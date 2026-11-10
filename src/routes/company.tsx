@@ -17,7 +17,7 @@ export const Route = createFileRoute("/company")({
       { property: "og:title", content: "About NahaLabs — Flavourly" },
       {
         property: "og:description",
-        content: "Why we built an AI revenue employee for South African restaurants.",
+        content: "Why we built a revenue employee for South African restaurants.",
       },
     ],
   }),
@@ -39,7 +39,7 @@ const values = [
   },
   {
     title: "A human always has the last word",
-    body: "The AI drafts. Your team approves. Nothing awkward goes out to a guest without a person seeing it first.",
+    body: "Flavourly drafts. Your team approves. Nothing awkward goes out to a guest without a person seeing it first.",
   },
 ];
 

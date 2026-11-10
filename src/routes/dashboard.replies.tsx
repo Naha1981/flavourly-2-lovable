@@ -7,7 +7,7 @@ import { useRestaurantProfile } from "@/lib/restaurant-profile";
 import { dashMeta, PageTitle } from "./dashboard";
 
 export const Route = createFileRoute("/dashboard/replies")({
-  head: () => dashMeta("AI desk", "Analyse guest messages and draft on-brand replies for bookings, questions and complaints."),
+  head: () => dashMeta("Reply desk", "Analyse guest messages and draft on-brand replies for bookings, questions and complaints."),
   component: RepliesPage,
 });
 
@@ -16,7 +16,7 @@ function RepliesPage() {
   if (!ready) return null;
   return (
     <>
-      <PageTitle title="AI desk" sub="Paste any guest message. See what it needs, then send a reply in your voice." />
+      <PageTitle title="Reply desk" sub="Paste any guest message. See what it needs, then send a reply in your voice." />
       <section className="grid gap-4">
         <h2 className="font-medium text-foreground">1. What does this guest need?</h2>
         <MessageTriage profile={profile} />

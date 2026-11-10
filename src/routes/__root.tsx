@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Flavourly is the AI revenue employee for South African restaurants: books tables on WhatsApp, protects your rating, and fills quiet nights.",
+          "Flavourly is the revenue employee for South African restaurants: books tables on WhatsApp, protects your rating, and fills quiet nights.",
       },
       { name: "author", content: "NahaLabs" },
       { property: "og:type", content: "website" },

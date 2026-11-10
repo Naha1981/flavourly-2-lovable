@@ -83,7 +83,7 @@ function Today() {
       <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-2xl">Messaging activation</h2>
         <p className="mt-3 text-muted-foreground">
-          Saving a menu does not activate WhatsApp, AI or sending. Connection, account capacity,
+          Saving a menu does not activate WhatsApp replies or sending. Connection, account capacity,
           reply limits and a test incoming message must be checked before activation.
         </p>
         <p className="mt-3 text-muted-foreground">

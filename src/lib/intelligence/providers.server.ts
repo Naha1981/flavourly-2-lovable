@@ -18,17 +18,17 @@ type ProviderResponse = {
 const env = (key: string) => process.env[key]?.trim() || "";
 
 const labelMap: Record<ProviderKind, string> = {
-  nahallm: "NahaLLM",
-  agent_reach: "Agent Reach",
-  jev: "Jev UltraFast",
-  jev_social: "Jev Social",
-  demand_radar: "Demand Radar",
-  content_os: "NahaLabs Content OS",
-  video_engine: "NahaLabs Video Engine",
-  openpost: "OpenPost",
-  brightbean: "BrightBean",
-  mixpost: "Mixpost",
-  whatsapp_operator: "WhatsApp Operator",
+  nahallm: "Research and drafting",
+  agent_reach: "Web research",
+  jev: "Website work",
+  jev_social: "Social research",
+  demand_radar: "Demand watch",
+  content_os: "Content planning",
+  video_engine: "Video creation",
+  openpost: "Social publishing",
+  brightbean: "Post scheduling",
+  mixpost: "Channel management",
+  whatsapp_operator: "WhatsApp connection",
 };
 
 const modeMap: Record<ProviderKind, ProviderStatus["mode"]> = {

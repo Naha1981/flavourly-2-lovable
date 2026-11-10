@@ -42,7 +42,7 @@ const sections = [
     body: "Don't use Flavourly to send unsolicited bulk messages, impersonate another business, or contact guests who have opted out.",
   },
   {
-    heading: "AI drafts",
+    heading: "Automated drafts",
     body: "Flavourly drafts replies for your team. A person on your side approves anything that goes to a guest, and you remain responsible for what is sent.",
   },
   {

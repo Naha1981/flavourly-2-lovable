@@ -33,7 +33,7 @@ export function ActivationReadiness({ tenantId }: { tenantId: string }) {
           <ul className="mt-3 grid gap-2 text-sm">
             <li>
               Connection switch: {data.connectEnabled ? "enabled" : "paused"}. Sending switch:{" "}
-              {data.sendEnabled ? "enabled" : "paused"}. AI switch:{" "}
+              {data.sendEnabled ? "enabled" : "paused"}. Reply switch:{" "}
               {data.aiEnabled ? "enabled" : "paused"}.
             </li>
             <li>
@@ -41,7 +41,7 @@ export function ActivationReadiness({ tenantId }: { tenantId: string }) {
               {data.providerConfigured
                 ? "key present, account capacity still needs verification"
                 : "not configured"}
-              . AI setup:{" "}
+              . Reply setup:{" "}
               {data.aiConfigured
                 ? "key present, free capacity still needs verification"
                 : "not configured"}

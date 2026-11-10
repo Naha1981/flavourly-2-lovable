@@ -32,7 +32,7 @@ export const Route = createFileRoute("/onboarding")({
       {
         name: "description",
         content:
-          "Set up your Flavourly workspace: restaurant profile, WhatsApp link and your first AI reply.",
+          "Set up your Flavourly workspace: restaurant profile, WhatsApp link and your first reply.",
       },
       { property: "og:title", content: "Set up your restaurant — Flavourly" },
       { property: "og:description", content: "Three short steps to put Flavourly to work." },
