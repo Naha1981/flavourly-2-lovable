@@ -63,4 +63,32 @@ describe("synthetic workspace and actual guard journey, not live acceptance", ()
     });
     expect(state.db.rows("tenant_profiles")).toHaveLength(2);
   });
+  it("keeps 50 synthetic restaurant workspaces isolated across every owner pair", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    const { authorizeTenant } = await import("@/lib/tenant-auth.server");
+    const restaurants = [];
+    for (let i = 0; i < 50; i++) {
+      const user = `synthetic-capacity-owner-${i}`;
+      const ws = await ensureWorkspace(state.db as never, user, `Synthetic capacity restaurant ${i}`);
+      restaurants.push({user, ...ws});
+    }
+    expect(new Set(restaurants.map(r=>r.tenantId)).size).toBe(50);
+    expect(state.db.rows("tenant_profiles")).toHaveLength(50);
+    expect(state.db.rows("tenant_members")).toHaveLength(50);
+    expect(state.db.rows("menu_items")).toHaveLength(0);
+    expect(state.db.rows("customers")).toHaveLength(0);
+    for (const owner of restaurants) {
+      state.user = owner.user;
+      await expect(authorizeTenant(owner.tenantId)).resolves.toBeUndefined();
+      const returning = await ensureWorkspace(state.db as never, owner.user, "Ignored changed metadata");
+      expect(returning.tenantId).toBe(owner.tenantId);
+      for (const other of restaurants) {
+        if (other.tenantId !== owner.tenantId) {
+          await expect(authorizeTenant(other.tenantId)).rejects.toMatchObject({status:403});
+        }
+      }
+    }
+    expect(state.db.rows("tenant_profiles")).toHaveLength(50);
+  });
+
 });
