@@ -102,7 +102,7 @@ function MenuPage() {
     <>
       <PageTitle
         title="Menu"
-        sub="Mark a dish sold out and it disappears from your public menu right away."
+        sub="Mark a dish sold out and guests see it as unavailable on your public menu."
       />
       {!hasVenue && (
         <p className="mb-4 rounded-xl bg-secondary p-3 text-sm text-foreground">

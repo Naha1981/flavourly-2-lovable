@@ -6,6 +6,8 @@ import { getPublicMenu, type PublicMenu } from "@/lib/menu.functions";
 import { formatZAR } from "@/lib/south-africa";
 
 export const Route = createFileRoute("/m/$slug")({
+  // Load public menu data through the server-function gateway on self-hosted UI origins.
+  ssr: false,
   loader: ({ params }) => getPublicMenu({ data: { slug: params.slug } }),
   head: ({ loaderData }) => {
     const name = loaderData?.venue.name ?? "Menu";
