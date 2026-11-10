@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -344,6 +345,9 @@ function DishRow({
   onChanged: () => Promise<void>;
 }) {
   const remove = useServerFn(deleteMenuItem);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const pair = useServerFn(savePairing);
   const unpair = useServerFn(deletePairing);
   const [open, setOpen] = useState(false);
@@ -397,17 +401,30 @@ function DishRow({
             variant="ghost"
             size="icon"
             aria-label={`Delete ${item.name}`}
-            onClick={async () => {
-              if (confirm(`Remove ${item.name} from the menu?`)) {
-                await remove({ data: { tenantId, itemId: item.id } });
-                await onChanged();
-              }
-            }}
+            onClick={() => { setDeleteError(null); setConfirmDelete(true); }}
           >
             <Trash2 className="size-4" />
           </Button>
         </div>
       </div>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove dish?</AlertDialogTitle>
+            <AlertDialogDescription>Remove {item.name} from your menu? This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Keep dish</AlertDialogCancel>
+            <Button disabled={deleting} onClick={async () => {
+              setDeleting(true);
+              try { await remove({ data: { tenantId, itemId: item.id } }); await onChanged(); setConfirmDelete(false); }
+              catch { setDeleteError("Couldn't remove the dish. Please try again."); }
+              finally { setDeleting(false); }
+            }}>{deleting ? "Removing..." : "Remove dish"}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {open && (
         <div className="mt-3 grid gap-3 border-t border-border pt-3">
           {pairings.map((p) => (

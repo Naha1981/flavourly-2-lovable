@@ -14,3 +14,5 @@ describe('public menu on a separate UI host',()=>{
  it('loads data client-side through the protected backend gateway',()=>{const source=readFileSync(new URL('../src/routes/m.$slug.tsx',import.meta.url),'utf8');expect(source).toContain('ssr: false');});
  it('describes the actual sold-out state without promising disappearance',()=>{const source=readFileSync(new URL('../src/routes/dashboard.menu.tsx',import.meta.url),'utf8');expect(source).toContain('guests see it as unavailable');expect(source).not.toContain('disappears from your public menu');});
 });
+
+describe('menu removal confirmation',()=>{it('uses an accessible confirmation with cancel and failure state',()=>{const source=readFileSync(new URL('../src/routes/dashboard.menu.tsx',import.meta.url),'utf8');expect(source).toContain('<AlertDialog open={confirmDelete}');expect(source).toContain('Keep dish');expect(source).toContain("Couldn't remove the dish.");expect(source).not.toContain('if (confirm(');});});
