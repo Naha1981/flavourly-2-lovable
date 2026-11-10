@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check:env": "node scripts/check-env-example.mjs",
-    "check:test-focus": "node scripts/check-test-focus.mjs"
+    "check:test-focus": "node scripts/check-test-focus.mjs",
+    "build:pages": "NITRO_PRESET=cloudflare_pages vite build && node scripts/prepare-pages.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
