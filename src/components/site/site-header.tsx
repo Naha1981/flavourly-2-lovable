@@ -18,7 +18,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <Link to="/" className="flex min-w-0 items-center">
+        <Link to="/" className="flex min-h-11 min-w-0 items-center">
           <Logo size="md" className="shrink-0" />
           <span className="sr-only">Flavourly home</span>
         </Link>
@@ -30,7 +30,7 @@ export function SiteHeader() {
                 key={item.to}
                 to={item.to}
                 activeProps={{ className: "text-foreground" }}
-                className="rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="inline-flex min-h-11 items-center rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
                 {item.label}
               </Link>
@@ -46,7 +46,7 @@ export function SiteHeader() {
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
-            className="ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground lg:hidden"
+            className="ml-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground lg:hidden"
           >
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
@@ -61,7 +61,7 @@ export function SiteHeader() {
                 <Link
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className="block rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+                  className="flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
                 >
                   {item.label}
                 </Link>
@@ -71,7 +71,7 @@ export function SiteHeader() {
               <Link
                 to="/login"
                 onClick={() => setOpen(false)}
-                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+                className="flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
               >
                 Sign in
               </Link>

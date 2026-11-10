@@ -43,7 +43,7 @@ const nav = [
   { to: "/dashboard/redeem", label: "Redeem", icon: Ticket, exact: false },
   { to: "/dashboard/reputation", label: "Reputation", icon: ShieldAlert, exact: false },
   { to: "/dashboard/social", label: "Social", icon: Send, exact: false },
-  { to: "/dashboard/replies", label: "AI desk", icon: Sparkles, exact: false },
+  { to: "/dashboard/replies", label: "Reply desk", icon: Sparkles, exact: false },
   { to: "/dashboard/revenue-employee", label: "Revenue Employee", icon: Bot, exact: false },
   { to: "/dashboard/approvals", label: "Approvals", icon: ClipboardCheck, exact: false },
   { to: "/dashboard/billing", label: "Billing", icon: CreditCard, exact: false },

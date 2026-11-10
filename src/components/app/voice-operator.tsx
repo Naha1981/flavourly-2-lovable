@@ -192,7 +192,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
       const tokenResult = await getToken({ data: { tenantId } });
       if (!tokenResult.ok) throw new Error(tokenResult.error);
 
-      setStatus("Connecting to Gemini…");
+      setStatus("Connecting voice…");
 
       const ws = new WebSocket(
         `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=${encodeURIComponent(tokenResult.token)}`,
@@ -242,7 +242,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
 
         if (message.error?.message) {
           setError(message.error.message);
-          setStatus("Gemini error");
+          setStatus("Voice connection error");
           return;
         }
 
@@ -310,7 +310,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
       };
 
       ws.onerror = () => {
-        setError("Could not connect to Gemini Live.");
+        setError("Could not connect voice. Please try again.");
         setStatus("Connection error");
         setBusy(false);
       };
@@ -394,7 +394,7 @@ export function VoiceOperator({ tenantId, restaurantName }: Props) {
 
       <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Phone className="size-3.5" />
-        Gemini Live uses a short-lived session token; your long-lived Gemini API key stays on the server.
+        Voice access expires after each session. Your account credentials stay private.
       </p>
     </section>
   );

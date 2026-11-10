@@ -80,7 +80,7 @@ const engines = [
   {
     icon: Inbox,
     name: "Unified Inbox",
-    line: "Keep customer conversations, intent and AI drafts in one operational view.",
+    line: "Keep customer conversations, intent and reply drafts in one operational view.",
     benefit: "Stop high-intent messages disappearing after hours.",
   },
 ];
@@ -413,7 +413,7 @@ function RevenueFlow() {
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
             Flavourly is designed around the commercial loop — not another collection of
-            disconnected AI features.
+            disconnected features.
           </p>
         </div>
 

@@ -330,9 +330,9 @@ function RevenueEmployeePage() {
           <div className="flex items-center gap-2">
             <Globe2 className="size-5" />
             <div>
-              <h2 className="font-display text-xl">Capability providers</h2>
+              <h2 className="font-display text-xl">Connected capabilities</h2>
               <p className="text-sm text-muted-foreground">
-                Adapters stay replaceable; Flavourly keeps the business logic.
+                Check which capabilities have been set up for your workspace.
               </p>
             </div>
           </div>
@@ -341,10 +341,10 @@ function RevenueEmployeePage() {
               <div key={provider.provider} className="flex items-center justify-between rounded-xl border border-border p-3">
                 <div>
                   <p className="text-sm font-medium">{provider.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{provider.mode}</p>
+                  <p className="text-[11px] text-muted-foreground">{provider.mode === "browser" ? "Website work" : "Workspace service"}</p>
                 </div>
                 <span className={provider.configured ? "rounded-full bg-forest-soft px-2 py-1 text-[10px] text-forest" : "rounded-full bg-secondary px-2 py-1 text-[10px] text-muted-foreground"}>
-                  {provider.configured ? "configured" : "adapter ready"}
+                  {provider.configured ? "configured" : "Setup needed"}
                 </span>
               </div>
             ))}
