@@ -1,5 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, ws } from '@appdeploy/client';
+import { useEffect, useMemo, useState } from 'react';
+
+const api = {
+  async request(path: string, options: RequestInit = {}) {
+    const response = await fetch(path, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Request failed');
+    return { data };
+  },
+  get(path: string) { return this.request(path); },
+  post(path: string, body: unknown) {
+    return this.request(path, { method: 'POST', body: JSON.stringify(body) });
+  },
+  put(path: string, body: unknown) {
+    return this.request(path, { method: 'PUT', body: JSON.stringify(body) });
+  },
+};
 import {
   ArrowLeft,
   ArrowRight,
@@ -204,8 +222,6 @@ export default function App() {
   const [customerName, setCustomerName] = useState('Guest');
   const [notice, setNotice] = useState('');
   const [activeOrder, setActiveOrder] = useState<string | null>(null);
-  const connection = useRef<ReturnType<typeof ws.connect> | null>(null);
-
   const refreshOrders = async () => {
     try {
       const result = await api.get('/api/orders');
@@ -219,46 +235,27 @@ export default function App() {
 
   useEffect(() => {
     refreshOrders();
-    const conn = ws.connect();
-    connection.current = conn;
-    conn.onMessage((message: any) => {
-      if (
-        message?.type === 'entity.update' &&
-        message?.payload?.entity_type === 'orders'
-      ) {
-        const updated = message.payload.data as Order;
+    const events = new EventSource('/api/events');
+    events.onmessage = message => {
+      try {
+        const updated = JSON.parse(message.data) as Order;
         setOrders(current => {
           const exists = current.some(order => order.id === updated.id);
           return exists
             ? current.map(order => (order.id === updated.id ? updated : order))
             : [updated, ...current];
         });
+      } catch {
+        // Ignore malformed event payloads; the next refresh reconciles state.
       }
-    });
-    conn.ready
-      .then(() => {
-        if (conn.connectionId) {
-          api
-            .post('/api/subscriptions', {
-              entity_type: 'orders',
-              entity_id: 'all',
-              connection_id: conn.connectionId,
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {});
+    };
+    events.onerror = () => {
+      // EventSource reconnects automatically; periodic refresh is the fallback.
+    };
+    const refreshTimer = window.setInterval(refreshOrders, 15000);
     return () => {
-      if (conn.connectionId)
-        api
-          .post('/api/subscriptions/remove', {
-            entity_type: 'orders',
-            entity_id: 'all',
-            connection_id: conn.connectionId,
-          })
-          .catch(() => {});
-      conn.disconnect();
-      connection.current = null;
+      window.clearInterval(refreshTimer);
+      events.close();
     };
   }, []);
 
@@ -297,8 +294,7 @@ export default function App() {
     );
 
   const placeOrder = async () => {
-    if (!cart.length || !address.trim()) return;
-    setBusy(true);
+    if (!cart.length || !address.trim()) return;    setBusy(true);
     try {
       const result = await api.post('/api/orders', {
         customerName,
@@ -597,8 +593,7 @@ export default function App() {
                         className="add-button"
                         onClick={() => addItem(item)}                        aria-label={'Add ' + item.name}
                       >
-                        <Plus size={17} />
-                      </button>
+                        <Plus size={17} />                      </button>
                     </div>
                   </div>
                 </article>
@@ -897,8 +892,7 @@ export default function App() {
                   percent="8.15%"
                   color="gold"
                 />
-              </div>
-              <div className="allocation-note">
+              </div>              <div className="allocation-note">
                 <strong>R135.00 total customer payment</strong>
                 <span>
                   Processing fees, refunds and chargebacks are not included.
