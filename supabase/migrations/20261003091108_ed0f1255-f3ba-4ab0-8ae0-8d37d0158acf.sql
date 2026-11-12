@@ -1,1 +1,0 @@
--- Duplicate of 20260928130000_reservation_attendance.sql; intentionally a no-op.
