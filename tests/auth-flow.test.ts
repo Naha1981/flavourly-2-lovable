@@ -1,0 +1,262 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  postLoginPath,
+  signInErrorMessage,
+  signupErrorMessage,
+  validateSignup,
+} from "@/lib/auth-rules";
+import { createFakeDb, type FakeDb } from "./helpers/fake-db";
+
+/** Sign-up, sign-in, restaurant creation on first sign-in, and dashboard protection. */
+const state: { db: FakeDb; auth: string | null; users: Record<string, string> } = {
+  db: createFakeDb(),
+  auth: null,
+  users: {},
+};
+
+vi.mock("@tanstack/react-start/server", () => ({
+  getRequest: () =>
+    new Request("http://x", { headers: state.auth ? { authorization: state.auth } : {} }),
+}));
+vi.mock("@/integrations/supabase/client.server", () => ({
+  get supabaseAdmin() {
+    return Object.assign(state.db, {
+      auth: {
+        getUser: async (token: string) => {
+          const id = state.users[token];
+          return id
+            ? { data: { user: { id } }, error: null }
+            : { data: { user: null }, error: { message: "bad" } };
+        },
+      },
+    });
+  },
+}));
+
+const TOKEN = "aaa.bbb.ccc";
+
+beforeEach(() => {
+  state.db = createFakeDb({
+    tenant_profiles: [["tenant_id"]],
+    tenant_members: [["tenant_id", "user_id"]],
+  });
+  state.auth = null;
+  state.users = { [TOKEN]: "user-1" };
+  process.env["REQUIRE_AUTH"] = "true";
+});
+afterEach(() => {
+  delete process.env["REQUIRE_AUTH"];
+  delete process.env["ALLOW_INSECURE_DEMO"];
+  delete process.env["PUBLIC_APP_URL"];
+});
+
+describe("sign-up", () => {
+  it("requires a restaurant, an email and an 8+ character password", () => {
+    expect(
+      validateSignup({ restaurant: "", email: "a@b.co", password: "12345678" }),
+    ).not.toBeNull();
+    expect(
+      validateSignup({ restaurant: "Marble", email: "a@b.co", password: "1234567" }),
+    ).not.toBeNull();
+    expect(
+      validateSignup({ restaurant: "Marble", email: "not-an-email", password: "12345678" }),
+    ).not.toBeNull();
+    expect(
+      validateSignup({ restaurant: "Marble", email: "a@b.co", password: "12345678" }),
+    ).toBeNull();
+  });
+});
+
+describe("auth service failures", () => {
+  it("does not tell users to change details when email auth is disabled", () => {
+    expect(signupErrorMessage("email_provider_disabled")).toContain("Email access is paused");
+    expect(signInErrorMessage("Email logins disabled", "email_provider_disabled")).toContain(
+      "No password change",
+    );
+    expect(signupErrorMessage("signup_disabled")).toContain("Email access is paused");
+  });
+  it("reports throttling without leaking backend errors or account existence", () => {
+    expect(signupErrorMessage("over_request_rate_limit")).toContain("wait");
+    expect(signupErrorMessage("user_already_exists")).toBe(signupErrorMessage("unknown"));
+    expect(signupErrorMessage()).toContain("Account creation could not complete");
+  });
+});
+
+describe("sign-in", () => {
+  it("returns to the requested dashboard page", () => {
+    expect(postLoginPath("/dashboard/inbox")).toBe("/dashboard/inbox");
+    expect(postLoginPath("/dashboard?tab=today")).toBe("/dashboard?tab=today");
+    expect(postLoginPath("/dashboard/inbox?status=open#latest")).toBe(
+      "/dashboard/inbox?status=open#latest",
+    );
+  });
+  it("never redirects outside the dashboard after sign-in", () => {
+    expect(postLoginPath(undefined)).toBe("/dashboard");
+    expect(postLoginPath("https://evil.example")).toBe("/dashboard");
+    expect(postLoginPath("/dashboardx")).toBe("/dashboard");
+    expect(postLoginPath("/pricing")).toBe("/dashboard");
+    expect(postLoginPath("/login")).toBe("/dashboard");
+    expect(postLoginPath("//evil.example/dashboard")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/../../login")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/../pricing")).toBe("/dashboard");
+    expect(postLoginPath("/dashboard/\\evil")).toBe("/dashboard");
+  });
+  it("explains an unconfirmed email separately from a wrong password", () => {
+    expect(signInErrorMessage("Email not confirmed")).toBe(
+      "Confirm your email first, then sign in.",
+    );
+    expect(signInErrorMessage("Invalid login credentials")).toBe(
+      "That email and password don't match.",
+    );
+  });
+});
+
+describe("restaurant creation during onboarding", () => {
+  it("does not create another workspace when membership lookup fails", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    state.db.injectError("tenant_members", "select", { message: "database unavailable" });
+    await expect(
+      ensureWorkspace(
+        state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+        "user-1",
+        "Synthetic",
+      ),
+    ).rejects.toMatchObject({ message: "database unavailable" });
+    expect(state.db.rows("tenant_profiles")).toHaveLength(0);
+  });
+
+  it("does not report successful entry when an existing profile cannot be loaded", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    await state.db
+      .from("tenant_members")
+      .insert({ tenant_id: "missing", user_id: "user-1", role: "owner" });
+    await expect(
+      ensureWorkspace(
+        state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+        "user-1",
+        "Synthetic",
+      ),
+    ).rejects.toThrow("profile is unavailable");
+    state.db.injectError("tenant_profiles", "select", { message: "database unavailable" });
+    await expect(
+      ensureWorkspace(
+        state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+        "user-1",
+        "Synthetic",
+      ),
+    ).rejects.toMatchObject({ message: "database unavailable" });
+    expect(state.db.rows("tenant_profiles")).toHaveLength(0);
+  });
+
+  it("creates the restaurant and makes the new user its owner", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    const ws = await ensureWorkspace(
+      state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+      "user-1",
+      "Marble JHB",
+    );
+    expect(ws).toEqual({ tenantId: "marble-jhb", name: "Marble JHB", role: "owner" });
+    const trialEnd = new Date(
+      String(state.db.rows("tenant_profiles")[0]?.["trial_ends_at"]),
+    ).getTime();
+    expect(trialEnd - Date.now()).toBeGreaterThan(7 * 86_400_000 - 5_000);
+    expect(trialEnd - Date.now()).toBeLessThanOrEqual(7 * 86_400_000);
+    expect(state.db.rows("tenant_members")).toEqual([
+      expect.objectContaining({ tenant_id: "marble-jhb", user_id: "user-1", role: "owner" }),
+    ]);
+  });
+
+  it("is safe to call twice and never creates a second restaurant", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    await ensureWorkspace(
+      state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+      "user-1",
+      "Marble JHB",
+    );
+    const again = await ensureWorkspace(
+      state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+      "user-1",
+      "Something Else",
+    );
+    expect(again.tenantId).toBe("marble-jhb");
+    expect(state.db.rows("tenant_profiles")).toHaveLength(1);
+  });
+
+  it("gives a second restaurant with the same name its own address", async () => {
+    const { ensureWorkspace } = await import("@/lib/workspace.server");
+    await ensureWorkspace(
+      state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+      "user-1",
+      "Marble JHB",
+    );
+    const other = await ensureWorkspace(
+      state.db as unknown as Parameters<typeof ensureWorkspace>[0],
+      "user-2",
+      "Marble JHB",
+    );
+    expect(other.tenantId).not.toBe("marble-jhb");
+    expect(other.tenantId.startsWith("marble-jhb-")).toBe(true);
+  });
+});
+
+describe("protected dashboard access", () => {
+  const status = async (p: Promise<unknown>) => {
+    try {
+      await p;
+      return 200;
+    } catch (e) {
+      return (e as Response).status;
+    }
+  };
+
+  it("fails closed when no authentication environment flags are set", async () => {
+    delete process.env["REQUIRE_AUTH"];
+    delete process.env["ALLOW_INSECURE_DEMO"];
+    delete process.env["PUBLIC_APP_URL"];
+
+    const { authRequired, authorizeTenant } = await import("@/lib/tenant-auth.server");
+    expect(authRequired()).toBe(true);
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(401);
+  });
+
+  it("allows bypass only when the demo override and a non-HTTPS URL are explicit", async () => {
+    const { authRequired } = await import("@/lib/tenant-auth.server");
+    process.env["REQUIRE_AUTH"] = "false";
+    process.env["ALLOW_INSECURE_DEMO"] = "true";
+    process.env["PUBLIC_APP_URL"] = "http://localhost:3000";
+    expect(authRequired()).toBe(false);
+
+    process.env["PUBLIC_APP_URL"] = "https://example.com";
+    expect(authRequired()).toBe(true);
+  });
+
+  it("blocks signed-out visitors with 401", async () => {
+    const { authorizeTenant, requireUser } = await import("@/lib/tenant-auth.server");
+    expect(await status(requireUser())).toBe(401);
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(401);
+  });
+
+  it("blocks an invalid session token with 401", async () => {
+    state.auth = "Bearer xxx.yyy.zzz";
+    const { requireUser } = await import("@/lib/tenant-auth.server");
+    expect(await status(requireUser())).toBe(401);
+  });
+
+  it("blocks a signed-in user from another restaurant with 403", async () => {
+    state.auth = `Bearer ${TOKEN}`;
+    state.db.rows("tenant_members").push({ tenant_id: "other", user_id: "user-1", role: "owner" });
+    const { authorizeTenant } = await import("@/lib/tenant-auth.server");
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(403);
+  });
+
+  it("lets staff in but keeps manager-only areas for owners and managers", async () => {
+    state.auth = `Bearer ${TOKEN}`;
+    state.db
+      .rows("tenant_members")
+      .push({ tenant_id: "marble-jhb", user_id: "user-1", role: "staff" });
+    const { authorizeTenant, MANAGERS } = await import("@/lib/tenant-auth.server");
+    expect(await status(authorizeTenant("marble-jhb"))).toBe(200);
+    expect(await status(authorizeTenant("marble-jhb", MANAGERS))).toBe(403);
+  });
+});

@@ -1,0 +1,344 @@
+import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
+import { createFakeDb } from "./helpers/fake-db";
+const state = vi.hoisted(() => ({ db: null as unknown as ReturnType<typeof createFakeDb> }));
+vi.mock("@/lib/db.server", () => ({
+  db: async () => state.db,
+  APP_URL: () => process.env["PUBLIC_APP_URL"] ?? "",
+}));
+vi.mock("../src/lib/db.server", () => ({
+  db: async () => state.db,
+  APP_URL: () => process.env["PUBLIC_APP_URL"] ?? "",
+}));
+import { sendText, bootstrap, status } from "@/lib/whatsapp.server";
+import { encryptCredential } from "@/lib/tenant-whatsapp.server";
+import { parseInboxEvent } from "@/lib/webhook-ingest.server";
+const event = () => ({
+  id: "event-1",
+  event: "message.received",
+  timestamp: new Date().toISOString(),
+  account: { accountId: "account-a", profileId: "profile-a", platform: "whatsapp" },
+  conversation: { id: "conversation-a" },
+  message: { id: "message-a", text: "Menu please", sender: { phoneNumber: "27821234567" } },
+});
+beforeEach(() => {
+  state.db = createFakeDb();
+  state.db
+    .rows("wa_channels")
+    .push({ tenant_id: "venue-a", account_id: "account-a", profile_id: "profile-a" });
+  state.db.rows("wa_conversations").push({
+    id: "convo-a",
+    tenant_id: "venue-a",
+    provider_conversation_id: "conversation-a",
+    guest_phone: "27821234567",
+    last_inbound_at: new Date().toISOString(),
+  });
+  process.env["WHATSAPP_SEND_ENABLED"] = "true";
+  process.env["ZERNIO_API_KEY"] = "test-only-key";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ message: { id: "reply-1" } })),
+  );
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete process.env["WHATSAPP_SEND_ENABLED"];
+  delete process.env["ZERNIO_API_KEY"];
+});
+describe("customer-owned provider routing", () => {
+  it("uses tenant key, never shared key, for an owned account", async () => {
+    vi.stubEnv("WHATSAPP_CREDENTIALS_ENCRYPTION_KEY", "ab".repeat(32));
+    vi.stubEnv("WHATSAPP_CUSTOMER_OWNED_ENABLED", "true");
+    state.db.rows("wa_channels")[0]!["credential_mode"] = "customer";
+    state.db.rows("wa_tenant_credentials").push({
+      tenant_id: "venue-a",
+      state: "ready",
+      api_key_ciphertext: encryptCredential("fixture-tenant-only-key", "venue-a"),
+    });
+    expect((await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).ok).toBe(
+      true,
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer fixture-tenant-only-key" }),
+      }),
+    );
+    vi.unstubAllEnvs();
+  });
+  it("missing tenant credentials never fall back to shared key", async () => {
+    state.db.rows("wa_channels")[0]!["credential_mode"] = "customer";
+    expect((await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).ok).toBe(
+      false,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+describe("reply-only send guard", () => {
+  it("sends a recent customer reply through the inbox only", async () => {
+    expect((await sendText("venue-a", "account-a", "27821234567", "Welcome")).ok).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(
+      "https://zernio.com/api/v1/inbox/conversations/conversation-a/messages",
+      expect.objectContaining({
+        body: JSON.stringify({ accountId: "account-a", message: "Welcome" }),
+      }),
+    );
+  });
+  for (const scenario of [
+    "disabled",
+    "foreign-account",
+    "foreign-tenant",
+    "never-inbound",
+    "expired",
+    "opted-out",
+    "budget-exhausted",
+  ])
+    it(`refuses ${scenario} without a network call`, async () => {
+      if (scenario === "disabled") delete process.env["WHATSAPP_SEND_ENABLED"];
+      if (scenario === "never-inbound") state.db.rows("wa_conversations").splice(0);
+      if (scenario === "expired")
+        state.db.rows("wa_conversations")[0]!["last_inbound_at"] = new Date(
+          Date.now() - 86400001,
+        ).toISOString();
+      if (scenario === "opted-out")
+        state.db.rows("wa_opt_outs").push({ tenant_id: "venue-a", phone: "27821234567" });
+      if (scenario === "budget-exhausted")
+        vi.spyOn(state.db, "rpc").mockResolvedValue({ data: false, error: null });
+      const result = await sendText(
+        scenario === "foreign-tenant" ? "venue-b" : "venue-a",
+        scenario === "foreign-account" ? "account-b" : "account-a",
+        "27821234567",
+        "hi",
+      );
+      expect(result.ok).toBe(false);
+      expect(fetch).not.toHaveBeenCalled();
+      if (scenario === "budget-exhausted")
+        expect(state.db.rows("wa_conversations")[0]).toMatchObject({ status: "needs_approval" });
+    });
+});
+describe("provider parser", () => {
+  it("ignores provider test deliveries and preserves standby for human control", () => {
+    expect(parseInboxEvent({ ...event(), test: true })).toBeNull();
+    const e = event();
+    expect(
+      parseInboxEvent({ ...e, message: { ...e.message, metadata: { standby: true } } })?.standby,
+    ).toBe(true);
+  });
+
+  it("uses provider account identity and ignores attacker tenant hints", () => {
+    expect(parseInboxEvent({ ...event(), tenantId: "venue-b" })?.accountId).toBe("account-a");
+    expect(parseInboxEvent({ ...event(), tenantId: "venue-b" })).not.toHaveProperty("tenantId");
+  });
+  it("rejects echoes, other platforms, missing IDs and malformed timestamps", () => {
+    const e = event();
+    expect(parseInboxEvent({ ...e, message: { ...e.message, fromMe: true } })).toBeNull();
+    expect(parseInboxEvent({ ...e, account: { ...e.account, platform: "instagram" } })).toBeNull();
+    expect(parseInboxEvent({ ...e, id: "" })).toBeNull();
+    expect(parseInboxEvent({ ...e, timestamp: "bad" })).toBeNull();
+  });
+});
+
+describe("one-number plan guard", () => {
+  it("does not create another connection when a number is linked", async () => {
+    process.env["WHATSAPP_CONNECT_ENABLED"] = "true";
+    try {
+      expect((await bootstrap("venue-a", "Venue A")).ok).toBe(false);
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      delete process.env["WHATSAPP_CONNECT_ENABLED"];
+    }
+  });
+  it("does not silently replace an existing linked account", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            { _id: "account-other", profileId: "profile-a", platform: "whatsapp", isActive: true },
+          ],
+        }),
+      ),
+    );
+    expect((await status("venue-a", "account-other")).ok).toBe(false);
+    expect(state.db.rows("wa_channels")[0]?.["account_id"]).toBe("account-a");
+  });
+});
+
+describe("missing production allowance setup", () => {
+  it("blocks before the old reserve or provider when the read RPC is missing", async () => {
+    const rpc = vi
+      .spyOn(state.db, "rpc")
+      .mockResolvedValue({ data: null, error: { message: "PGRST202" } });
+    const result = await sendText("venue-a", "account-a", "27821234567", "hello");
+    expect(result.ok).toBe(false);
+    expect(rpc).toHaveBeenCalledWith("wa_reply_usage", { p_tenant: "venue-a" });
+    expect(rpc).not.toHaveBeenCalledWith("wa_reserve_budget", expect.anything());
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("blocks a denied allowance even when the old reservation would succeed", async () => {
+    const rpc = vi
+      .spyOn(state.db, "rpc")
+      .mockResolvedValue({ data: { allowed: false }, error: null });
+    expect((await sendText("venue-a", "account-a", "27821234567", "hello")).ok).toBe(false);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("current provider populated profile response", () => {
+  it("matches exact nested profile ID and binds the existing account", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            {
+              _id: "account-a",
+              profileId: { _id: "profile-a", name: "Synthetic A" },
+              platform: "whatsapp",
+              isActive: true,
+            },
+          ],
+        }),
+      ),
+    );
+    expect(await status("venue-a", "ignored")).toMatchObject({
+      ok: true,
+      data: { isConnected: true, waAccountId: "account-a" },
+    });
+  });
+  it("does not accept a nested foreign profile", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          accounts: [
+            {
+              _id: "account-a",
+              profileId: { _id: "profile-other" },
+              platform: "whatsapp",
+              isActive: true,
+            },
+          ],
+        }),
+      ),
+    );
+    expect((await status("venue-a", "ignored")).ok).toBe(false);
+    expect(state.db.rows("wa_channels")[0]?.["account_id"]).toBe("account-a");
+  });
+});
+
+describe("provider send evidence", () => {
+  it("does not claim acceptance without a real message identifier", async () => {
+    for (const body of [{}, { message: {} }, { message: { id: 12 } }, { messageId: "" }]) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json(body)),
+      );
+      expect(
+        await sendText("venue-a", "account-a", "27821234567", "Synthetic reply"),
+      ).toMatchObject({ ok: false, error: expect.stringContaining("could not be verified") });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  });
+  it("reads the documented nested Zernio send response without a second provider call", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          success: true,
+          data: { messageId: "wamid.verified-reply", conversationId: "conversation-a" },
+        }),
+      ),
+    );
+    expect(await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).toMatchObject({
+      ok: true,
+      data: { messageId: "wamid.verified-reply", status: "accepted" },
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("preserves a verified top-level message identifier", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ messageId: "verified-reply" })),
+    );
+    expect(await sendText("venue-a", "account-a", "27821234567", "Synthetic reply")).toMatchObject({
+      ok: true,
+      data: { messageId: "verified-reply", status: "accepted" },
+    });
+  });
+});
+
+describe("self-service own-number routing", () => {
+  beforeEach(() => {
+    process.env["WHATSAPP_CONNECT_ENABLED"] = "true";
+    process.env["ZERNIO_WEBHOOK_SECRET"] = "synthetic-secret";
+    state.db.rows("wa_channels")[0]!["account_id"] = null;
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).endsWith("/accounts")) return Response.json({ accounts: [] });
+      if (String(url).endsWith("/webhooks/settings")) return Response.json({ webhooks: [] });
+      return Response.json({ authUrl: "https://zernio.com/connect/whatsapp/test" });
+    });
+  });
+  afterEach(() => {
+    delete process.env["WHATSAPP_CONNECT_ENABLED"];
+    delete process.env["ZERNIO_WEBHOOK_SECRET"];
+    delete process.env["PUBLIC_APP_URL"];
+  });
+  it("prepares one exact-profile inbox hook before the hosted coexistence flow", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(true);
+    const calls = vi.mocked(fetch).mock.calls;
+    const post = calls.find(
+      ([url, init]) => String(url).endsWith("/webhooks/settings") && init?.method === "POST",
+    );
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
+      profileIds: ["profile-a"],
+      url: "https://flavourly.nahalabs.co.za/api/public/webhooks/whatsapp",
+    });
+    expect(
+      calls.some(([url]) =>
+        String(url).includes("signup=hosted&onboarding=business_app&brandName=Flavourly"),
+      ),
+    ).toBe(true);
+  });
+  it("stops before connecting if the webhook secret is missing", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    delete process.env["ZERNIO_WEBHOOK_SECRET"];
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(false);
+    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).endsWith("/accounts"))).toBe(
+      true,
+    );
+  });
+  it("does not modify an existing other-app webhook", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      String(url).endsWith("/accounts")
+        ? Response.json({ accounts: [] })
+        : String(url).endsWith("/webhooks/settings")
+          ? Response.json({
+              webhooks: [
+                {
+                  url: "https://revup.nahalabs.co.za/webhooks/zernio/",
+                  isActive: true,
+                  profileIds: [],
+                },
+              ],
+            })
+          : Response.json({ authUrl: "https://zernio.com/connect/whatsapp/test" }),
+    );
+    await bootstrap("venue-a", "Synthetic A");
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([, init]) => init?.method === "PUT" || init?.method === "DELETE"),
+    ).toBe(false);
+  });
+  it("refuses a third paid connection before profile/webhook creation", async () => {
+    process.env["PUBLIC_APP_URL"] = "https://flavourly.nahalabs.co.za";
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({ accounts: [{ isActive: true }, { isActive: true }] }),
+    );
+    expect((await bootstrap("venue-a", "Synthetic A")).ok).toBe(false);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});

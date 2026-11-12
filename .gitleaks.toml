@@ -1,0 +1,17 @@
+title = "Flavourly secret scanning"
+[extend]
+useDefault = true
+
+# Supabase publishable keys (sb_publishable_ prefix) are explicitly intended
+# for browser use. Allow that class only in the public env template and the
+# historically tracked .env file; do not allowlist the path by itself.
+[allowlist]
+description = "Only Supabase publishable keys in .env and .env.example are public client configuration."
+condition = "AND"
+paths = [
+  '''(^|/)\.env$''',
+  '''(^|/)\.env\.example$'''
+]
+regexes = [
+  '''sb_publishable_[A-Za-z0-9_-]+'''
+]
