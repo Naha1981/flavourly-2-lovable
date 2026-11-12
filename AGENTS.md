@@ -1,0 +1,1 @@
+- Keep the exported marketplace frontend independent of the unavailable AppDeploy client package by using the local HTTP adapter; realtime remains inactive until a compatible service is configured.

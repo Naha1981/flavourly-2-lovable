@@ -1,22 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, ws } from '@appdeploy/client';
+import { useEffect, useRef, useState } from 'react';
+import { api, ws } from './lib/appdeploy-client';
 import {
-  ArrowLeft,
   ArrowRight,
   Bike,
   Check,
-  ChefHat,
   ChevronDown,
   Clock3,
   Compass,
   Heart,
   Home,
   MapPin,
-  MessageCircle,
   Minus,
   Navigation,
   Package,
-  Phone,
   Plus,
   Search,
   ShoppingBag,
@@ -203,7 +199,6 @@ export default function App() {
   const [address, setAddress] = useState('Home · 12 Main Road, Johannesburg');
   const [customerName, setCustomerName] = useState('Guest');
   const [notice, setNotice] = useState('');
-  const [activeOrder, setActiveOrder] = useState<string | null>(null);
   const connection = useRef<ReturnType<typeof ws.connect> | null>(null);
 
   const refreshOrders = async () => {
@@ -311,14 +306,12 @@ export default function App() {
         foodSubtotal,
         deliveryFee,
         total,
-        ...totals,
         address,
       });
       setOrders(current => [
         result.data.order,
         ...current.filter(order => order.id !== result.data.order.id),
       ]);
-      setActiveOrder(result.data.order.id);
       setCart([]);
       setShowCart(false);
       setNotice('Order placed! Your restaurant has been notified.');
@@ -356,8 +349,6 @@ export default function App() {
     }
   };
 
-  const currentOrder =
-    orders.find(order => order.id === activeOrder) || orders[0];
   const openOrders = orders.filter(order => order.status !== 'delivered');
   const completedOrders = orders.filter(order => order.status === 'delivered');
 
