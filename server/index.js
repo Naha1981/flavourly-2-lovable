@@ -162,7 +162,7 @@ app.use((error, _req, res, _next) => {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.resolve(here, '../dist')));
-app.get('*', (_req, res) => res.sendFile(path.resolve(here, '../dist/index.html')));
+app.get('/{*splat}', (_req, res) => res.sendFile(path.resolve(here, '../dist/index.html')));
 
 await initialise();
 const server = app.listen(port, '0.0.0.0', () => console.log(`Flavourly API listening on ${port}`));
