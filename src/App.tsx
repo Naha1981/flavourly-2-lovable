@@ -307,7 +307,6 @@ export default function App() {
         foodSubtotal,
         deliveryFee,
         total,
-        ...totals,
         address,
       });
       setOrders(current => [
