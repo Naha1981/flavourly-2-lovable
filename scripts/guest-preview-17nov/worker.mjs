@@ -33,13 +33,19 @@ var worker_default = {
       for (const cookie of cookies) out.append("set-cookie", cookie.replace(/;\s*Domain=(?:\.)?flavourly-2-lovable\.lovable\.app(?=;|$)/ig, ""));
     }
     if (!incoming.pathname.startsWith("/assets/")) out.set("cache-control", "private, no-store");
+    if(incoming.pathname.startsWith('/assets/routes-') && incoming.pathname.endsWith('.js')) {
+      let js=await response.text();
+      js=js.replace("(0,x.jsx)(h,{asChild:!0,size:`lg`,className:`rounded-full px-7 text-base shadow-[var(--shadow-lift)]`,children:(0,x.jsx)(r,{to:`/claim/$slug`,params:{slug:`marble-jhb`},children:`See what Flavourly finds`})})",'null');
+      out.set('cache-control','no-store');out.delete('content-length');out.delete('etag');
+      return new Response(js,{status:response.status,headers:out});
+    }
     const result = new Response(response.body, { status: response.status, statusText: response.statusText, headers: out });
     if (incoming.pathname === "/login" && (out.get("content-type") || "").includes("text/html")) {
       return new HTMLRewriter().on("form", { element(form) {
         form.setAttribute("method", "post");
       } }).transform(result);
     }
-    if(incoming.pathname==='/' && (out.get('content-type')||'').includes('text/html')) return new HTMLRewriter().on('body',{element(e){e.prepend('<aside style="padding:16px;background:#fff2c2;color:#20251c;font:16px system-ui;text-align:center">Account service unavailable. <a href="/demo" style="color:#184b30;font-weight:bold">Explore a fictional guest workspace</a>. No sign-in, messages or real bookings.</aside>',{html:true})}}).transform(result);
+    if(incoming.pathname==='/' && (out.get('content-type')||'').includes('text/html')) return new HTMLRewriter().on('a[href^="/claim/"]',{element(e){e.remove()}}).on('body',{element(e){e.prepend('<aside style="padding:16px;background:#fff2c2;color:#20251c;font:16px system-ui;text-align:center">Account service unavailable. <a href="/demo" style="color:#184b30;font-weight:bold">Explore a fictional guest workspace</a>. No sign-in, messages or real bookings.</aside>',{html:true})}}).transform(result);
     return result;
   }
 };

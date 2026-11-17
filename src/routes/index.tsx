@@ -119,15 +119,6 @@ function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-              className="rounded-full px-7 text-base shadow-[var(--shadow-lift)]"
-            >
-              <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-                See what Flavourly finds
-              </Link>
-            </Button>
           </div>
 
         </div>
@@ -395,11 +386,6 @@ function MagicLink() {
             guests and opportunities — before asking them to sit through a sales demo.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="rounded-full px-7">
-              <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-                See an illustrative workspace <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
             <Button asChild size="lg" variant="ghost" className="rounded-full">
               <Link to="/product">See how it works</Link>
             </Button>
@@ -656,11 +642,6 @@ function FinalCta() {
           automate next.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Button asChild size="lg" className="rounded-full px-8 text-base">
-            <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
-              See Flavourly in a restaurant <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
           <Button
             asChild
             size="lg"
