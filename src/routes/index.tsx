@@ -124,7 +124,7 @@ function Hero() {
               size="lg"
               className="rounded-full px-7 text-base shadow-[var(--shadow-lift)]"
             >
-              <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
+              <Link to="/claim/$slug" params={{ slug: "sample-restaurant" }}>
                 See what Flavourly finds
               </Link>
             </Button>
@@ -396,7 +396,7 @@ function MagicLink() {
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full px-7">
-              <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
+              <Link to="/claim/$slug" params={{ slug: "sample-restaurant" }}>
                 See an illustrative workspace <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
@@ -657,7 +657,7 @@ function FinalCta() {
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="rounded-full px-8 text-base">
-            <Link to="/claim/$slug" params={{ slug: "marble-jhb" }}>
+            <Link to="/claim/$slug" params={{ slug: "sample-restaurant" }}>
               See Flavourly in a restaurant <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>

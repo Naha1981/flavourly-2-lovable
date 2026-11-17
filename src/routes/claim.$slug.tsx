@@ -34,7 +34,7 @@ function titleFromSlug(slug: string) {
 
 function ClaimPage() {
   const { slug } = Route.useParams();
-  const venue = titleFromSlug(slug) || demoRestaurant.name;
+  const venue = "Sample restaurant";
 
   const included = [
     "Add your own menu, hours and branding during setup",
@@ -64,7 +64,7 @@ function ClaimPage() {
           {venue}: an illustrative preview
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          This page uses a name from the URL and sample figures. It is not evidence that we
+          This page uses a fictional restaurant label and sample figures. It is not evidence that we
           researched, imported or connected this restaurant.
         </p>
 

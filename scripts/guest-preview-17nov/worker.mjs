@@ -10,6 +10,7 @@ var worker_default = {
       return new Response(null, { status: 303, headers: { location: incoming.origin + incoming.pathname, "cache-control": "no-store", "referrer-policy": "no-referrer" } });
     }
     if(incoming.pathname === '/demo' && request.method === 'GET') return new Response(GUEST_DEMO,{headers:{'content-type':'text/html;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
+    if(incoming.pathname.startsWith('/claim/') && incoming.pathname !== '/claim/sample-restaurant') return Response.redirect(PUBLIC+'/claim/sample-restaurant',302);
     const headers = new Headers(request.headers);
     headers.delete("host");
     headers.delete("cf-connecting-ip");
@@ -33,6 +34,19 @@ var worker_default = {
       for (const cookie of cookies) out.append("set-cookie", cookie.replace(/;\s*Domain=(?:\.)?flavourly-2-lovable\.lovable\.app(?=;|$)/ig, ""));
     }
     if (!incoming.pathname.startsWith("/assets/")) out.set("cache-control", "private, no-store");
+    if(incoming.pathname.startsWith('/assets/') && incoming.pathname.endsWith('.js')) {
+      let js=await response.text();
+      js=js.replaceAll('marble-jhb','sample-restaurant').replaceAll('Rosebank, Johannesburg','Fictional sample location').replaceAll('"Marble"','"Sample restaurant"');
+      out.set('cache-control','no-store');out.delete('content-length');out.delete('etag');
+      return new Response(js,{status:response.status,headers:out});
+    }
+    if (incoming.pathname === '/claim/sample-restaurant' && request.method === 'GET' && (out.get('content-type')||'').includes('text/html')) {
+      let html=await response.text();
+      html=html.replace(/Marble Jhb|Marble|Rosebank, Johannesburg/g,'Sample restaurant').replace(/Sample Restaurant/g,'Sample restaurant').replace(/marble-jhb/g,'sample-restaurant').replace(/This page uses a name from the URL and sample figures\./g,'This page uses a fictional restaurant label and sample figures.');
+      html=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+      out.set('cache-control','no-store');out.delete('content-length');out.delete('etag');
+      return new Response(html,{status:response.status,headers:out});
+    }
     const result = new Response(response.body, { status: response.status, statusText: response.statusText, headers: out });
     if (incoming.pathname === "/login" && (out.get("content-type") || "").includes("text/html")) {
       return new HTMLRewriter().on("form", { element(form) {
