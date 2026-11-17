@@ -14,3 +14,13 @@ describe('guest entry',()=>{
   expect(source).toContain('No messages leave this page');
  });
 });
+
+describe('retired prospect pages',()=>{
+ it('redirects every claim URL before passing a request upstream',()=>{
+  const guard=source.indexOf("incoming.pathname === '/claim' || incoming.pathname.startsWith('/claim/')");
+  expect(guard).toBeGreaterThan(-1);
+  expect(guard).toBeLessThan(source.indexOf('const headers = new Headers(request.headers)'));
+  expect(source.slice(guard,guard+230)).toContain("location:PUBLIC + '/'");
+  expect(source.slice(guard,guard+230)).toContain("'cache-control':'no-store'");
+ });
+});

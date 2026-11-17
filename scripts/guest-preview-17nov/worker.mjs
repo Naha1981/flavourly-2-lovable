@@ -9,6 +9,7 @@ var worker_default = {
     if ([...incoming.searchParams.keys()].some((key) => /^(password|passwd|passcode|pwd)$/i.test(key))) {
       return new Response(null, { status: 303, headers: { location: incoming.origin + incoming.pathname, "cache-control": "no-store", "referrer-policy": "no-referrer" } });
     }
+    if(incoming.pathname === '/claim' || incoming.pathname.startsWith('/claim/')) return new Response(null,{status:302,headers:{location:PUBLIC + '/', 'cache-control':'no-store'}});
     if(incoming.pathname === '/demo' && ['GET','HEAD'].includes(request.method)) return Response.redirect(PUBLIC + '/try' + incoming.search, 302);
     if(incoming.pathname === '/try' && ['GET','HEAD'].includes(request.method)) return new Response(request.method === 'HEAD' ? null : GUEST_DEMO,{headers:{'content-type':'text/html;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
     const headers = new Headers(request.headers);
