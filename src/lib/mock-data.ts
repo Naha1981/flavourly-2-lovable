@@ -23,9 +23,9 @@ export type Restaurant = {
 };
 
 export const demoRestaurant: Restaurant = {
-  slug: "sample-restaurant",
-  name: "Sample restaurant",
-  city: "Fictional sample location",
+  slug: "marble-jhb",
+  name: "Marble",
+  city: "Rosebank, Johannesburg",
   cuisine: "Wood-fired African grill",
   rating: 4.7,
   reviewCount: 3128,
