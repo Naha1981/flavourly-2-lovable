@@ -6,7 +6,7 @@ describe('short home review',()=>{
   expect(source).not.toContain('See what Flavourly finds');
   expect(source).not.toContain('marble-jhb');
   expect(source).not.toContain('to="/claim/$slug"');
-  expect(source).toContain('Illustrative demo');
+  expect(source).toContain('Sample conversation');
   expect(source).toContain('The restaurant still needs to confirm it.');
  });
  it('does not hide product messages behind delayed entrances',()=>{

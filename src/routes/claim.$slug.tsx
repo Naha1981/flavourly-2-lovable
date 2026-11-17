@@ -12,7 +12,7 @@ export const Route = createFileRoute("/claim/$slug")({
       { title: "Claim your restaurant app — Flavourly" },
       {
         name: "description",
-        content: "Illustrative Flavourly preview. Your venue has not been imported or connected.",
+        content: "Sample Flavourly preview. Your venue has not been imported or connected.",
       },
       { property: "og:title", content: "Claim your restaurant app — Flavourly" },
       {
@@ -51,7 +51,7 @@ function ClaimPage() {
             <Logo size="md" />
           </Link>
           <Badge variant="secondary" className="rounded-full text-[11px]">
-            Illustrative preview: {venue}
+            Sample preview: {venue}
           </Badge>
         </div>
       </header>
@@ -61,7 +61,7 @@ function ClaimPage() {
           <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Sample only - not connected
         </Badge>
         <h1 className="mt-5 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-          {venue}: an illustrative preview
+          {venue}: a sample preview
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
           This page uses a name from the URL and sample figures. It is not evidence that we
@@ -93,7 +93,7 @@ function ClaimPage() {
 
           <div className="rounded-2xl border border-border/70 bg-card p-7">
             <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Illustrative dashboard - not your results
+              Sample dashboard - not your results
             </p>
             <dl className="mt-5 grid gap-5">
               <Stat label="Sample revenue" value={rand(revenue.yesterday)} />
@@ -102,7 +102,7 @@ function ClaimPage() {
               <Stat label="Recovered this month" value={rand(revenue.recovered)} />
             </dl>
             <p className="mt-6 text-xs leading-relaxed text-muted-foreground">
-              All figures are illustrative, not verified revenue, customer results or a promise of a
+              All figures are samples, not verified revenue, customer results or a promise of a
               till connection.
             </p>
           </div>

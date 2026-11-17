@@ -93,7 +93,7 @@ function Landing() {
         <Hero />
         <Engines />
         <PricingPeek />
-        <p className="mx-auto max-w-7xl px-6 py-6 text-sm text-muted-foreground">Illustrative product examples only. No real customer, booking or revenue results are shown.</p>
+        <p className="mx-auto max-w-7xl px-6 py-6 text-sm text-muted-foreground">Sample product examples only. No real customer, booking or revenue results are shown.</p>
       </main>
       <SiteFooter />
     </div>
@@ -149,7 +149,7 @@ function HeroExperience() {
               variant="outline"
               className="rounded-full border-forest/20 bg-forest/5 text-forest"
             >
-              Illustrative demo
+              Sample conversation
             </Badge>
           </div>
 
@@ -490,7 +490,7 @@ function Story() {
               See the system move from signal to action.
             </h2>
             <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-              This is an illustrative product workflow, not a customer revenue claim.
+              This is a sample product workflow, not a customer revenue claim.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -520,7 +520,7 @@ function Story() {
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm font-medium text-muted-foreground">Campaign · Tuesday Rescue</p>
               <Badge className="rounded-full bg-forest/10 text-forest hover:bg-forest/10">
-                Illustrative
+                Sample
               </Badge>
             </div>
 

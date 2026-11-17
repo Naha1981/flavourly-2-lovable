@@ -26,7 +26,7 @@ describe("public claims remain fail-closed during pilot acceptance", () => {
     expect(p).not.toContain("demoRestaurant");
     expect(p).toContain('name: ""');
     expect(source("routes/dashboard.index.tsx")).not.toContain("mock-data");
-    expect(source("routes/index.tsx")).toContain("Illustrative product examples only");
+    expect(source("routes/index.tsx")).toContain("Sample product examples only");
   });
   it("does not pretend an enquiry was sent", () => {
     const s = source("routes/contact.tsx");
