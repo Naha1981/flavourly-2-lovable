@@ -13,6 +13,7 @@ import { lovable } from "@/integrations/lovable";
 import { enterWorkspace } from "@/lib/auth-client";
 import { postLoginPath, signInErrorMessage } from "@/lib/auth-rules";
 
+const RECOVERY_EMAIL_ONLY = import.meta.env["VITE_SUPABASE_URL"] === "https://sllsevzvlarcmdyxaibm.supabase.co";
 const GOOGLE_REDIRECT_KEY = "fl_postlogin_redirect";
 
 const searchSchema = z.object({
@@ -197,7 +198,7 @@ function LoginPage() {
       <Button
         type="button"
         variant="outline"
-        disabled={busy}
+        disabled={busy || RECOVERY_EMAIL_ONLY}
         onClick={() => void googleSignIn()}
         className="w-full rounded-full"
       >
@@ -219,7 +220,7 @@ function LoginPage() {
             d="M12 23.25c3.04 0 5.6-1 7.46-2.72l-3.68-2.85c-1.02.69-2.33 1.1-3.78 1.1-2.98 0-5.45-1.99-6.3-4.66l-3.66 2.84c1.8 3.67 5.58 6.29 9.96 6.29z"
           />
         </svg>
-        Sign in with Google
+        {RECOVERY_EMAIL_ONLY ? "Google sign-in unavailable. Use email." : "Sign in with Google"}
       </Button>
     </AuthShell>
   );

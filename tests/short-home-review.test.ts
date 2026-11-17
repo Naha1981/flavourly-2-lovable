@@ -2,8 +2,10 @@ import {describe,it,expect} from 'vitest';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../src/routes/index.tsx',import.meta.url),'utf8');
 describe('short home review',()=>{
- it('keeps the primary action and honest example label',()=>{
-  expect(source).toContain('See what Flavourly finds');
+ it('removes the unrequested claim preview link and keeps honest product example labels',()=>{
+  expect(source).not.toContain('See what Flavourly finds');
+  expect(source).not.toContain('marble-jhb');
+  expect(source).not.toContain('to="/claim/$slug"');
   expect(source).toContain('Illustrative demo');
   expect(source).toContain('The restaurant still needs to confirm it.');
  });
