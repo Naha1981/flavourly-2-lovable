@@ -1,0 +1,1 @@
+17 Nov2026: isolated read-only synthetic guest route /demo on branded frontdoor. Full auth remains provider530. No server writes, customer data, AI calls or message sends. Rollback version17c10b19-21d3-48ff-b4dc-d5a6149b4946. Existing upstream/proxy paths preserved. Phone390px tested and visually inspected.
